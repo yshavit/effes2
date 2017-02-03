@@ -61,10 +61,12 @@ FUNC : reverse 1 1 0 1
 # 1: $res
 call :Empty Empty # $res = Empty
 svar 1
-pvar 0            # while type $(0) == Cons
+labl @loop_top
+pvar 0            # while type $0 == Cons
 type :Cons
-goif 6            # jump to the loop body
-goto 15           # jump to loop end
+goif @loop_body
+goto @loop_end
+labl @loop_body
 pvar 0            # (loop body) $res = Cons($0.head, $res)
 pfld :Cons head
 pvar 1
@@ -73,7 +75,8 @@ svar 1
 pvar 0            # $0 = $.tail
 pfld :Cons tail
 svar 0
-goto 2            # jump to top of loop
+goto @loop_top
+labl @loop_end
 pvar 1
 rtrn
 
