@@ -1,0 +1,177 @@
+efct 0
+
+# Denter class and supporting types. From stdin, returns a stream of indents, dedents and strings.
+# Each call to Denter.next returns one of Indent, Dedent, String or False (representing EOF).
+# The Denter's state is:
+#  - indents: a ConsList[Integer] of indentations. Every time you indent,
+TYPE 0 Indent
+TYPE 0 Dedent
+TYPE 0 Denter indents pending
+
+FUNC : create 0 1 0 0
+int  0                      # [0]
+call ConsList:Empty Empty   # [0, Empty]
+call ConsList:Cons Cons     # [Cons(0,Empty)]
+call ConsList:Empty Empty   # [Cons(0, Empty), Empty]
+call :Denter Denter         # [Denter]
+rtrn
+
+FUNC Denter next 0 1 0 2
+# $0: this
+# $1: this.pending
+# $2: result
+pvar 0                               # [this]
+pfld :Denter pending                 # [this.pending]
+svar 1                               # []
+pvar 1                               # [this.pending]
+type ConsList:Empty                  # [bool]
+gofi @if_not_empty
+pvar 0                               # [this]
+call :Denter _loadNext               # []
+pvar 0                               # [this]
+pfld :Denter pending                 # [this.pending]
+typp ConsList:Empty                  # [this.pending, bool]
+gofi @found_more_data                # [this.pending]
+pop                                  # []
+bool False                           # [False]
+rtrn
+labl @found_more_data                # [this.pending]
+svar 1                               # []
+labl @if_not_empty
+pvar 1                               # [this.pending] ## $2 = pending.head
+pfld ConsList:Cons head              # [this.pending.head]
+svar 2                               # []
+pvar 0                               # [this] ## this.pending = this.pending.tail
+pvar 1                               # [this, this.pending]
+pfld ConsList:Cons tail              # [this, this.pending.tail]
+sfld :Denter pending                 # []
+pvar 2                               # [result]
+rtrn
+
+FUNC Denter _loadNext 0 0 0 2
+# $0: this
+# $1: the input string, and then the regex match
+# $2: the input's indendation
+labl @top
+call_String:sin                      # [input?]
+typp False                           # [input?, bool]
+gofi @have_data                      # [input?]
+# while (this.indents.head > 0):
+#  pop this.indents
+#  push a dedent
+pop                                  # []
+labl @eof_dedents_loop
+pvar 0                               # [this]
+pfld :Denter indents                 # [this.indents]
+pfld ConsList:Cons head              # [topIndent]
+int  0                               # [topIndent, 0]
+call_Integer:gt                      # [cmpBool]
+gofi @eof_dedents_end                # []
+pvar 0                               # [this]
+pvar 0                               # [this, this]
+pfld :Denter indents                 # [this, this.indents]
+pfld ConsList:Cons tail              # [this, this.indents.tail]
+sfld :Denter indents                 # []
+pvar 0                               # [this]
+call :Dedent Dedent                  # [this, Dedent]
+pvar 0                               # [this, Dedent, this]
+pfld :Denter pending                 # [this, Dedent, this.pending]
+call ConsList:Cons Cons              # [this, Cons(Dedent, this.pending)]
+sfld :Denter pending                 # []
+labl @eof_dedents_end
+rtrn
+labl @have_data
+svar 1                               # []
+pvar 1                               # [input]
+str  "^(\\s*)(\\S.*)$"               # [input, pattern]
+call_String:regex                    # [matcher?]
+svar 1                               # []
+pvar 1                               # [matcher?]
+typp False                           # [matcher?, bool]
+gofi @matched                        # [matcher?]
+goto @top                            ## means the string was all whitespace; try to find another
+labl @matched                        ## We have our input string. Now find its indendtation in absolute chars
+int  1                               # [matcher, 1]
+call_Match:igroup                    # [indentStr?]
+typp False                           # [indentStr?, bool]
+gofi @have_indents                   # [indentStr?]
+pop                                  # []
+rtrn                                 ## Wouldn't expect this to actually happen
+labl @have_indents
+call_String:len                      # [indentNum]
+svar 2                               # []
+# find any dedents:
+# while (this.indents.head > indentNum):
+#   pop this.indents
+#   push Dedent to this.pending
+labl @dedents_loop_top               # []
+pvar 0                               # [this]
+pfld :Denter indents                 # [this.indents] ## We're going to cheat a bit and assume it's a Cons
+pfld ConsList:Cons head              # [topIndent]
+pvar 2                               # [topIndent, indentNum]
+call_Integer:gt                      # [cmpBool]
+gofi @dedents_loop_end               # []
+pvar 0                               # [this] ## this.indents = this.indents.tail
+pvar 0                               # [this, this]
+pfld :Denter indents                 # [this, this.indents]
+pfld ConsList:Cons tail              # [this, tailIndents]
+sfld :Denter indents                 # []
+pvar 0                               # [this] ## this.pending = Cons(Dedent, this.pending)
+call :Dedent Dedent                  # [this, Dedent]
+pvar 0                               # [this, Dedent, this]
+pfld :Denter pending                 # [this, Dedent, pending)
+call ConsList:Cons Cons              # [this, ConsList(Dedent,pending)]
+sfld :Denter pending                 # []
+goto @dedents_loop_top               # []
+labl @dedents_loop_end
+# if (this.indents.head < indentNum):
+#  push indentNum to this.indents
+#  push Indent to this.pending
+pvar 0                               # [this]
+pfld :Denter indents                 # [this.indents] ## We're going to cheat a bit and assume it's a Cons
+pfld ConsList:Cons head              # [topIndent]
+pvar 2                               # [topIndent, indentNum]
+call_Integer:lt                      # [cmpBool]
+gofi @done_with_indents              # []
+pvar 0                               # [this] ## this.indents = Cons(indentNum, this.indents)
+pvar 2                               # [this, indentNum]
+pvar 0                               # [this, indentNum, this]
+pfld :Denter indents                 # [this, indentNum, this.indents]
+call ConsList:Cons Cons              # [this, Cons(indentNum, this.indents)]
+sfld :Denter indents                 # []
+pvar 0                               # [this] ## this.pending = Cons(Indent, this.pending)
+call :Indent Indent                  # [this, Indent]
+pvar 0                               # [this, Indent, this]
+pfld :Denter pending                 # [this, Indent, pending)
+call ConsList:Cons Cons              # [this, Cons(Indent,pending)]
+sfld :Denter pending                 # []
+# Finally, append the rest of the string, and reverse this.pending
+labl @done_with_indents
+pvar 0                               # [this]
+pvar 1                               # [this, matcher]
+int  2                               # [this, matcher, 2]
+call_Match:igroup                    # [this, payload]
+pvar 0                               # [this, payload, this]
+pfld :Denter pending                 # [this, payload, this.pending]
+call ConsList:Cons Cons              # [this, Cons(payload, this.pending)]
+call ConsList: reverse               # [this, reversedPending]
+sfld :Denter pending                 # []
+rtrn
+
+FUNC : main 0 1 0 1
+call : create
+svar 0
+labl @loop_top
+pvar 0
+call :Denter next
+typp False
+goif @exit
+call_native:toString
+call_String:sout
+str  "\n"
+call_String:sout
+goto @loop_top
+labl @exit
+pop  # the Denter instance
+int  0
+rtrn
