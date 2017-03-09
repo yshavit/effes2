@@ -158,11 +158,11 @@ call ConsList: reverse               # [this, reversedPending]
 sfld :Denter pending                 # []
 rtrn
 
-FUNC : main 0 1 0 1
+FUNC : main 1 1 0 1
 call : create
-svar 0
+svar 1
 labl @loop_top
-pvar 0
+pvar 1
 call :Denter next
 typp False
 goif @exit

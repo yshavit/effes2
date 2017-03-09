@@ -80,24 +80,24 @@ labl @loop_end
 pvar 1
 rtrn
 
-FUNC : main 0 1 0 1
+FUNC : main 1 1 0 1
 # arg: list
 call ConsList:Empty Empty
-svar 0
+svar 1
 call_String:sin      # read lines, put them into the list
 typp False
 goif 9               # exit the loop
-pvar 0
+pvar 1
 call ConsList:Cons Cons
-svar 0
+svar 1
 goto 2               # top of the loop
 pop                  # pop the "False" from String:sin
-pvar 0
+pvar 1
 call ConsList: toString # call_native:toString
 call_String:sout
 str  "\n"
 call_String:sout
-pvar 0
+pvar 1
 call ConsList: reverse
 call ConsList: toString # call_native:toString
 call_String:sout
