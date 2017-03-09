@@ -1,0 +1,37 @@
+type ConsList(head, tail)
+type Empty
+
+headIf list:
+  # Returns the list's head, or False if it's empty
+  return case list is:
+    Cons: list.head
+    _: False
+
+toString list:
+  sb = StringBuilder()
+  sb.add("[")
+  while list is Cons:
+    sb.add(list.head)
+    list = list.tail
+    if list is Cons:
+      sb.add(", ")
+  sb.add("]")
+  return sb.get()
+
+reverse list:
+  rv = Empty
+  while list is Cons:
+    rv = Cons(list.head, rv)
+    list = list.head
+  return rv
+
+main:
+  lines = Empty
+  while Stdin.line() as line is String:
+    lines = Cons(line, lines)
+  Stdout.print(lines)
+  Stdout.print("\n")
+  Stdout.print(reverse(lines))
+  Stdout.print("\n")
+  return 0
+
