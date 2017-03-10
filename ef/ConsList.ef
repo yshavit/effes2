@@ -1,13 +1,13 @@
 type Cons(head, tail)
 type Empty
 
-headIf(list):
+headIf(list) -> Empty: # NOTE: no type checking for now, just marks that there's a rv
   # Returns the list's head, or False if it's empty
-  return case list is:
+  return if list is:
     Cons: list.head
     *: False
 
-toString(list):
+toString(list) -> String:
   sb = StringBuilder()
   sb.add("[")
   while list is Cons:
@@ -25,7 +25,7 @@ reverse(list):
     list = list.head
   return rv
 
-main(args):
+main(args) -> Int:
   lines = Empty
   while Stdio.readLine() as line is String:
     lines = Cons(line, lines)
