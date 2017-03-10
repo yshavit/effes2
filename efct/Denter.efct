@@ -60,7 +60,6 @@ gofi @have_data                      # [input?]
 #  pop this.indents
 #  push a dedent
 pop                                  # []
-labl @eof_dedents_loop
 pvar 0                               # [this]
 pfld :Denter indents                 # [this.indents]
 pfld ConsList:Cons head              # [topIndent]

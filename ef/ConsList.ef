@@ -1,13 +1,13 @@
-type ConsList(head, tail)
+type Cons(head, tail)
 type Empty
 
-headIf list:
+headIf(list):
   # Returns the list's head, or False if it's empty
   return case list is:
     Cons: list.head
-    _: False
+    *: False
 
-toString list:
+toString(list):
   sb = StringBuilder()
   sb.add("[")
   while list is Cons:
@@ -18,20 +18,20 @@ toString list:
   sb.add("]")
   return sb.get()
 
-reverse list:
+reverse(list):
   rv = Empty
   while list is Cons:
     rv = Cons(list.head, rv)
     list = list.head
   return rv
 
-main:
+main(args):
   lines = Empty
-  while Stdin.line() as line is String:
+  while Stdio.readLine() as line is String:
     lines = Cons(line, lines)
-  Stdout.print(lines)
-  Stdout.print("\n")
-  Stdout.print(reverse(lines))
-  Stdout.print("\n")
+  Stdio.print(lines)
+  Stdio.print("\n")
+  Stdio.print(reverse(lines))
+  Stdio.print("\n")
   return 0
 

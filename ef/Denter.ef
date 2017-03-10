@@ -1,0 +1,61 @@
+import ConsList: Cons, Empty, reverse
+
+type Indent
+type Dedent
+
+type Denter(_indents, _pending):
+  next():
+    if this._pending is Empty:
+      this._loadNext()
+      if this._pending is Empty:
+        return False
+    case this._pending is:
+      Cons(head, tail):
+        this._pending = tail
+        return head
+      Empty:
+        return False
+
+  _loadNext():
+    # This is a while-is loop. The evaluation/assignment is done at the start of each iteration.
+    # Each of the matchers must end in "continue", "break" or "return"
+    while line = Stdio.readLine() is:
+      match : /^(\s*)(\S.*)$/ :
+        assume match.1 is String
+        assume match.2 is String
+        indentCount = match.1.length()
+        # find and pop any dedents before the indent, adding Dedents as you go
+        while this._indents is Cons(head: head > indentCount, tail):
+          this._indents = tail
+          this._pending = Cons(Dedent, this._pending)
+        # Add an indent if needed
+        if this._indents is Cons(head: head < indentCount, *):
+          this._indents = Cons(indentCount, this._indents)
+          this._pending = Cons(Indent, this._pending)
+        # Finally, append the rest of the string, and reverse this._pending.
+        # This is because Cons lists work as stacks, whereas we want a queue.
+        # NOTE: I think this is actually incorrect, though I haven't come up with an example yet.
+        # But I think we need to create a ConsQueue, using the two-conslist approach.
+        this._pending = Cons(match.2.length, this._pending)
+        this._pending = reverse(this._pending)
+        return # or break
+      False:
+        # no more lines; insert dedents as needed
+        while this._indents is Cons(head: head > 0, tail):
+          this._indents = tail
+          this._pending = Cons(Dedent, this._pending)
+        return
+      *: continue # blank line
+
+create(): 
+  return Denter(Cons(0, Empty), Empty)
+
+main(args):
+  denter = create()
+  while denter.next() is:
+    False:
+      break
+    e:
+      Stdio.print(e)
+      Stdio.print("\n")
+      continue
