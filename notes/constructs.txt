@@ -1,0 +1,95 @@
+║ Tokens
+╠═══════════════════════════════════════════════════════════════════════════════
+║ 
+║ quoted text is keyword or op, anything else is a description.
+║ 
+║ TYPE       : Any word that starts with uppercase and has at least one
+║              lowercase. Preceding underscores are allowed. e.g. Foo, _Foo.
+║ IDENTIFIER : Any word that stars with a lowrecase. Preceding underscores are
+║              allowed. e.g. foo, fooBar, _fooBaz.
+║ INDENT     : An indentation event in the stream
+║ DEDENT     : An dedentation event in the stream
+╚═══════════════════════════════════════════════════════════════════════════════
+
+║
+║ Rules
+╠═╤═════════════════════════════════════════════════════════════════════════════
+║ │
+║ │ type
+║ ├───────────────────────────────────────────────────────────────────────────── 
+║ │ - 'type' TYPE
+║ │ - opt. (argNames...)
+║ │ - opt. ':' INDENT methods DEDENT
+║ │
+║ │
+║ │ method
+║ ├───────────────────────────────────────────────────────────────────────────── 
+║ │ - IDENTIFIER (argNames)
+║ │ - opt. '->'
+║ │   ↳  Iff provided, method has a return value
+║ │ - ':' block
+║ ├─────────────────────────────────────────────────────────────────────────────
+║ │
+║ │
+║ │ block
+║ ├─────────────────────────────────────────────────────────────────────────────
+║ │ - INDENT statements DEDENT
+║ │ 
+║ │ 
+║ │ statement
+║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ │ ╎ invocation  : (expression '.') IDENTIFIER (args...)
+║ │ ╎ while       : 'while' expression ':' block
+║ │ ╎ while-is    : 'while' expression 'is' ':' matcherlist
+║ │ ╎             ↳  Each matcherblock's block must end in a
+║ │ ╎                continue, break or return statement.
+║ │ ╎ if          : 'if' expression ':' block
+║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist
+║ │ ╎ assume      : 'assume' expression
+║ │ ╎ return      : 'return' expression?
+║ │ ╎ continue    : 'continue'
+║ │ ╎ break       : 'break'
+║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+║ │ ╎ invocation  : (like the expression)
+║ │ ╎ assignment  : (like the expression)
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+║ │ 
+║ │ 
+║ │ expression
+║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ │ ╎ instantiation  : TYPE (args...)?
+║ │ ╎ string_literal : "..."
+║ │ ╎ int_literal    : [+-]? digits
+║ │ ╎ variable       : variable
+║ │ ╎ isa            : expression 'is' TYPE
+║ │ ╎ this           : 'this'
+║ │ ╎ invocation     : (expression '.') IDENTIFIER (args...)
+║ │ ╎ assignment     : IDENTIFIER = expression
+║ │ ╎                ↳ Only allowed as a top-level expression in ifs and whiles
+║ │ ╎                  (including the -is variants), or as a statement.
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+║ │ 
+║ │ 
+║ │ variable
+║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ │ ╎ IDENTIFIER
+║ │ ╎ expression '.' IDENTIFIER
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+║ │ 
+║ │ 
+║ │ matcherlist
+║ ├─────────────────────────────────────────────────────────────────────────────
+║ │ matcherblocks, where a matcherblock is:
+║ │ matcher ':' statement or block
+║ │ 
+║ │ 
+║ │ matcher
+║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ │ ╎ '*' (':' guard)?
+║ │ ╎ bindto (':' guard)?
+║ │ ╎ TYPE (matchers...)
+║ │ ╎ bindto ':' regex 
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+║ │ 
+║ ╰─────────────────────────────────────────────────────────────────────────────
+║

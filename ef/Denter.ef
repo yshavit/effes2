@@ -4,7 +4,7 @@ type Indent
 type Dedent
 
 type Denter(_indents, _pending):
-  next() -> Denter: # NOTE: no type checking for now, just marks that there's a rv
+  next() -> : # NOTE: no type checking for now, just marks that there's a rv
     if this._pending is Empty:
       this._loadNext()
       if this._pending is Empty:
@@ -47,10 +47,10 @@ type Denter(_indents, _pending):
         return
       *: continue # blank line
 
-create() -> Denter:
+create() -> :
   return Denter(Cons(0, Empty), Empty)
 
-main(args) -> Int:
+main(args) -> :
   denter = create()
   while denter.next() is:
     False:
