@@ -4,25 +4,25 @@ type Empty
 headIf(list) -> : # NOTE: no type checking for now, just marks that there's a rv
   # Returns the list's head, or False if it's empty
   return if list is:
-    Cons: list.head
+    Cons(head, *): head
     *: False
 
 toString(list) -> :
   sb = StringBuilder()
   sb.add("[")
-  while list is Cons:
-    sb.add(list.head)
-    list = list.tail
-    if list is Cons:
+  while list is Cons(head, tail):
+    sb.add(head)
+    list = tail
+    if list is Cons(*,*):
       sb.add(", ")
   sb.add("]")
   return sb.get()
 
 reverse(list):
   rv = Empty
-  while list is Cons:
-    rv = Cons(list.head, rv)
-    list = list.head
+  while list is Cons(head, *):
+    rv = Cons(head, rv)
+    list = head
   return rv
 
 main(args) -> :

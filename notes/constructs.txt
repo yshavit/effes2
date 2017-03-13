@@ -9,86 +9,92 @@
 ║              allowed. e.g. foo, fooBar, _fooBaz.
 ║ INDENT     : An indentation event in the stream
 ║ DEDENT     : An dedentation event in the stream
+║ NL         : A newline
 ╚═══════════════════════════════════════════════════════════════════════════════
 
 ║
 ║ Rules
 ╠═╤═════════════════════════════════════════════════════════════════════════════
 ║ │
-║ │ type
-║ ├───────────────────────────────────────────────────────────────────────────── 
+║ ┝━ file ────────────────────────────────────────────────────────────────────── 
+║ │ - import*
+║ │ - fileelem*
+║ │
+║ ┝━ fileelem ────────────────────────────────────────────────────────────────── 
+║ │ - type or method
+║ │
+║ ┝━ import ──────────────────────────────────────────────────────────────────── 
+║ │ 'import' <modulename> ':' fileelem (, fileelem)*
+║ │
+║ ┝━ args ────────────────────────────────────────────────────────────────────── 
+║ │ identifier (',' identifier)*
+║ │
+║ ┝━ type ────────────────────────────────────────────────────────────────────── 
 ║ │ - 'type' TYPE
-║ │ - opt. (argNames...)
+║ │ - opt. (args...)
 ║ │ - opt. ':' INDENT methods DEDENT
 ║ │
-║ │
-║ │ method
-║ ├───────────────────────────────────────────────────────────────────────────── 
-║ │ - IDENTIFIER (argNames)
+║ ┝━ method ──────────────────────────────────────────────────────────────────── 
+║ │ - IDENTIFIER (args)
 ║ │ - opt. '->'
 ║ │   ↳  Iff provided, method has a return value
 ║ │ - ':' block
-║ ├─────────────────────────────────────────────────────────────────────────────
 ║ │
-║ │
-║ │ block
-║ ├─────────────────────────────────────────────────────────────────────────────
-║ │ - INDENT statements DEDENT
+║ ┝━ block ─────────────────────────────────────────────────────────────────────
+║ │ - INDENT (statement NL)+ DEDENT
 ║ │ 
-║ │ 
-║ │ statement
-║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ ┝━┯━ statement ─────────────────────────────────────────────────────────────── 
 ║ │ ╎ invocation  : (expression '.') IDENTIFIER (args...)
 ║ │ ╎ while       : 'while' expression ':' block
-║ │ ╎ while-is    : 'while' expression 'is' ':' matcherlist
+║ │ ╎ while-is    : 'while' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Each matcherblock's block must end in a
 ║ │ ╎                continue, break or return statement.
 ║ │ ╎ if          : 'if' expression ':' block
-║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist
+║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist<block>
+║ │ ╎             ↳  Once type checking is in place, all types must be matched
 ║ │ ╎ assume      : 'assume' expression
 ║ │ ╎ return      : 'return' expression?
 ║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
-║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+║ │ ├┈
 ║ │ ╎ invocation  : (like the expression)
 ║ │ ╎ assignment  : (like the expression)
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
-║ │ 
-║ │ expression
-║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ ┝━┯━ expression ────────────────────────────────────────────────────────────── 
+║ │ ╎ if-is          : like if-is statement, but with matchrelist<expression>
 ║ │ ╎ instantiation  : TYPE (args...)?
 ║ │ ╎ string_literal : "..."
 ║ │ ╎ int_literal    : [+-]? digits
 ║ │ ╎ variable       : variable
-║ │ ╎ isa            : expression 'is' TYPE
+║ │ ╎ isa            : expression 'is' matcher
 ║ │ ╎ this           : 'this'
 ║ │ ╎ invocation     : (expression '.') IDENTIFIER (args...)
 ║ │ ╎ assignment     : IDENTIFIER = expression
 ║ │ ╎                ↳ Only allowed as a top-level expression in ifs and whiles
 ║ │ ╎                  (including the -is variants), or as a statement.
+║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+║ │ ╎ Note: These and future expressions can never contain ':' as a token.
+║ │ ╎       That would confuse the parsing of matchers' guard expressions.
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
-║ │ 
-║ │ variable
-║ ├─┬─────────────────────────────────────────────────────────────────────────── 
+║ ┝━┯━ variable ──────────────────────────────────────────────────────────────── 
 ║ │ ╎ IDENTIFIER
 ║ │ ╎ expression '.' IDENTIFIER
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
+║ ┝━ matcherlist<k> ────────────────────────────────────────────────────────────
+║ │ matcherblock<k>, where a matcherblock<k> is:
+║ │ matcher ':' <k>
+║ │              ↳ <k> is either a statement, a block or an expression
 ║ │ 
-║ │ matcherlist
-║ ├─────────────────────────────────────────────────────────────────────────────
-║ │ matcherblocks, where a matcherblock is:
-║ │ matcher ':' statement or block
-║ │ 
-║ │ 
-║ │ matcher
-║ ├─┬─────────────────────────────────────────────────────────────────────────── 
-║ │ ╎ '*' (':' guard)?
-║ │ ╎ bindto (':' guard)?
+║ ┝━┯━ matcher ───────────────────────────────────────────────────────────────── 
+║ │ ╎ '*' (':' expression)?
+║ │ ╎ bindto (':' expression)?
 ║ │ ╎ TYPE (matchers...)
 ║ │ ╎ bindto ':' regex 
+║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
+║ │ ╎ regex: '/' (regex as parsed by Java) '/'
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ╰─────────────────────────────────────────────────────────────────────────────
