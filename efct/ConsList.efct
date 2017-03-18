@@ -2,7 +2,7 @@ efct 0
 TYPE 0 Cons head tail
 TYPE 0 Empty
 
-FUNC : headIf 1 1 0 0
+FUNC : headIf 1 1 0
 # returns the list's head, or False if it's Empty
 pvar 0
 typp :Cons
@@ -13,7 +13,7 @@ pop       # return False
 bool False
 rtrn
 
-FUNC : toString 1 1 0 1
+FUNC : toString 1 1 0
 # vars:
 # 0: incoming list
 # 1: stringbuilder
@@ -48,7 +48,7 @@ pvar 1            # return sb.toString
 call_native:toString
 rtrn
 
-FUNC : reverse 1 1 0 1
+FUNC : reverse 1 1 0
 # reverses the given list, which is either a Cons or Empty
 # $res = Empty
 # while type($0) == Cons
@@ -80,7 +80,7 @@ labl @loop_end
 pvar 1
 rtrn
 
-FUNC : main 1 1 0 1
+FUNC : main 1 1 0
 # arg: list
 call ConsList:Empty Empty
 svar 1

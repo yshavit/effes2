@@ -8,7 +8,7 @@ TYPE 0 Indent
 TYPE 0 Dedent
 TYPE 0 Denter indents pending
 
-FUNC : create 0 1 0 0
+FUNC : create 0 1 0
 int  0                      # [0]
 call ConsList:Empty Empty   # [0, Empty]
 call ConsList:Cons Cons     # [Cons(0,Empty)]
@@ -16,7 +16,7 @@ call ConsList:Empty Empty   # [Cons(0, Empty), Empty]
 call :Denter Denter         # [Denter]
 rtrn
 
-FUNC Denter next 0 1 0 2
+FUNC Denter next 0 1 0
 # $0: this
 # $1: this.pending
 # $2: result
@@ -48,7 +48,7 @@ sfld :Denter pending                 # []
 pvar 2                               # [result]
 rtrn
 
-FUNC Denter _loadNext 0 0 0 2
+FUNC Denter _loadNext 0 0 0
 # $0: this
 # $1: the input string, and then the regex match
 # $2: the input's indendation
@@ -157,7 +157,7 @@ call ConsList: reverse               # [this, reversedPending]
 sfld :Denter pending                 # []
 rtrn
 
-FUNC : main 1 1 0 1
+FUNC : main 1 1 0
 call : create
 svar 1
 labl @loop_top
