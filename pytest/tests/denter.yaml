@@ -1,0 +1,57 @@
+desc: some indents
+entry_module: Denter
+stdin: |
+  one:
+    two
+    three
+    four:
+      five:
+        six
+    seven
+stdout: |
+  one:
+  Denter:Indent
+  two
+  Newline
+  three
+  Newline
+  four:
+  Denter:Indent
+  five:
+  Denter:Indent
+  six
+  Newline
+  Denter:Dedent
+  Denter:Dedent
+  seven
+  Newline
+  Denter:Dedent
+---
+entry_module: Denter
+desc: ends in statement
+stdin: |
+  one
+  two
+stdout: |
+  one
+  Newline
+  two
+  Newline
+---
+entry_module: Denter
+desc: half-dent
+stdin: |
+  one
+       two
+    three
+  four
+stdout: |
+  one
+  Denter:Indent
+  two
+  Denter:Dedent
+  Denter:Indent
+  three
+  Denter:Dedent
+  four
+  Newline
