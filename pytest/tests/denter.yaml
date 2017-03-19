@@ -49,9 +49,11 @@ stdout: |
   one
   Denter:Indent
   two
+  Denter:Newline
   Denter:Dedent
   Denter:Indent
   three
+  Denter:Newline
   Denter:Dedent
   four
   Denter:Newline

@@ -51,7 +51,7 @@ def find_results(tests_dir=TESTS_DIR):
 
 
 def run_effes(entry_module, stdin):
-    proc_args = ['java', '-jar', abs_path(EF_JAR), entry_module]
+    proc_args = ['java', '-Ddebug=true', '-jar', abs_path(EF_JAR), entry_module]
     classpath = abs_path(EF_CLASSPATH)
     proc_env = {'EFFES_CLASSPATH': classpath}
     p = subprocess.Popen(proc_args, stdin=PIPE, stdout=PIPE, env=proc_env)
