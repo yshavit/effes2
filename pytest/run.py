@@ -100,11 +100,8 @@ if __name__ == '__main__':
                 '' if case_errors == 1 else 's',
                 test_errors,
                 '' if test_errors == 1 else 's')
-    else:
-        print 'No errors!'
-
-    if results:
         exit_code = 1
     else:
+        print 'No errors!'
         exit_code = 0
     exit(exit_code)
