@@ -6,7 +6,7 @@ efct 0
 #  - indents: a ConsList[Integer] of indentations. Every time you indent,
 TYPE 0 Indent
 TYPE 0 Dedent
-TYPE 0 Denter indents pending
+TYPE 0 Denter _indents _pending
 
 FUNC : create 0 1 0
 int  0                      # [0]
@@ -18,33 +18,33 @@ rtrn
 
 FUNC Denter next 0 1 0
 # $0: this
-# $1: this.pending
+# $1: this._pending
 # $2: result
 pvar 0                               # [this]
-pfld :Denter pending                 # [this.pending]
+pfld :Denter _pending                # [this._pending]
 svar 1                               # []
-pvar 1                               # [this.pending]
+pvar 1                               # [this._pending]
 type ConsList:Empty                  # [bool]
 gofi @if_not_empty
 pvar 0                               # [this]
 call :Denter _loadNext               # []
 pvar 0                               # [this]
-pfld :Denter pending                 # [this.pending]
-typp ConsList:Empty                  # [this.pending, bool]
-gofi @found_more_data                # [this.pending]
+pfld :Denter _pending                # [this._pending]
+typp ConsList:Empty                  # [this._pending, bool]
+gofi @found_more_data                # [this._pending]
 pop                                  # []
 bool False                           # [False]
 rtrn
-labl @found_more_data                # [this.pending]
+labl @found_more_data                # [this._pending]
 svar 1                               # []
 labl @if_not_empty
-pvar 1                               # [this.pending] ## $2 = pending.head
-pfld ConsList:Cons head              # [this.pending.head]
+pvar 1                               # [this._pending] ## $2 = _pending.head
+pfld ConsList:Cons head              # [this._pending.head]
 svar 2                               # []
-pvar 0                               # [this] ## this.pending = this.pending.tail
-pvar 1                               # [this, this.pending]
-pfld ConsList:Cons tail              # [this, this.pending.tail]
-sfld :Denter pending                 # []
+pvar 0                               # [this] ## this._pending = this._pending.tail
+pvar 1                               # [this, this._pending]
+pfld ConsList:Cons tail              # [this, this._pending.tail]
+sfld :Denter _pending                # []
 pvar 2                               # [result]
 rtrn
 
@@ -56,27 +56,27 @@ labl @top
 call_String:sin                      # [input?]
 typp False                           # [input?, bool]
 gofi @have_data                      # [input?]
-# while (this.indents.head > 0):
-#  pop this.indents
+# while (this._indents.head > 0):
+#  pop this._indents
 #  push a dedent
 pop                                  # []
 pvar 0                               # [this]
-pfld :Denter indents                 # [this.indents]
+pfld :Denter _indents                # [this._indents]
 pfld ConsList:Cons head              # [topIndent]
 int  0                               # [topIndent, 0]
 call_Integer:gt                      # [cmpBool]
 gofi @eof_dedents_end                # []
 pvar 0                               # [this]
 pvar 0                               # [this, this]
-pfld :Denter indents                 # [this, this.indents]
-pfld ConsList:Cons tail              # [this, this.indents.tail]
-sfld :Denter indents                 # []
+pfld :Denter _indents                # [this, this._indents]
+pfld ConsList:Cons tail              # [this, this._indents.tail]
+sfld :Denter _indents                # []
 pvar 0                               # [this]
 call :Dedent Dedent                  # [this, Dedent]
 pvar 0                               # [this, Dedent, this]
-pfld :Denter pending                 # [this, Dedent, this.pending]
-call ConsList:Cons Cons              # [this, Cons(Dedent, this.pending)]
-sfld :Denter pending                 # []
+pfld :Denter _pending                # [this, Dedent, this._pending]
+call ConsList:Cons Cons              # [this, Cons(Dedent, this._pending)]
+sfld :Denter _pending                # []
 labl @eof_dedents_end
 rtrn
 labl @have_data
@@ -100,61 +100,61 @@ labl @have_indents
 call_String:len                      # [indentNum]
 svar 2                               # []
 # find any dedents:
-# while (this.indents.head > indentNum):
-#   pop this.indents
-#   push Dedent to this.pending
+# while (this._indents.head > indentNum):
+#   pop this._indents
+#   push Dedent to this._pending
 labl @dedents_loop_top               # []
 pvar 0                               # [this]
-pfld :Denter indents                 # [this.indents] ## We're going to cheat a bit and assume it's a Cons
+pfld :Denter _indents                # [this._indents] ## We're going to cheat a bit and assume it's a Cons
 pfld ConsList:Cons head              # [topIndent]
 pvar 2                               # [topIndent, indentNum]
 call_Integer:gt                      # [cmpBool]
 gofi @dedents_loop_end               # []
-pvar 0                               # [this] ## this.indents = this.indents.tail
+pvar 0                               # [this] ## this._indents = this._indents.tail
 pvar 0                               # [this, this]
-pfld :Denter indents                 # [this, this.indents]
+pfld :Denter _indents                # [this, this._indents]
 pfld ConsList:Cons tail              # [this, tailIndents]
-sfld :Denter indents                 # []
-pvar 0                               # [this] ## this.pending = Cons(Dedent, this.pending)
+sfld :Denter _indents                # []
+pvar 0                               # [this] ## this._pending = Cons(Dedent, this._pending)
 call :Dedent Dedent                  # [this, Dedent]
 pvar 0                               # [this, Dedent, this]
-pfld :Denter pending                 # [this, Dedent, pending)
-call ConsList:Cons Cons              # [this, ConsList(Dedent,pending)]
-sfld :Denter pending                 # []
+pfld :Denter _pending                # [this, Dedent, _pending)
+call ConsList:Cons Cons              # [this, ConsList(Dedent,_pending)]
+sfld :Denter _pending                # []
 goto @dedents_loop_top               # []
 labl @dedents_loop_end
-# if (this.indents.head < indentNum):
-#  push indentNum to this.indents
-#  push Indent to this.pending
+# if (this._indents.head < indentNum):
+#  push indentNum to this._indents
+#  push Indent to this._pending
 pvar 0                               # [this]
-pfld :Denter indents                 # [this.indents] ## We're going to cheat a bit and assume it's a Cons
+pfld :Denter _indents                # [this._indents] ## We're going to cheat a bit and assume it's a Cons
 pfld ConsList:Cons head              # [topIndent]
 pvar 2                               # [topIndent, indentNum]
 call_Integer:lt                      # [cmpBool]
 gofi @done_with_indents              # []
-pvar 0                               # [this] ## this.indents = Cons(indentNum, this.indents)
+pvar 0                               # [this] ## this._indents = Cons(indentNum, this._indents)
 pvar 2                               # [this, indentNum]
 pvar 0                               # [this, indentNum, this]
-pfld :Denter indents                 # [this, indentNum, this.indents]
-call ConsList:Cons Cons              # [this, Cons(indentNum, this.indents)]
-sfld :Denter indents                 # []
-pvar 0                               # [this] ## this.pending = Cons(Indent, this.pending)
+pfld :Denter _indents                # [this, indentNum, this._indents]
+call ConsList:Cons Cons              # [this, Cons(indentNum, this._indents)]
+sfld :Denter _indents                # []
+pvar 0                               # [this] ## this._pending = Cons(Indent, this._pending)
 call :Indent Indent                  # [this, Indent]
 pvar 0                               # [this, Indent, this]
-pfld :Denter pending                 # [this, Indent, pending)
-call ConsList:Cons Cons              # [this, Cons(Indent,pending)]
-sfld :Denter pending                 # []
-# Finally, append the rest of the string, and reverse this.pending
+pfld :Denter _pending                # [this, Indent, _pending)
+call ConsList:Cons Cons              # [this, Cons(Indent,_pending)]
+sfld :Denter _pending                # []
+# Finally, append the rest of the string, and reverse this._pending
 labl @done_with_indents
 pvar 0                               # [this]
 pvar 1                               # [this, matcher]
 int  2                               # [this, matcher, 2]
 call_Match:igroup                    # [this, payload]
 pvar 0                               # [this, payload, this]
-pfld :Denter pending                 # [this, payload, this.pending]
-call ConsList:Cons Cons              # [this, Cons(payload, this.pending)]
+pfld :Denter _pending                # [this, payload, this._pending]
+call ConsList:Cons Cons              # [this, Cons(payload, this._pending)]
 call ConsList: reverse               # [this, reversedPending]
-sfld :Denter pending                 # []
+sfld :Denter _pending                # []
 rtrn
 
 FUNC : main 1 1 0
