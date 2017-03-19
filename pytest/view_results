@@ -3,4 +3,5 @@
 # Requires vim with the DirDiff plugin:
 # https://github.com/will133/vim-dirdiff
 
+cd "$(dirname "$0")"
 vim '+DirDiff results/expected results/actual'

@@ -12,19 +12,19 @@ stdout: |
   one:
   Denter:Indent
   two
-  Newline
+  Denter:Newline
   three
-  Newline
+  Denter:Newline
   four:
   Denter:Indent
   five:
   Denter:Indent
   six
-  Newline
+  Denter:Newline
   Denter:Dedent
   Denter:Dedent
   seven
-  Newline
+  Denter:Newline
   Denter:Dedent
 ---
 entry_module: Denter
@@ -34,9 +34,9 @@ stdin: |
   two
 stdout: |
   one
-  Newline
+  Denter:Newline
   two
-  Newline
+  Denter:Newline
 ---
 entry_module: Denter
 desc: half-dent
@@ -54,4 +54,4 @@ stdout: |
   three
   Denter:Dedent
   four
-  Newline
+  Denter:Newline

@@ -61,6 +61,7 @@ def run_effes(entry_module, stdin):
 
 
 def clear_dir(dir_p):
+    dir_p = abs_path(dir_p)
     if os.path.exists(dir_p):
         shutil.rmtree(dir_p)
     os.makedirs(dir_p)
