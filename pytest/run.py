@@ -29,7 +29,8 @@ def find_results(tests_dir=TESTS_DIR):
     prefix_len = len(tests_dir_abs) + 1  # +1 for the trailing slash
     for test_p in glob.glob('%s**/*.yaml' % tests_dir_abs):
         test_name = test_p[prefix_len:]
-        print test_name
+        test_name = os.path.splitext(test_name)[0]
+        print '\x1b[4m%s:\x1b[0m' % test_name
         with open(test_p) as test_f:
             case_results = []
             for case_no, case in enumerate(yaml.load_all(test_f)):
@@ -38,14 +39,14 @@ def find_results(tests_dir=TESTS_DIR):
                 desc = case.get('desc', 'case_%d' % case_no)
                 entry_module = case['entry_module']
                 sys.stdout.write('  %s:' % desc)
+                sys.stdout.flush()
                 actual = run_effes(entry_module, stdin)
                 if stdout == actual:
                     print ' OK'
                 else:
-                    print ' FAIL'
+                    print ' \x1b[1mFAIL\x1b[0m'
                     case_results.append((desc, stdout, actual))
-            key = os.path.splitext(test_name)[0]
-            results[key] = case_results
+            results[test_name] = case_results
     return results
 
 
@@ -88,6 +89,19 @@ if __name__ == '__main__':
         exit(50)
     results = find_results()
     results_to_files(results)
+
+    case_errors = reduce(lambda a, b: a + b, map(len, results.itervalues()))
+    if case_errors:
+        test_errors = len(filter(bool, results.itervalues()))
+        print
+        print '%d error%s in %d test file%s.' % (
+                case_errors,
+                '' if case_errors == 1 else 's',
+                test_errors,
+                '' if test_errors == 1 else 's')
+    else:
+        print 'No errors!'
+
     if results:
         exit_code = 1
     else:
