@@ -110,9 +110,6 @@ typp False                           # [matcher?, bool]
 gofi @matched                        # [matcher?]
 goto @top                            ## means the string was all whitespace; try to find another
 labl @matched                        ## We have our input string. Now find its indendtation in absolute chars
-pvar 0                               # [this]
-bool True                            # [this, True]
-sfld :Denter _needTrailingNewline    # []
 int  1                               # [matcher, 1]
 call_Match:igroup                    # [indentStr?]
 typp False                           # [indentStr?, bool]
@@ -122,13 +119,16 @@ rtrn                                 ## Wouldn't expect this to actually happen
 labl @have_indents
 call_String:len                      # [indentNum]
 svar 2                               # []
-# if this._indents is Cons(head: head > indentCount, *):
+# if this._indents is Cons(head: head >= indentCount, *):
 #   this.pending = Cons(Newline, this._pending)
 pvar 0                               # [this]
 pfld :Denter _indents                # [this._indents] ## We're going to cheat a bit and assume it's a Cons
 pfld ConsList:Cons head              # [topIndent]
 pvar 2                               # [topIndent, indentNum]
-call_Integer:gt                      # [cmpBool]
+call_Integer:ge                      # [cmpBool]
+gofi @after_inserting_newline        # []
+pvar 0                               # [this]
+pfld :Denter _needTrailingNewline    # [this._needTrailingNewline]
 gofi @after_inserting_newline        # []
 pvar 0                               # [this]
 call :Newline Newline                # [this, Newline]
@@ -193,6 +193,9 @@ pfld :Denter _pending                # [this, payload, this._pending]
 call ConsList:Cons Cons              # [this, Cons(payload, this._pending)]
 call ConsList: reverse               # [this, reversedPending]
 sfld :Denter _pending                # []
+pvar 0                               # [this]
+bool True                            # [this, True]
+sfld :Denter _needTrailingNewline    # []
 rtrn
 
 FUNC : main 1 1 0

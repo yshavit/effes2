@@ -25,10 +25,11 @@ type Denter(_indents, _pending, _needTrailingNewline):
         assume match.1 is String
         assume match.2 is String
         indentCount = match.1.length()
-        this._needTrailingNewline = True
         # find and pop any dedents before the indent, adding Dedents as you go
-        if this._indents is Cons(head: head > indentCount, *):
-          this._pending = Cons(Newline, this._pending)
+        # We would eventually want to combine these two into an &&
+        if this._indents is Cons(head: head >= indentCount, *):
+          if this._needTrailingNewline:
+            this._pending = Cons(Newline, this._pending)
         while this._indents is Cons(head: head > indentCount, tail):
           this._indents = tail
           this._pending = Cons(Dedent, this._pending)
@@ -42,16 +43,16 @@ type Denter(_indents, _pending, _needTrailingNewline):
         # But I think we need to create a ConsQueue, using the two-conslist approach.
         this._pending = Cons(match.2.length, this._pending)
         this._pending = reverse(this._pending)
+        this._needTrailingNewline = True
         return # or break
       False:
         # no more lines; insert dedents as needed
-        if this._needTrailingNewline:
-          this._needTrailingNewline = False
-          this._pending = Cons(Newline, this._pending)
-
         while this._indents is Cons(head: head > 0, tail):
           this._indents = tail
           this._pending = Cons(Dedent, this._pending)
+        if this._needTrailingNewline:
+          this._needTrailingNewline = False
+          this._pending = Cons(Newline, this._pending)
         return
       *: continue # blank line
 
