@@ -6,13 +6,15 @@ efct 0
 #  - indents: a ConsList[Integer] of indentations. Every time you indent,
 TYPE 0 Indent
 TYPE 0 Dedent
-TYPE 0 Denter _indents _pending
+TYPE 0 Denter _indents _pending _needTrailingNewline
+TYPE 0 Newline
 
 FUNC : create 0 1 0
 int  0                      # [0]
 call ConsList:Empty Empty   # [0, Empty]
 call ConsList:Cons Cons     # [Cons(0,Empty)]
 call ConsList:Empty Empty   # [Cons(0, Empty), Empty]
+bool False                  # [Cons(0, Empty), Empty, False]
 call :Denter Denter         # [Denter]
 rtrn
 
@@ -56,6 +58,7 @@ labl @top
 call_String:sin                      # [input?]
 typp False                           # [input?, bool]
 gofi @have_data                      # [input?]
+# No more data. Push trailing dedents.
 # while (this._indents.head > 0):
 #  pop this._indents
 #  push a dedent
@@ -78,7 +81,24 @@ pfld :Denter _pending                # [this, Dedent, this._pending]
 call ConsList:Cons Cons              # [this, Cons(Dedent, this._pending)]
 sfld :Denter _pending                # []
 labl @eof_dedents_end
+# if this._needTrailingNewline
+#   this.pending = Cons(Newline, this._pending)
+#   this._needTrailingNewline = False
+pvar 0                               # [this]
+pfld :Denter _needTrailingNewline    # [this._needTrailingNewline]
+gofi @after_insert_last_newline      # []
+pvar 0                               # [this]
+call :Newline Newline                # [this, Newline]
+pvar 0                               # [this, Newline, this]
+pfld :Denter _pending                # [this, Newline, this._pending]
+call ConsList:Cons Cons              # [this, Cons(Newline, this._pending)]
+sfld :Denter _pending                # []
+pvar 0                               # [this]
+bool False                           # [this, False]
+sfld :Denter _needTrailingNewline    # []
+labl @after_insert_last_newline      # []
 rtrn
+# We have a new row
 labl @have_data
 svar 1                               # []
 pvar 1                               # [input]
@@ -90,6 +110,9 @@ typp False                           # [matcher?, bool]
 gofi @matched                        # [matcher?]
 goto @top                            ## means the string was all whitespace; try to find another
 labl @matched                        ## We have our input string. Now find its indendtation in absolute chars
+pvar 0                               # [this]
+bool True                            # [this, True]
+sfld :Denter _needTrailingNewline    # []
 int  1                               # [matcher, 1]
 call_Match:igroup                    # [indentStr?]
 typp False                           # [indentStr?, bool]
@@ -99,6 +122,21 @@ rtrn                                 ## Wouldn't expect this to actually happen
 labl @have_indents
 call_String:len                      # [indentNum]
 svar 2                               # []
+# if this._indents is Cons(head: head > indentCount, *):
+#   this.pending = Cons(Newline, this._pending)
+pvar 0                               # [this]
+pfld :Denter _indents                # [this._indents] ## We're going to cheat a bit and assume it's a Cons
+pfld ConsList:Cons head              # [topIndent]
+pvar 2                               # [topIndent, indentNum]
+call_Integer:gt                      # [cmpBool]
+gofi @after_inserting_newline        # []
+pvar 0                               # [this]
+call :Newline Newline                # [this, Newline]
+pvar 0                               # [this, Newline, this]
+pfld :Denter _pending                # [this, Newline, this._pending]
+call ConsList:Cons Cons              # [this, Cons(Newline, this._pending)]
+sfld :Denter _pending                # []
+labl @after_inserting_newline 
 # find any dedents:
 # while (this._indents.head > indentNum):
 #   pop this._indents
