@@ -18,16 +18,16 @@
 ║ │
 ║ ┝━ file ────────────────────────────────────────────────────────────────────── 
 ║ │ - import*
-║ │ - fileelem*
+║ │ - declaration*
 ║ │
-║ ┝━ fileelem ────────────────────────────────────────────────────────────────── 
+║ ┝━ declaration ─────────────────────────────────────────────────────────────── 
 ║ │ - type or method
 ║ │
 ║ ┝━ import ──────────────────────────────────────────────────────────────────── 
-║ │ 'import' <modulename> ':' fileelem (, fileelem)*
+║ │ 'import' <modulename> ':' declaration (, declaration)*
 ║ │
 ║ ┝━ args ────────────────────────────────────────────────────────────────────── 
-║ │ identifier (',' identifier)*
+║ │ '(' identifier (',' identifier)* ')'
 ║ │
 ║ ┝━ type ────────────────────────────────────────────────────────────────────── 
 ║ │ - 'type' TYPE
@@ -44,7 +44,6 @@
 ║ │ - INDENT (statement NL)+ DEDENT
 ║ │ 
 ║ ┝━┯━ statement ─────────────────────────────────────────────────────────────── 
-║ │ ╎ invocation  : (expression '.') IDENTIFIER (args...)
 ║ │ ╎ while       : 'while' expression ':' block
 ║ │ ╎ while-is    : 'while' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Each matcherblock's block must end in a
@@ -66,21 +65,16 @@
 ║ │ ╎ instantiation  : TYPE (args...)?
 ║ │ ╎ string_literal : "..."
 ║ │ ╎ int_literal    : [+-]? digits
-║ │ ╎ variable       : variable
+║ │ ╎ variable       : (expression '.')? IDENTIFIER
 ║ │ ╎ isa            : expression 'is' matcher
 ║ │ ╎ this           : 'this'
-║ │ ╎ invocation     : (expression '.') IDENTIFIER (args...)
+║ │ ╎ invocation     : (expression '.')? IDENTIFIER (args...)
 ║ │ ╎ assignment     : IDENTIFIER = expression
 ║ │ ╎                ↳ Only allowed as a top-level expression in ifs and whiles
 ║ │ ╎                  (including the -is variants), or as a statement.
 ║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 ║ │ ╎ Note: These and future expressions can never contain ':' as a token.
 ║ │ ╎       That would confuse the parsing of matchers' guard expressions.
-║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
-║ │ 
-║ ┝━┯━ variable ──────────────────────────────────────────────────────────────── 
-║ │ ╎ IDENTIFIER
-║ │ ╎ expression '.' IDENTIFIER
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ┝━ matcherlist<k> ────────────────────────────────────────────────────────────
