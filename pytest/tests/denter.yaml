@@ -1,3 +1,8 @@
+desc: empty
+entry_module: Denter
+stdin: ''
+stdout: ''
+---
 desc: some indents
 entry_module: Denter
 stdin: |
