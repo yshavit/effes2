@@ -1,4 +1,4 @@
-desc: simple
+desc: simple type
 entry_module: Lexer
 stdin: |
   type Foo
@@ -6,4 +6,26 @@ stdout: |
   Lexer:KwType
   Lexer:TypeName(Foo)
   Denter:Newline
+---
+desc: complex type
+entry_module: Lexer
+stdin: |
+  type Foo(bar, baz):
+    hello -> there
+
+stdout: |
+  Lexer:KwType
+  Lexer:TypeName(Foo)
+  Lexer:OpenParen
+  Lexer:Identifier(bar)
+  Lexer:Comma
+  Lexer:Identifier(baz)
+  Lexer:CloseParen
+  Lexer:Colon
+  Denter:Indent
+  Lexer:Identifier(hello)
+  Lexer:Arrow
+  Lexer:Identifier(there)
+  Denter:Newline
+  Denter:Dedent
 

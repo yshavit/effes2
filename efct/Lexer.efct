@@ -177,7 +177,7 @@ goto @end_if_raw_is
 # case "close_paren"
 labl @try_close_paren
 pvar 1                          # [raw]
-str "\\((.+)?"                  # [raw, pattern]
+str "\\)(.+)?"                  # [raw, pattern]
 call_String:regex               # [match?]
 typf Match                      # [(match), bool]
 gofi @try_end_of_string         # []
