@@ -8,6 +8,7 @@ from subprocess import PIPE
 import sys
 import yaml
 
+DEBUG_KEY = 'EF_DEBUG'
 # All paths are relative to here
 TESTS_DIR = 'tests'
 EXPECTEDS_DIR = 'results/expected'
@@ -51,7 +52,8 @@ def find_results(tests_dir=TESTS_DIR):
 
 
 def run_effes(entry_module, stdin):
-    proc_args = ['java', '-Ddebug=true', '-jar', abs_path(EF_JAR), entry_module]
+    debug_option = os.environ.get(DEBUG_KEY, 'true')
+    proc_args = ['java', '-Ddebug=%s' % debug_option, '-jar', abs_path(EF_JAR), entry_module]
     classpath = abs_path(EF_CLASSPATH)
     proc_env = {'EFFES_CLASSPATH': classpath}
     p = subprocess.Popen(proc_args, stdin=PIPE, stdout=PIPE, env=proc_env)

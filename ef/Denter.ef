@@ -22,9 +22,11 @@ type Denter(_indents, _pending, _needTrailingNewline):
     # Each of the matchers must end in "continue", "break" or "return"
     while line = Stdio.readLine() is:
       match : /^(\s*)(\S.*)$/ :
-        assume match.1 is String
-        assume match.2 is String
-        indentCount = match.1.length()
+        m1 = match.group(1)
+        m2 = match.group(2)
+        assume m1 is String
+        assume m2 is String
+        indentCount = m1.length()
         # find and pop any dedents before the indent, adding Dedents as you go
         # We would eventually want to combine these two into an &&
         if this._indents is Cons(head: head >= indentCount, *):
@@ -41,7 +43,7 @@ type Denter(_indents, _pending, _needTrailingNewline):
         # This is because Cons lists work as stacks, whereas we want a queue.
         # NOTE: I think this is actually incorrect, though I haven't come up with an example yet.
         # But I think we need to create a ConsQueue, using the two-conslist approach.
-        this._pending = Cons(match.2.length, this._pending)
+        this._pending = Cons(m2.length, this._pending)
         this._pending = reverse(this._pending)
         this._needTrailingNewline = True
         return # or break
