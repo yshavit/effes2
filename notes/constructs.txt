@@ -67,6 +67,7 @@
 ║ │ ╎ int_literal    : [+-]? digits
 ║ │ ╎ variable       : (expression '.')? IDENTIFIER
 ║ │ ╎ isa            : expression 'is' matcher
+║ │ ╎ isnot          : expression 'is' 'not' matcher
 ║ │ ╎ this           : 'this'
 ║ │ ╎ invocation     : (expression '.')? IDENTIFIER (args...)
 ║ │ ╎ assignment     : IDENTIFIER = expression
@@ -86,7 +87,8 @@
 ║ │ ╎ '*' (':' expression)?
 ║ │ ╎ bindto (':' expression)?
 ║ │ ╎ TYPE (matchers...)
-║ │ ╎ bindto ':' regex 
+║ │ ╎ (bindto ':')? regex 
+║ │ ╎ QUOTED
 ║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
 ║ │ ╎ regex: '/' (regex as parsed by Java) '/'
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌

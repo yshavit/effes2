@@ -1,0 +1,9 @@
+desc: simple
+entry_module: Lexer
+stdin: |
+  type Foo
+stdout: |
+  Lexer:KwType
+  Lexer:TypeName(Foo)
+  Denter:Newline
+
