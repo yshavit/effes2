@@ -6,15 +6,17 @@ efct 0
 #  - indents: a ConsList[Integer] of indentations. Every time you indent,
 TYPE 0 Indent
 TYPE 0 Dedent
-TYPE 0 Denter _indents _pending _needTrailingNewline
+TYPE 0 Denter _in _indents _pending _needTrailingNewline
 TYPE 0 Newline
 
-FUNC : create 0 1 0
-int  0                      # [0]
-call ConsList:Empty Empty   # [0, Empty]
-call ConsList:Cons Cons     # [Cons(0,Empty)]
-call ConsList:Empty Empty   # [Cons(0, Empty), Empty]
-bool False                  # [Cons(0, Empty), Empty, False]
+FUNC : create 1 1 0
+# $0: the StreamIn to dent
+pvar 0                      # [stream]
+int  0                      # [stream, 0]
+call ConsList:Empty Empty   # [stream, 0, Empty]
+call ConsList:Cons Cons     # [stream, Cons(0,Empty)]
+call ConsList:Empty Empty   # [stream, Cons(0, Empty), Empty]
+bool False                  # [stream, Cons(0, Empty), Empty, False]
 call :Denter Denter         # [Denter]
 rtrn
 
@@ -55,7 +57,9 @@ FUNC Denter _loadNext 0 0 0
 # $1: the input string, and then the regex match
 # $2: the input's indendation
 labl @top
-call_String:sin                      # [input?]
+pvar 0                               # [this]
+pfld :Denter _in                     # [this._in]
+call_Stream:readLine                 # [input?]
 typp False                           # [input?, bool]
 gofi @have_data                      # [input?]
 # No more data. Push trailing dedents.
@@ -199,6 +203,7 @@ sfld :Denter _needTrailingNewline    # []
 rtrn
 
 FUNC : main 1 1 0
+call_Stream:stdin
 call : create
 svar 1
 labl @loop_top

@@ -17,8 +17,8 @@ type Comma
 type OpenParen
 type CloseParen
 
-create() -> :
-  return Lexer(Denter(), Empty)
+create(in) -> :
+  return Lexer(Denter(in), Empty)
 
 type Lexer(_denter, _pending):
   next() -> :

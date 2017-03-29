@@ -12,7 +12,8 @@ TYPE 0 CloseParen
 
 TYPE 0 Lexer _denter _pending
 
-FUNC : create 0 1 0
+FUNC : create 1 1 0
+pvar 0                    # [instream]
 call Denter: create       # [Denter]
 call ConsList:Empty Empty # [Denter, Empty]
 call :Lexer Lexer         # [Lexer]
@@ -239,6 +240,7 @@ labl @not_string                # [raw]
 rtrn
 
 FUNC : main 1 1 0
+call_Stream:stdin               # [stdin]
 call : create                   # [Lexer]
 svar 0                          # []
 labl @loop_top

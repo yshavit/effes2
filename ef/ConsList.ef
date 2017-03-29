@@ -27,7 +27,7 @@ reverse(list):
 
 main(args) -> :
   lines = Empty
-  while line = Stdio.readLine() is String:
+  while line = Stdio.in.readLine() is String:
     lines = Cons(line, lines)
   Stdio.print(lines)
   Stdio.print("\n")
