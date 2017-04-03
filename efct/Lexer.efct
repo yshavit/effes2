@@ -45,15 +45,6 @@ labl @post_is_cons
 bool False
 rtrn
 
-FUNC Lexer 1 0 0
-pvar 0                    # [this]
-pvar 1                    # [this, tok]
-pvar 0                    # [this, tok]
-pfld :Denter _pending     # [this, tok, this._pending]
-call ConsList:Cons Cons   # [this, Cons(tok, this_pending)]
-sfld :Denter _pending     # []
-rtrn
-
 FUNC Lexer _loadNext 0 1 0
 # $1: raw
 pvar 0                          # [this]

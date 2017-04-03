@@ -31,9 +31,6 @@ type Lexer(_denter, _pending):
       Empty:
         return False
 
-  pushBack(token):
-    this.pending = Cons(token, this.pending)
-
   _loadNext() -> :
     if this._denter.next() is:
       raw: String:
