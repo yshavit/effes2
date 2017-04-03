@@ -1,0 +1,49 @@
+import Lexer: *
+
+type EfFile(types)
+type EfType(name, args)
+type EfArgs(argNames)
+type NoParse
+type _Parsed(element, remainingTokens)
+
+parseFile(toks) -> :
+  types = Empty
+  while parseType(toks) is _Parsed(elem, @toks):
+    types = Cons(elem, types)
+  return if toks is:
+    Empty: EfFile(types)
+    *: NoParse
+
+parseType(toks) -> :
+  if toks is:
+    Cons(Cons(KwType, Identifier(name)), @toks):
+      args = Empty
+      see if parseArgs(toks) is _Parsed(@args, @toks)
+      return _Parsed(EfType(name, args), toks)
+    *:
+      return NoParse
+
+parseArgs(toks) -> :
+  if toks is:
+    Cons(OpenParen, Cons(CloseParen, @toks)):
+      return _Parsed(EfArgs(Empty), toks)
+    Cons(OpenParen, @toks):
+      # We'll be evaluating the rule: '(' name (',' name)* ')'
+      # As such, we first pick the first name, and then parse
+      # comma-name as many times as we can.
+      names = Empty
+      if toks is:
+        Cons(Identifier(name), @toks):
+          names = Cons(name, Empty)
+        *:
+          return NoParse
+      while toks is:
+        Cons(CloseParen, @toks):
+          return _Parsed(EfArgs(names), toks)
+        Cons(Comma, Cons(Identifier(name), @toks))
+          names = Cons(name, names)
+        *:
+          return NoParse
+  *:
+    return NoParse
+

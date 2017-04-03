@@ -51,11 +51,15 @@
 ║ │ ╎ if          : 'if' expression ':' block
 ║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Once type checking is in place, all types must be matched
+║ │ ╎ see-if-is   : 'see' 'if' expression 'is' ':' matcher
+║ │ ╎             ↳  Any matcher will work, but only really useful if at least
+║ │ ╎                one bound variable is exported (via '@'). The expression
+║ │ ╎                is always evaluated, regardless.
 ║ │ ╎ assume      : 'assume' expression
 ║ │ ╎ return      : 'return' expression?
 ║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
-║ │ ╎ noop        : '()'
+║ │ ╎ noop        : 'pass'
 ║ │ ├┈
 ║ │ ╎ invocation  : (like the expression)
 ║ │ ╎ assignment  : (like the expression)
@@ -86,7 +90,14 @@
 ║ │ 
 ║ ┝━┯━ matcher ───────────────────────────────────────────────────────────────── 
 ║ │ ╎ '*' (':' expression)?
-║ │ ╎ bindto (':' expression)?
+║ │ ╎ '@'? bindto (':' expression)?
+║ │ ╎  ↳ The '@' is required if bindto should be exported to the containing
+║ │ ╎    scope of the construct that contains this matcher. For instance, if
+║ │ ╎    this matcher is in an if clause, the containing scope for that if. 
+║ │ ╎    This is required if the bindto overwrites a variable in that scope;
+║ │ ╎    if it does, that binding holds true for the variable's entire scope,
+║ │ ╎    not just the aforementioned containing scope. The binding only
+║ │ ╎    takes place is the expression evaluates to True.
 ║ │ ╎ TYPE (matchers...)
 ║ │ ╎ (bindto ':')? regex 
 ║ │ ╎ QUOTED
