@@ -35,7 +35,7 @@
 ║ │ - opt. ':' INDENT methods DEDENT
 ║ │
 ║ ┝━ method ──────────────────────────────────────────────────────────────────── 
-║ │ - IDENTIFIER (args)
+║ │ - IDENTIFIER args
 ║ │ - opt. '->'
 ║ │   ↳  Iff provided, method has a return value
 ║ │ - ':' block
@@ -55,6 +55,7 @@
 ║ │ ╎ return      : 'return' expression?
 ║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
+║ │ ╎ noop        : '()'
 ║ │ ├┈
 ║ │ ╎ invocation  : (like the expression)
 ║ │ ╎ assignment  : (like the expression)
