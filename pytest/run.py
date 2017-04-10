@@ -22,7 +22,7 @@ def abs_path(relative):
     return '%s/%s' % (home_dir, relative)
 
 
-def find_results(tests_dir=TESTS_DIR):
+def find_results(desc_filter=None, tests_dir=TESTS_DIR):
     '''Result is a map where the key is a file path, and the value is
     a list of tuples: (description, expected, actual)'''
     tests_dir_abs = abs_path(tests_dir)
@@ -39,16 +39,26 @@ def find_results(tests_dir=TESTS_DIR):
                 stdin = case.get('stdin', '')
                 stdout = case.get('stdout', '').strip()
                 desc = case.get('desc', 'case_%d' % case_no)
-                entry_module = case['entry_module']
-                sys.stdout.write('  %s:' % desc)
-                sys.stdout.flush()
-                actual, actual_err = run_effes(entry_module, stdin)
-                if stdout == actual:
-                    print ' OK%s' % (', but with stderr' if actual_err else '')
+                skipped = False
+                if desc_filter:
+                    full_desc = '%s:%s' % (test_name, desc)
+                    skipped = not desc_filter(full_desc)
+                    if skipped:
+                        sys.stdout.write('\x1b[2m')  # dim
+                if skipped:
+                    print ' \x1b[2m%s (skipped)\x1b[0m' % desc  # dim
                 else:
-                    print ' \x1b[1mFAIL\x1b[0m'
-                case_results.append((desc, stdout, actual, actual_err))
-            results[test_name] = case_results
+                    sys.stdout.write(' %s:' % desc)
+                    sys.stdout.flush()
+                    entry_module = case['entry_module']
+                    actual, actual_err = run_effes(entry_module, stdin)
+                    if stdout == actual:
+                        print ' OK%s' % (', but with stderr' if actual_err else '')
+                    else:
+                        print ' \x1b[1mFAIL\x1b[0m'  # bold
+                    case_results.append((desc, stdout, actual, actual_err))
+            if case_results:
+                results[test_name] = case_results
     return results
 
 
@@ -93,10 +103,14 @@ if __name__ == '__main__':
     if not os.path.exists(ef_jar):
         sys.stderr.write('No such file: %s\n' % ef_jar)
         exit(50)
-    if len(sys.argv) != 1:
-        sys.stderr.write("Can't pass in any arguments.")
-        exit(50)
-    results = find_results()
+    tests_filter = None
+    if sys.argv[1:]:
+        def tests_filter(test_desc):
+            for pattern in sys.argv[1:]:
+                if re.search(pattern, test_desc):
+                    return True
+            return False
+    results = find_results(tests_filter)
     results_to_files(results)
     # results is a map of test -> [(desc, expected, actual, actual_err)]
     errs = []
