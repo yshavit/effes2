@@ -1,0 +1,17 @@
+Things like `typf` make it hard to know what the stack looks like at any given moment. It basically means that any verification of that would have to be known via a branched analysis, rather than just proving that any given op always has a given stack before and after its execution. Not sure of the implications of that.
+
+---
+
+"see if" is pretty un-intuitive. It's all about side effects, and the fact that it's happening is subtle in how you read the line. For instance:
+
+    see if parseArgs(toks) is _Parsed(@args, @toks)
+
+My first reaction was: "see if it is... and if it is, then what?"
+
+Maybe something like:
+
+    bind parseArgs(toks) if _Parsed(@args, @toks)
+
+That's not great either, but it's better. Bears more thinking.
+
+---

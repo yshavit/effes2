@@ -2,9 +2,17 @@ import Lexer: *
 
 type EfFile(types)
 type EfType(name, args)
-type EfArgs(argNames)
+type EfArgs(names)
 type NoParse
 type _Parsed(element, remainingTokens)
+
+readTokens(lexer) -> :
+  toks = Empty
+  while lexer.next() is:
+    False:
+      return reverse(toks)
+    tok:
+      toks = Cons(tok, toks)
 
 parseFile(toks) -> :
   types = Empty
@@ -18,7 +26,7 @@ parseType(toks) -> :
   if toks is:
     Cons(Cons(KwType, Identifier(name)), @toks):
       args = Empty
-      see if parseArgs(toks) is _Parsed(@args, @toks)
+      bind parseArgs(toks) if _Parsed(@args, @toks)
       return _Parsed(EfType(name, args), toks)
     *:
       return NoParse
@@ -47,3 +55,6 @@ parseArgs(toks) -> :
   *:
     return NoParse
 
+main(args) -> :
+  Stdout.print(parseFile(readToks(Lexer.create(Stdin))))
+  return 0

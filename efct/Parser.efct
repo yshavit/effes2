@@ -1,0 +1,207 @@
+efct 0
+
+TYPE 0 EfFile types
+TYPE 0 EfType name args
+TYPE 0 EfArgs names
+TYPE 0 NoParse
+TYPE 0 _Parsed element remainingTokens
+
+FUNC : readTokens 1 1 0
+# $0: lexer
+# $1: toks
+call ConsList:Empty Empty       # [Empty]
+svar 1                          # []
+labl @loop_top                  # []
+pvar 0                          # [lexer]
+call Lexer:Lexer next           # [next]
+typp False                      # [next, isFalse]
+gofi @not_false                 # [next]
+pop                             # []
+pvar 1                          # [toks]
+call ConsList: reverse          # [toks']
+rtrn
+labl @not_false                 # [next]
+pvar 1                          # [next, toks]
+call ConsList:Cons Cons         # [Cons(~)]
+svar 1                          # []
+goto @loop_top                  # []
+
+FUNC : parseFile 1 1 0
+# $0: toks
+# $1: types
+# $2: tmp
+#
+# while parseType(toks)...
+call ConsList:Empty Empty       # [Empty]
+svar 1                          # []
+labl @loop_top                  # []
+pvar 0                          # [toks]
+call : parseType                # [parseRv]
+typp :_Parsed                   # [parseRv?, isParsed]
+gofi @loop_end                  # [parseRv]
+Pfld :_Parsed element           # [parseRv, parseRv.element]
+svar 2                          # [parseRv]
+pfld :_Parsed remainingTokens   # [parseRv.remainingTokens]
+svar 0                          # []
+pvar 2                          # [parseRv.element]
+pvar 1                          # [parseRv.element, types]
+call ConsList:Cons Cons         # [Cons(element, types)]
+svar 2                          # []
+goto @loop_top                  # []
+labl @loop_end                  # []
+pvar 1                          # [types]
+type ConsList:Empty             # [isEmpty]
+gofi @no_parse                  # []
+pvar 1                          # [types]
+call :EfFile EfFile             # [EfFile(types)]
+rtrn
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+
+FUNC : parseType 1 1 0 
+# $0: toks
+# $1: name
+# $2: args
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.head]
+typf ConsList:Cons              # [toks, toks.head?, headIsCons]
+gofi @no_parse1                 # [toks, toks.head]
+Pfld ConsList:Cons head         # [toks, toks.head, toks.head.head]
+type Lexer:KwType               # [toks, toks.head, headHeadIsKwType]
+gofi @no_parse2                 # [toks, toks.head]
+pfld ConsList:Cons tail         # [toks, toks.head.tail]
+typf Lexer:Identifier           # [toks, toks.head.tail?, isId]
+gofi @no_parse1                 # [toks, toks.head.tail]
+pfld Lexer:Identifier value     # [toks, idValue]
+svar 1                          # [toks]
+pfld ConsList:Cons tail         # [toks.tail]
+svar 0                          # []
+call ConsList:Empty Empty       # [Empty]
+svar 2                          # []
+pvar 0                          # [toks]
+call : parseArgs                # [parseRv]
+typf :_Parsed                   # [parseRv?, isParsed]
+gofi @bind_end                  # [parseRv]
+Pfld :_Parsed element           # [parseRv, element]
+svar 2                          # [parseRv]
+pfld :_Parsed remainingTokens   # [tail]
+svar 0                          # []
+labl @bind_end
+pvar 1                          # [name]
+pvar 2                          # [name, args]
+call :EfType EfType             # [EfType(~)]
+pvar 0                          # [EfType(~), toks]
+call :_Parsed _Parsed           # [Parsed(~)]
+rtrn
+labl @no_parse2                 # [x, x]
+pop                             # [x]
+labl @no_parse1                 # [x]
+pop                             # []
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+# $1: types
+call ConsList:Empty Empty       # [Empty]
+svar 1                          # []
+labl @loop_top                  # []
+pvar 0                          # [toks]
+
+FUNC : parseArgs 1 1 0
+# $0: toks
+# $1: names
+# $2: name
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.head]
+type Lexer:OpenParen            # [toks, headIsOpenParen]
+goif @is_open_paren             # [toks]
+pop                             # []
+goto @no_parse                  # []
+labl @is_open_paren             # [toks]
+Pfld ConsList:Cons tail         # [toks, toks.tail]
+typf ConsList:Cons              # [toks, toks.tail?, toksTailisCons]
+gofi @if_cons2                  # [toks, toks.tail]
+Pfld ConsList:Cons head         # [toks, toks.tail, toks.tail.head]
+type Lexer:CloseParen           # [toks, toks.tail, toksTailHeadIsCloseParen]
+gofi @if_cons2                  # [toks, toks.tail]
+svar 0                          # [toks]
+pop                             # []
+call ConsList:Empty Empty       # [Empty]
+call :EfArgs EfArgs             # [EfArgs(Empty)]
+pvar 0                          # [EfArgs(Empty), toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn
+# the second of the "if... Cons" blocks
+labl @if_cons2                  # [toks, toks.tail]
+pvar 0                          # [toks]
+pop
+call ConsList:Empty Empty       # [Empty]
+# "if toks is" ...
+svar 1                          # []
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]  -- This is a slight cheat in re-usin @no_parse
+Pfld ConsList:Cons head         # [toks, toks.head]
+typf Lexer:Identifier           # [toks, toks.head?, toksHeadIsIdentifier]
+gofi @no_parse1                 # [toks, toks.head]
+pfld Lexer:Identifier value     # [toks, toks.head.value]
+svar 2                          # [toks]
+pfld ConsList:Cons tail         # [toks.head]
+svar 0                          # []
+pvar 2                          # [name]
+call ConsList:Empty Empty       # [name, Empty]
+call ConsList:Cons Cons         # [Cons(name, Empty)]
+svar 1                          # []
+# "while toks is" ...
+labl @while_toks                # []
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.head]
+type Lexer:CloseParen           # [toks, toksHeadIsCloseParen]
+gofi @cons_comma                # [toks]
+pfld ConsList:Cons tail         # [toks.tail]
+svar 0                          # []
+pvar 1                          # [names]
+call :EfArgs EfArgs             # [EfArgs(names)]
+pvar 0                          # [EfArgs(names), toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn                            # []
+labl @cons_comma                # [toks]
+Pfld ConsList:Cons head         # [toks, toks.head]
+type Lexer:Comma                # [toks, toksHeadIsComma]
+gofi @no_parse                  # [toks]
+pfld ConsList:Cons tail         # [toks.tail]
+typf ConsList:Cons              # [toks.tail, tailisCons]
+gofi @no_parse                  # [toks.tail]
+Pfld ConsList:Cons head         # [toks.tail, toks.tail.head]
+typf Lexer:Identifier           # [toks.tail, toks.tail.head?, isIdentifier]
+gofi @no_parse1                 # [toks.tail, toks.tail.head]
+pfld Lexer:Identifier value     # [toks.tail, name]
+svar 2                          # [toks.tail]
+pfld ConsList:Cons tail         # [toks.tail.tail]
+svar 0                          # []
+pvar 2                          # [name]
+pvar 1                          # [name, names]
+call ConsList:Cons Cons         # [Cons(name, names)]
+svar 1                          # []
+goto @while_toks
+labl @no_parse1                 # [toks]
+pop                             # [] -- this fallthrough is more clever than I'd expect the compiler to do
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+
+FUNC : main 1 1 0
+call_Stream:stdin               # [stdin]
+call Lexer: create              # [lexer]
+call : readTokens               # [toks]
+call : parseFile                # [parse]
+call_native:toString            # [parseString]
+call_String:sout                # []
+int  0                          # [0]
+rtrn
