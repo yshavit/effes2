@@ -4,6 +4,6 @@
 # https://github.com/will133/vim-dirdiff
 
 cd "$(dirname "$0")"
-if ! ./run.py ; then
+if ! ./run.py "${@}"; then
   ./view_results
 fi

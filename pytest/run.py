@@ -6,6 +6,7 @@ import shutil
 import subprocess
 from subprocess import PIPE
 import sys
+import time
 import yaml
 
 DEBUG_KEY = 'EF_DEBUG'
@@ -68,6 +69,23 @@ def run_effes(entry_module, stdin):
     classpath = abs_path(EF_CLASSPATH)
     proc_env = {'EFFES_CLASSPATH': classpath}
     p = subprocess.Popen(proc_args, stderr=PIPE, stdin=PIPE, stdout=PIPE, env=proc_env)
+    if debug_option.lower() == 'suspend':
+        sys.stderr.write(' (pid %s' % p.pid)
+        sys.stderr.flush()
+        time.sleep(0.5)
+        port_p = subprocess.Popen(['netstat', '-nlp'], stderr=PIPE, stdin=PIPE, stdout=PIPE)
+        port_stdout, port_stderr = port_p.communicate()
+        saw_a_port = False
+        for port_line in port_stdout.split('\n'):
+            if re.search('%s/java\\s*$' % p.pid, port_line):
+                m = re.search(':(\\d+)', port_line)
+                if m:
+                    if not saw_a_port:
+                        sys.stderr.write(' port ')
+                        saw_a_port = True
+                    sys.stderr.write(m.group(1))
+        sys.stderr.write(')')
+        sys.stderr.flush()
     stdout, stderr = p.communicate(stdin)
     return stdout.strip(), stderr.strip()
 
