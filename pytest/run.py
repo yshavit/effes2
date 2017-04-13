@@ -64,12 +64,12 @@ def find_results(desc_filter=None, tests_dir=TESTS_DIR):
 
 
 def run_effes(entry_module, stdin):
-    debug_option = os.environ.get(DEBUG_KEY, 'true')
+    debug_option = os.environ.get(DEBUG_KEY, '')
     proc_args = ['java', '-Ddebug=%s' % debug_option, '-jar', abs_path(EF_JAR), entry_module]
     classpath = abs_path(EF_CLASSPATH)
     proc_env = {'EFFES_CLASSPATH': classpath}
     p = subprocess.Popen(proc_args, stderr=PIPE, stdin=PIPE, stdout=PIPE, env=proc_env)
-    if debug_option.lower() == 'suspend':
+    if debug_option.lower().endswith(':suspend'):
         sys.stderr.write(' (pid %s' % p.pid)
         sys.stderr.flush()
         time.sleep(0.5)

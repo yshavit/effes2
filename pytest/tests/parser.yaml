@@ -2,4 +2,6 @@ desc: simple type
 entry_module: Parser
 stdin: |
   type Foo
-stdout: ''
+stdout: |
+  Parser:EfFile(ConsList:Empty)
+
