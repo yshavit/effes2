@@ -112,6 +112,7 @@ svar 1                               # []
 pvar 1                               # [matcher?]
 typp False                           # [matcher?, bool]
 gofi @matched                        # [matcher?]
+pop                                  # []
 goto @top                            ## means the string was all whitespace; try to find another
 labl @matched                        ## We have our input string. Now find its indendtation in absolute chars
 int  1                               # [matcher, 1]
