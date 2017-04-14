@@ -1,7 +1,21 @@
+desc: empty
+entry_module: Parser
+stdin: ''
+stdout: |
+  Parser:EfFile(ConsList:Empty)
+---
 desc: simple type
 entry_module: Parser
 stdin: |
   type Foo
 stdout: |
-  Parser:EfFile(ConsList:Empty)
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty))
+---
+desc: one arg
+entry_module: Parser
+stdin: |
+  type Foo(arg1)
+stdout: |
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Cons(arg1, ConsList:Empty))
+
 
