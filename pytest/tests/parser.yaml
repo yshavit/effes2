@@ -11,6 +11,15 @@ stdin: |
 stdout: |
   Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty))
 ---
+desc: two types
+entry_module: Parser
+stdin: |
+  type Foo
+  type Bar
+# Note: pushing to Cons means these come out in reverse parse order
+stdout: |
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Bar, ConsList:Empty), ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty)))
+---
 desc: one arg
 entry_module: Parser
 stdin: |

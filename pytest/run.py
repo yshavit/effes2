@@ -69,7 +69,7 @@ def run_effes(entry_module, stdin):
     classpath = abs_path(EF_CLASSPATH)
     proc_env = {'EFFES_CLASSPATH': classpath}
     p = subprocess.Popen(proc_args, stderr=PIPE, stdin=PIPE, stdout=PIPE, env=proc_env)
-    if debug_option.lower().endswith(':suspend'):
+    if debug_option.lower() == '0:suspend':
         sys.stderr.write(' (pid %s' % p.pid)
         sys.stderr.flush()
         time.sleep(0.5)
