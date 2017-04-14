@@ -16,6 +16,7 @@ readTokens(lexer) -> :
 
 parseFile(toks) -> :
   types = Empty
+  # TODO need to wipe out streams of newlines
   while parseType(toks) is _Parsed(elem, @toks):
     types = Cons(elem, types)
   return if toks is:
@@ -27,7 +28,9 @@ parseType(toks) -> :
     Cons(Cons(KwType, Identifier(name)), @toks):
       args = Empty
       bind parseArgs(toks) if _Parsed(@args, @toks)
-      return _Parsed(EfType(name, args), toks)
+      if toks is:
+        Cons(Newline,@toks):
+          return _Parsed(EfType(name, args), toks)
     *:
       return NoParse
 
