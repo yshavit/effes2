@@ -30,7 +30,7 @@ def find_results(desc_filter=None, tests_dir=TESTS_DIR):
     results = {}
 
     prefix_len = len(tests_dir_abs) + 1  # +1 for the trailing slash
-    for test_p in glob.glob('%s**/*.yaml' % tests_dir_abs):
+    for test_p in sorted(glob.glob('%s**/*.yaml' % tests_dir_abs)):
         test_name = test_p[prefix_len:]
         test_name = os.path.splitext(test_name)[0]
         print '\x1b[4m%s:\x1b[0m' % test_name
