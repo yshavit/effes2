@@ -62,3 +62,25 @@ stdout: |
   Denter:Dedent
   four
   Denter:Newline
+---
+entry_module: Denter
+desc: fold multiple newlines
+stdin: |
+  one
+
+
+    two
+
+    three
+
+  four
+stdout: |
+  one
+  Denter:Indent
+  two
+  Denter:Newline
+  three
+  Denter:Newline
+  Denter:Dedent
+  four
+  Denter:Newline
