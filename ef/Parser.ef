@@ -50,12 +50,13 @@ parseArgs(toks) -> :
           return NoParse
       while toks is:
         Cons(CloseParen, @toks):
+          names = reverse(names) # Cons pushes to back-to-front, we want front-to-back
           return _Parsed(EfArgs(names), toks)
         Cons(Comma, Cons(Identifier(name), @toks))
           names = Cons(name, names)
         *:
           return NoParse
-  *:
+    *:
     return NoParse
 
 main(args) -> :

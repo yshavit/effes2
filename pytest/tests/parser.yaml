@@ -20,11 +20,30 @@ stdin: |
 stdout: |
   Parser:EfFile(ConsList:Cons(Parser:EfType(Bar, ConsList:Empty), ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty)))
 ---
+desc: zero args, but with parens
+entry_module: Parser
+stdin: |
+  type Foo()
+stdout: |
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, Parser:EfArgs(ConsList:Empty)), ConsList:Empty))
+---
 desc: one arg
 entry_module: Parser
 stdin: |
   type Foo(arg1)
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Cons(arg1, ConsList:Empty))
-
-
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, Parser:EfArgs(ConsList:Cons(arg1, ConsList:Empty))), ConsList:Empty))
+---
+desc: two args
+entry_module: Parser
+stdin: |
+  type Foo(arg1, arg2)
+stdout: |
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, Parser:EfArgs(ConsList:Cons(arg1, ConsList:Cons(arg2, ConsList:Empty)))), ConsList:Empty))
+---
+desc: three
+entry_module: Parser
+stdin: |
+  type Foo(arg1, arg2, arg3)
+stdout: |
+  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, Parser:EfArgs(ConsList:Cons(arg1, ConsList:Cons(arg2, ConsList:Cons(arg3, ConsList:Empty))))), ConsList:Empty))
