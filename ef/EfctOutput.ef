@@ -1,0 +1,14 @@
+import ConsList: *
+import Parser: *
+
+toFile(moduleName, parsed):
+    fh = open_w(moduleName + ".efct")
+    fh.print("efct 0\n\n")
+    types = parsed.types
+    while types is Cons(EfType(typeName, typeArgs), @types):
+      fh.print("TYPE 0 ")
+      fh.print(typeName)
+      while typeArgs is Cons(arg, @typeArgs):
+          fh.print(" ")
+          fh.print(typeArgs)
+      fh.print("\n")

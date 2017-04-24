@@ -1,0 +1,2 @@
+type One(arg)
+type Two(arg1, arg2)

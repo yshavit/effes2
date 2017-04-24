@@ -1,0 +1,16 @@
+compile(fileName) ->:
+  fh = open_r(fileName + ".ef")
+  lexer = Lexer.create(fh)
+  lexed = Parser.readTokens(lexer)
+  if Parser.parseFile(lexed) is:
+    f:EfFile(*):
+      EfctOutput.toFile(f)
+      return True
+    *:
+      return False
+
+main(args):
+  for arg in args:
+    if compile(arg) is False:
+      return 1
+  return 0

@@ -2,7 +2,6 @@ efct 0
 
 TYPE 0 EfFile types
 TYPE 0 EfType name args
-TYPE 0 EfArgs names
 TYPE 0 NoParse
 TYPE 0 _Parsed element remainingTokens
 
@@ -144,8 +143,7 @@ svar 0                          # [toks]
 # first Cons matched
 pop                             # []
 call ConsList:Empty Empty       # [Empty]
-call :EfArgs EfArgs             # [EfArgs(Empty)]
-pvar 0                          # [EfArgs(Empty), toks]
+pvar 0                          # [Empty, toks]
 call :_Parsed _Parsed           # [_Parsed(~)]
 rtrn                            # []
 # second Cons matcher
@@ -194,8 +192,7 @@ pvar 1                          # [names]
 svar 1                          # []
 pvar 1                          # [names]
 call ConsList: reverse          # [names]
-call :EfArgs EfArgs             # [EfArgs(names)]
-pvar 0                          # [EfArgs(names), toks]
+pvar 0                          # [names, toks]
 call :_Parsed _Parsed           # [_Parsed(~)]
 rtrn
 # second check

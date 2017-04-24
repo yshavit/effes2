@@ -1,0 +1,53 @@
+efct 0
+
+FUNC : compile 1 1 0
+# $0: fileName
+# $1: parseResults
+pvar 0                      # [fileName]
+str  ".ef"                  # [fileName, ".ef"]
+call_String:concat          # [fileName.ef]
+call_Stream:readFile        # [fh]
+call Lexer: create          # [lexer]
+call Parser: readTokens     # [toks]
+call Parser: parseFile      # [parseResults]
+typf Parser:EfFile          # [parseResults?, isFile]
+gofi @no_parse              # [parseResults]
+svar 1                      # []
+pvar 0                      # [fileName]
+pvar 1                      # [fileName, parseResults]
+call EfctOutput: toFile     # []
+bool True                   # [True]
+rtrn
+labl @no_parse              # []
+bool False                  # [False]
+rtrn
+
+FUNC : main 1 1 0
+# $0: args
+# $1: i
+# $2: arg
+int  0                      # [0]
+svar 1                      # []
+labl @loop_top              # []
+pvar 1                      # [i]
+pvar 0                      # [i, args]
+call_Array:len              # [i, args.len]
+call_Integer:lt             # [i<args.len]
+gofi @loop_end              # []
+pvar 0                      # [args]
+pvar 1                      # [i]
+call_Array:get              # [arg]
+call : compile              # [didCompile]
+type False                  # [badCompile]
+gofi @loop_next             # []
+int  1                      # [1]
+rtrn
+labl @loop_next             # []
+pvar 1                      # [i]
+int  1                      # [i, 1]
+call_Integer:add            # [i+1]
+svar 1                      # []
+goto @loop_top              # []
+labl @loop_end
+int  0                      # [0]
+rtrn
