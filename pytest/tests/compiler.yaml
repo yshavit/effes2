@@ -1,0 +1,14 @@
+desc: simple type
+entry_module: Compiler
+args: [TwoTypes]
+initial_files:
+  TwoTypes.ef: |
+    type Foo
+    type Bar(arg1, arg2)
+result_files:
+  TwoTypes.ef: [...]
+  TwoTypes.efct: |
+    efct 0
+
+    TYPE 0 Bar arg1 arg2
+    TYPE 0 Foo
