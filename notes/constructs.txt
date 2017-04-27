@@ -60,9 +60,15 @@
 ║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
 ║ │ ╎ noop        : 'pass'
+║ │ ╎ try         : 'try' INDENT (trymatch NL)+ DEDENT
+║ │ ╎             ↳  Tries each expression/matcher pair in the trymatch list.
+║ │ ╎                If one matches, the rest are skipped. If none match,
+║ │ ╎                it is *not* an error. Nothing happens.
 ║ │ ├┈
 ║ │ ╎ invocation  : (like the expression)
 ║ │ ╎ assignment  : (like the expression)
+║ │ ├┈
+║ │ ╎ trymatch    : expression ':' matcher
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ┝━┯━ expression ────────────────────────────────────────────────────────────── 

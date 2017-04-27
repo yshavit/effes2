@@ -26,7 +26,8 @@ parseType(toks) -> :
   if toks is:
     Cons(Cons(KwType, Identifier(name)), @toks):
       args = Empty
-      bind parseArgs(toks) if _Parsed(@args, @toks)
+      try:
+        parseArgs(toks): _Parsed(@args, @toks)
       if toks is:
         Cons(Newline,@toks):
           return _Parsed(EfType(name, args), toks)
