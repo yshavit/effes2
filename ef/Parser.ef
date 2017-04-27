@@ -15,24 +15,32 @@ readTokens(lexer) -> :
 
 parseFile(toks) -> :
   types = Empty
-  # TODO need to wipe out streams of newlines
-  while parseType(toks) is _Parsed(elem, @toks):
-    types = Cons(elem, types)
-  return if toks is:
-    Empty: EfFile(types)
-    *: NoParse
+  methods = Empty
+  while toks is not Empty:
+    if parseType(toks) is _Parsed(elem, @toks):
+      types = Cons(elem, types)
+    elif parseMethod(toks) is _Parsed(elem, @toks):
+      methods = Cons(elem, methods)
+    else:
+      return NoParse
+  types = reverse(types)
+  methods = reverse(methods)
+  return EfFile(types)
 
 parseType(toks) -> :
   if toks is:
     Cons(Cons(KwType, Identifier(name)), @toks):
       args = Empty
-      try:
-        parseArgs(toks): _Parsed(@args, @toks)
+      if parseArgs(toks) is _Parsed(@args, @toks):
+        ::
       if toks is:
         Cons(Newline,@toks):
           return _Parsed(EfType(name, args), toks)
     *:
       return NoParse
+
+parseMethod(toks) -> :
+  return NoParse # TODO!
 
 parseArgs(toks) -> :
   if toks is:

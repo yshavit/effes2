@@ -28,35 +28,61 @@ goto @loop_top                  # []
 FUNC : parseFile 1 1 0
 # $0: toks
 # $1: types
-# $2: tmp
-#
-# while parseType(toks)...
+# $2: methods
+# $3: tmp
 call ConsList:Empty Empty       # [Empty]
 svar 1                          # []
+call ConsList:Empty Empty       # [Empty]
+svar 2                          # []
 labl @loop_top                  # []
+pvar 0                          # [toks]
+type ConsList:Empty             # [toksIsEmpty]
+goif @loop_end                  # []
+# if parseType(toks)...
 pvar 0                          # [toks]
 call : parseType                # [parseRv]
 typf :_Parsed                   # [parseRv?, isParsed]
-gofi @loop_end                  # [parseRv]
-Pfld :_Parsed element           # [parseRv, parseRv.element]
-svar 2                          # [parseRv]
-pfld :_Parsed remainingTokens   # [parseRv.remainingTokens]
+gofi @elif_parseMethod          # [parseRv]
+Pfld :_Parsed element           # [parseRv, elem]
+svar 3                          # [parseRv]
+pfld :_Parsed remainingTokens   # [toks']
 svar 0                          # []
-pvar 2                          # [parseRv.element]
-pvar 1                          # [parseRv.element, types]
-call ConsList:Cons Cons         # [Cons(element, types)]
+pvar 3                          # [elem]
+pvar 1                          # [elem, types]
+call ConsList:Cons Cons         # [Cons(~)]
 svar 1                          # []
-goto @loop_top                  # []
-labl @loop_end                  # [parseRV]
-#pop                             # []
+goto @if_end                    # []
+# elif parseMethod(toks)...
+labl @elif_parseMethod          # []
 pvar 0                          # [toks]
-type ConsList:Empty             # [isEmpty]
-gofi @no_parse                  # []
-pvar 1                          # [types]
-call :EfFile EfFile             # [EfFile(types)]
-rtrn
-labl @no_parse                  # []
+call : parseMethod              # [parseRv]
+typf :_Parsed                   # [parseRv?, isParsed]
+gofi @else                      # [parseRv]
+Pfld :_Parsed element           # [parseRv, elem]
+svar 3                          # [parseRv]
+pfld :_Parsed remainingTokens   # [toks']
+svar 0                          # []
+pvar 3                          # [elem]
+pvar 2                          # [elem, methods]
+call ConsList:Cons Cons         # [Cons(~)]
+svar 2                          # []
+goto @if_end                    # []
+# else
+labl @else                      # []
 call :NoParse NoParse           # [NoParse]
+rtrn
+labl @if_end                    # []
+goto @loop_top                  # []
+labl @loop_end                  # []
+# loop end
+pvar 1                          # [types]
+call ConsList: reverse          # [types']
+svar 1                          # []
+pvar 2                          # [methods]
+call ConsList: reverse          # [methods']
+svar 2                          # []
+pvar 1                          # [types]
+call :EfFile EfFile             # [EfFile(~)]
 rtrn
 
 FUNC : parseType 1 1 0 
@@ -116,6 +142,10 @@ call ConsList:Empty Empty       # [Empty]
 svar 1                          # []
 labl @loop_top                  # []
 pvar 0                          # [toks]
+
+FUNC : parseMethod 1 1 0 
+call :NoParse NoParse
+rtrn
 
 FUNC : parseArgs 1 1 0
 # $0: toks

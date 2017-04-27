@@ -41,14 +41,15 @@
 ║ │ - ':' block
 ║ │
 ║ ┝━ block ─────────────────────────────────────────────────────────────────────
-║ │ - INDENT (statement NL)+ DEDENT
+║ │ INDENT (statement NL)+ DEDENT
+║ │ INDENT ('::' NL) DEDENT
 ║ │ 
 ║ ┝━┯━ statement ─────────────────────────────────────────────────────────────── 
 ║ │ ╎ while       : 'while' expression ':' block
 ║ │ ╎ while-is    : 'while' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Each matcherblock's block must end in a
 ║ │ ╎                continue, break or return statement.
-║ │ ╎ if          : 'if' expression ':' block
+║ │ ╎ if          : 'if' expression ':' block else?
 ║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Once type checking is in place, all types must be matched
 ║ │ ╎ see-if-is   : 'see' 'if' expression 'is' ':' matcher
@@ -59,16 +60,15 @@
 ║ │ ╎ return      : 'return' expression?
 ║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
-║ │ ╎ noop        : 'pass'
-║ │ ╎ try         : 'try' INDENT (trymatch NL)+ DEDENT
-║ │ ╎             ↳  Tries each expression/matcher pair in the trymatch list.
-║ │ ╎                If one matches, the rest are skipped. If none match,
-║ │ ╎                it is *not* an error. Nothing happens.
 ║ │ ├┈
 ║ │ ╎ invocation  : (like the expression)
 ║ │ ╎ assignment  : (like the expression)
-║ │ ├┈
-║ │ ╎ trymatch    : expression ':' matcher
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+║ │ 
+║ ┝━┯━ else ────────────────────────────────────────────────────────────────────
+║ │ ╎ 'elif' expression ":' block else?
+║ │ ╎        ↳ Like the 'if' statement
+║ │ ╎ 'else' ':' block
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ┝━┯━ expression ────────────────────────────────────────────────────────────── 
@@ -89,10 +89,11 @@
 ║ │ ╎       That would confuse the parsing of matchers' guard expressions.
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
-║ ┝━ matcherlist<k> ────────────────────────────────────────────────────────────
-║ │ matcherblock<k>, where a matcherblock<k> is:
-║ │ matcher ':' <k>
-║ │              ↳ <k> is either a statement, a block or an expression
+║ ┝━┯━ matcherlist<k> ────────────────────────────────────────────────────────────
+║ │ ╎ matcherblock<k>, where a matcherblock<k> is:
+║ │ ╎ matcher ':' <k>
+║ │ ╎              ↳ <k> is either a statement, a block or an expression
+║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ┝━┯━ matcher ───────────────────────────────────────────────────────────────── 
 ║ │ ╎ '*' (':' expression)?

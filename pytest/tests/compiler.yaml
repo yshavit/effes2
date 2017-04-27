@@ -10,5 +10,5 @@ result_files:
   TwoTypes.efct: |
     efct 0
 
-    TYPE 0 Bar arg1 arg2
     TYPE 0 Foo
+    TYPE 0 Bar arg1 arg2
