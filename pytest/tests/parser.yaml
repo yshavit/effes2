@@ -12,10 +12,9 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Empty
-      tail: ConsList:Empty
 ---
 desc: two types
 entry_module: Parser
@@ -25,14 +24,12 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Empty
-      tail: ConsList:Cons
-        head: Parser:EfType
-          name: Bar
-          args: ConsList:Empty
-        tail: ConsList:Empty
+      [1]: Parser:EfType
+        name: Bar
+        args: ConsList:Empty
 ---
 desc: zero args, but with parens
 entry_module: Parser
@@ -41,10 +38,9 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Empty
-      tail: ConsList:Empty
 ---
 desc: one arg
 entry_module: Parser
@@ -53,12 +49,10 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Cons
-          head: arg1
-          tail: ConsList:Empty
-      tail: ConsList:Empty
+          [0]: arg1
 ---
 desc: two args
 entry_module: Parser
@@ -67,14 +61,11 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Cons
-          head: arg1
-          tail: ConsList:Cons
-            head: arg2
-            tail: ConsList:Empty
-      tail: ConsList:Empty
+          [0]: arg1
+          [1]: arg2
 ---
 desc: three args
 entry_module: Parser
@@ -83,16 +74,12 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Cons
-          head: arg1
-          tail: ConsList:Cons
-            head: arg2
-            tail: ConsList:Cons
-              head: arg3
-              tail: ConsList:Empty
-      tail: ConsList:Empty
+          [0]: arg1
+          [1]: arg2
+          [2]: arg3
 ---
 desc: two types with args
 entry_module: Parser
@@ -102,18 +89,12 @@ stdin: |
 stdout: |
   Parser:EfFile
     types: ConsList:Cons
-      head: Parser:EfType
+      [0]: Parser:EfType
         name: Foo
         args: ConsList:Cons
-          head: arg1
-          tail: ConsList:Cons
-            head: arg2
-            tail: ConsList:Empty
-      tail: ConsList:Cons
-        head: Parser:EfType
-          name: Bar
-          args: ConsList:Cons
-            head: arg3
-            tail: ConsList:Empty
-        tail: ConsList:Empty
-          
+          [0]: arg1
+          [1]: arg2
+      [1]: Parser:EfType
+        name: Bar
+        args: ConsList:Cons
+          [0]: arg3

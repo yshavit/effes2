@@ -74,7 +74,8 @@ def run_effes(entry_module, stdin, args, in_files):
     proc_args = ['java', '-Ddebug=%s' % debug_option, '-jar', abs_path(EF_JAR), entry_module]
     proc_args.extend(args)
     classpath = abs_path(EF_CLASSPATH)
-    proc_env = {'EFFES_CLASSPATH': classpath}
+    proc_env = dict(os.environ)
+    proc_env['EFFES_CLASSPATH']= classpath
     working_dir = tempfile.mkdtemp()
     create_files(working_dir, in_files)
     p = subprocess.Popen(proc_args, stderr=PIPE, stdin=PIPE, stdout=PIPE, env=proc_env, cwd=working_dir)
