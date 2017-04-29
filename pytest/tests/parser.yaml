@@ -2,56 +2,118 @@ desc: empty
 entry_module: Parser
 stdin: ''
 stdout: |
-  Parser:EfFile(ConsList:Empty)
+  Parser:EfFile
+    types: ConsList:Empty
 ---
 desc: simple type
 entry_module: Parser
 stdin: |
   type Foo
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Empty
+      tail: ConsList:Empty
 ---
 desc: two types
 entry_module: Parser
 stdin: |
   type Foo
   type Bar
-# Note: pushing to Cons means these come out in reverse parse order
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Cons(Parser:EfType(Bar, ConsList:Empty), ConsList:Empty)))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Empty
+      tail: ConsList:Cons
+        head: Parser:EfType
+          name: Bar
+          args: ConsList:Empty
+        tail: ConsList:Empty
 ---
 desc: zero args, but with parens
 entry_module: Parser
 stdin: |
   type Foo()
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Empty), ConsList:Empty))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Empty
+      tail: ConsList:Empty
 ---
 desc: one arg
 entry_module: Parser
 stdin: |
   type Foo(arg1)
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Cons(arg1, ConsList:Empty)), ConsList:Empty))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Cons
+          head: arg1
+          tail: ConsList:Empty
+      tail: ConsList:Empty
 ---
 desc: two args
 entry_module: Parser
 stdin: |
   type Foo(arg1, arg2)
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Cons(arg1, ConsList:Cons(arg2, ConsList:Empty))), ConsList:Empty))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Cons
+          head: arg1
+          tail: ConsList:Cons
+            head: arg2
+            tail: ConsList:Empty
+      tail: ConsList:Empty
 ---
 desc: three args
 entry_module: Parser
 stdin: |
   type Foo(arg1, arg2, arg3)
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Cons(arg1, ConsList:Cons(arg2, ConsList:Cons(arg3, ConsList:Empty)))), ConsList:Empty))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Cons
+          head: arg1
+          tail: ConsList:Cons
+            head: arg2
+            tail: ConsList:Cons
+              head: arg3
+              tail: ConsList:Empty
+      tail: ConsList:Empty
 ---
 desc: two types with args
 entry_module: Parser
 stdin: |
   type Foo(arg1, arg2)
-  type Bar(arg4)
+  type Bar(arg3)
 stdout: |
-  Parser:EfFile(ConsList:Cons(Parser:EfType(Foo, ConsList:Cons(arg1, ConsList:Cons(arg2, ConsList:Empty))), ConsList:Cons(Parser:EfType(Bar, ConsList:Cons(arg4, ConsList:Empty)), ConsList:Empty)))
+  Parser:EfFile
+    types: ConsList:Cons
+      head: Parser:EfType
+        name: Foo
+        args: ConsList:Cons
+          head: arg1
+          tail: ConsList:Cons
+            head: arg2
+            tail: ConsList:Empty
+      tail: ConsList:Cons
+        head: Parser:EfType
+          name: Bar
+          args: ConsList:Cons
+            head: arg3
+            tail: ConsList:Empty
+        tail: ConsList:Empty
+          
