@@ -13,3 +13,54 @@ stdout: |
         hasRv: False
         statements: ConsList:Cons
           [0]: Lexer:KwReturn
+---
+desc: no arg, with arv
+entry_module: Parser
+stdin: |
+  myFunc () -> :
+    return
+stdout: |
+  Parser:EfFile
+    types: ConsList:Empty
+    methods: ConsList:Cons
+      [0]: Parser:EfMethod
+        name: myFunc
+        args: ConsList:Empty
+        hasRv: True
+        statements: ConsList:Cons
+          [0]: Lexer:KwReturn
+---
+desc: one arg, no arv
+entry_module: Parser
+stdin: |
+  myFunc (arg1) :
+    return
+stdout: |
+  Parser:EfFile
+    types: ConsList:Empty
+    methods: ConsList:Cons
+      [0]: Parser:EfMethod
+        name: myFunc
+        args: ConsList:Cons
+          [0]: arg1
+        hasRv: False
+        statements: ConsList:Cons
+          [0]: Lexer:KwReturn
+---
+desc: two args, with arv
+entry_module: Parser
+stdin: |
+  myFunc (arg1, arg2) -> :
+    return
+stdout: |
+  Parser:EfFile
+    types: ConsList:Empty
+    methods: ConsList:Cons
+      [0]: Parser:EfMethod
+        name: myFunc
+        args: ConsList:Cons
+          [0]: arg1
+          [1]: arg2
+        hasRv: True
+        statements: ConsList:Cons
+          [0]: Lexer:KwReturn
