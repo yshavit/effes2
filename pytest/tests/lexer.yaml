@@ -28,4 +28,10 @@ stdout: |
   Lexer:Identifier(there)
   Denter:Newline
   Denter:Dedent
-
+---
+desc: return without value
+entry_module: Lexer
+stdin: return
+stdout: |
+  Lexer:KwReturn
+  Denter:Newline

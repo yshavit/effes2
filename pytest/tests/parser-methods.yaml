@@ -1,0 +1,15 @@
+desc: no arg, no rv
+entry_module: Parser
+stdin: |
+  myFunc ():
+    return
+stdout: |
+  Parser:EfFile
+    types: ConsList:Empty
+    methods: ConsList:Cons
+      [0]: Parser:EfMethod
+        name: myFunc
+        args: ConsList:Empty
+        hasRv: False
+        statements: ConsList:Cons
+          [0]: Lexer:KwReturn

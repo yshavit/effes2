@@ -1,7 +1,8 @@
 efct 0
 
-TYPE 0 EfFile types
+TYPE 0 EfFile types methods
 TYPE 0 EfType name args
+TYPE 0 EfMethod name args hasRv statements
 TYPE 0 NoParse
 TYPE 0 _Parsed element remainingTokens
 
@@ -82,6 +83,7 @@ pvar 2                          # [methods]
 call ConsList: reverse          # [methods']
 svar 2                          # []
 pvar 1                          # [types]
+pvar 2                          # [types, methods]
 call :EfFile EfFile             # [EfFile(~)]
 rtrn
 
@@ -94,7 +96,7 @@ typf ConsList:Cons              # [toks?, isCons]
 gofi @no_parse                  # [toks]
 Pfld ConsList:Cons head         # [toks, toks.head]
 type Lexer:KwType               # [toks, toks.head, headHeadIsKwType]
-gofi @no_parse2                 # [toks, toks.head]
+gofi @no_parse1                 # [toks, toks.head]
 pfld ConsList:Cons tail         # [toks, toks.head.tail]
 typf ConsList:Cons              # [toks, toks.head?, headIsCons]
 gofi @no_parse1                 # [toks, toks.head]
@@ -144,7 +146,169 @@ labl @loop_top                  # []
 pvar 0                          # [toks]
 
 FUNC : parseMethod 1 1 0 
-call :NoParse NoParse
+# $0: toks
+# $1: name
+# $2: args
+# $3: hasRv
+# $4: statements
+# 
+# find method name
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+typf Lexer:Identifier           # [toks, toks.h?, isId]
+gofi @no_parse_1                # [toks, toks.h]
+pfld Lexer:Identifier value     # [toks, name]
+svar 1                          # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+# find args
+pvar 0                          # [toks]
+call : parseArgs                # [args]
+typf :_Parsed                   # [parsedArgs?, isParsed]
+gofi @no_parse                  # [parsedArgs]
+Pfld :_Parsed element           # [parsedArgs, args]
+svar 2                          # [parsedArgs]
+pfld :_Parsed remainingTokens   # [parsedArgs.tail]
+svar 0                          # []
+# hasRv ...
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_rv                     # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Lexer:Arrow                # [toks, toks.h.isArrow]
+gofi @no_rv_1                   # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+bool True                       # [True]
+goto @set_rv                    # [hasRv]
+labl @no_rv_1                   # [x]
+pop                             # []
+labl @no_rv                     # []
+bool False                      # [False]
+labl @set_rv                    # [hasRv]
+svar 3                          # []
+# find colon
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Lexer:Colon                # [toks, toks.h.isColon]
+gofi @no_parse_1                # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+# parse block
+pvar 0                          # [toks]
+call : parseBlock               # [tryParseBlock]
+typf :_Parsed                   # [tryParseBlock?, isParsed]
+gofi @no_parse                  # [tryParseBlock]
+Pfld :_Parsed element           # [tryParseBlock, tryParseBlock.elem]
+svar 4                          # [tryParseBlock]
+pfld :_Parsed remainingTokens   # [tryParseBlock.t]
+svar 0                          # []
+# return
+pvar 1                          # [name]
+pvar 2                          # [name, args]
+pvar 3                          # [name, args, hasRv]
+pvar 4                          # [name, args, hasRv, statements]
+call :EfMethod EfMethod         # [EfMethod(~)]
+pvar 0                          # [EfMethod(~), toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn
+labl @no_parse_1                # [x]
+pop                             # []
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+
+FUNC : parseBlock 1 1 0
+# $0: toks
+# $1: statements
+# $2: tmp
+#
+# look for indent
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Denter:Indent              # [toks, toks.h.isIndent]
+gofi @no_parse_1                # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+# loop over toks
+call ConsList:Empty Empty       # [Empty]
+svar 1                          # []
+labl @loop_top
+pvar 0                          # [toks]
+# if Cons(Dedent...
+typp ConsList:Cons              # [toks, isCons]
+gofi @loop_else                 # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Denter:Dedent              # [toks, toks.h.isDedent]
+gofi @loop_else                 # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+pvar 1                          # [statements]
+call ConsList: reverse          # [statements']
+pvar 0                          # [statements', toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn
+# else...
+labl @loop_else                 # [toks]
+call : parseStatement           # [stmtRv]
+typf :_Parsed                   # [stmtRv?, isParsed]
+gofi @no_parse                  # [stmtRv]
+Pfld :_Parsed element           # [stmtRv, s]
+svar 2                          # [stmtRv]
+pfld :_Parsed remainingTokens   # [stmtRv.tail]
+svar 0                          # []
+pvar 2                          # [s]
+pvar 1                          # [s, statements]
+call ConsList:Cons Cons         # [Cons(~)]
+svar 1                          # []
+goto @loop_top                  # []
+labl @no_parse_1                # [x]
+pop                             # []
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+
+FUNC : parseStatement 1 1 0
+# $0: toks
+# $1: result
+#
+# if "return"
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Lexer:KwReturn             # [toks, toks.h.isReturn]
+gofi @no_parse_1                # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+call Lexer:KwReturn KwReturn    # [KwR]
+svar 1                          # []
+goto @look_for_newline          # []
+#
+# look for newline
+labl @look_for_newline          # []
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+type Denter:Newline             # [toks, toks.h.isNewline]
+gofi @no_parse_1                # [toks]
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+pvar 1                          # [s]
+pvar 0                          # [s, toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn
+labl @no_parse_1                # [x]
+pop                             # []
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
 rtrn
 
 FUNC : parseArgs 1 1 0

@@ -1,7 +1,8 @@
 import Lexer: *
 
-type EfFile(types)
+type EfFile(types, methods)
 type EfType(name, args)
+type EfMethod(name, args, hasRv, statements)
 type NoParse
 type _Parsed(element, remainingTokens)
 
@@ -25,7 +26,7 @@ parseFile(toks) -> :
       return NoParse
   types = reverse(types)
   methods = reverse(methods)
-  return EfFile(types)
+  return EfFile(types, methods)
 
 parseType(toks) -> :
   if toks is:
@@ -40,7 +41,43 @@ parseType(toks) -> :
       return NoParse
 
 parseMethod(toks) -> :
-  return NoParse # TODO!
+  if toks is not Cons(Identifier(@name), @toks):
+    return NoParse
+  if parseArgs(toks) is not _Parsed(args, @toks):
+    return NoParse
+  hasRv = if toks is
+    Cons(Arrow, @toks): True
+    *: False
+  if toks is not Cons(Colon, @toks):
+    return NoParse
+  if parseBlock(toks) is not _Parsed(@statements, @toks):
+    return NoParse
+  return _Parsed(EfMethod(name, args, hasRv, statements), toks)
+
+parseBlock(toks) -> :
+  if toks is not Cons(Indent, @toks):
+    return NoParse
+  statements = Empty
+  while toks is:
+    Cons(Dedent, @toks):
+      return _Parsed(reverse(statements), toks)
+    *:
+      if parseStatement(toks) is _Parsed(s, @toks)
+        s = Cons(s, statements)
+      else:
+        return NoParse
+
+parseStatement(toks):
+  s = ?
+  if toks is Cons(KwReturn, @toks):
+    s = KwReturn
+  else:
+    return NoParse
+
+  if toks is Cons(Newline, @toks):
+    return _Parsed(s, toks)
+  else:
+    return NoParse
 
 parseArgs(toks) -> :
   if toks is:

@@ -4,6 +4,7 @@ TYPE 0 TypeName value
 TYPE 0 Identifier value
 TYPE 0 LexError value
 TYPE 0 KwType
+TYPE 0 KwReturn
 TYPE 0 Arrow
 TYPE 0 Colon
 TYPE 0 Comma
@@ -77,11 +78,24 @@ labl @no_leading_spaces
 # 
 # case "type"
 pvar 1                          # [raw]
-str "type\\s+(.+)?"             # [raw, pattern]
+str "type\\b+(.*)"              # [raw, pattern]
+call_String:regex               # [match?]
+typf Match                      # [(match), bool]
+gofi @try_return                # []
+call :KwType KwType             # [match, tok]
+svar 3                          # [match]
+int  1                          # [match, 1]
+call_Match:igroup               # [nextraw]
+svar 1                          # []
+goto @end_if_raw_is
+# case "return"
+labl @try_return
+pvar 1                          # [raw]
+str "return\\b+(.*)"            # [raw, pattern]
 call_String:regex               # [match?]
 typf Match                      # [(match), bool]
 gofi @try_type_name             # []
-call :KwType KwType             # [match, tok]
+call :KwReturn KwReturn         # [match, tok]
 svar 3                          # [match]
 int  1                          # [match, 1]
 call_Match:igroup               # [nextraw]
