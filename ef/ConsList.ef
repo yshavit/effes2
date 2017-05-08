@@ -10,7 +10,7 @@ headIf(list) -> : # NOTE: no type checking for now, just marks that there's a rv
 toString(list) -> :
   sb = StringBuilder()
   sb.add("[")
-  while list is Cons(head, tail):
+  while list is Cons(@head, @tail):
     sb.add(head)
     list = tail
     if list is Cons(*,*):

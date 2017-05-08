@@ -8,6 +8,7 @@ TYPE 0 KwReturn
 TYPE 0 Arrow
 TYPE 0 Colon
 TYPE 0 Comma
+TYPE 0 Equals
 TYPE 0 OpenParen
 TYPE 0 CloseParen
 
@@ -48,6 +49,7 @@ rtrn
 
 FUNC Lexer _loadNext 0 1 0
 # $1: raw
+#
 pvar 0                          # [this]
 pfld :Lexer _denter             # [this._denter]
 call Denter:Denter next         # [raw]
@@ -78,7 +80,7 @@ labl @no_leading_spaces
 # 
 # case "type"
 pvar 1                          # [raw]
-str "type\\b+(.*)"              # [raw, pattern]
+str "type\\b+(.+)?"             # [raw, pattern]
 call_String:regex               # [match?]
 typf Match                      # [(match), bool]
 gofi @try_return                # []
@@ -91,7 +93,7 @@ goto @end_if_raw_is
 # case "return"
 labl @try_return
 pvar 1                          # [raw]
-str "return\\b+(.*)"            # [raw, pattern]
+str "return\\b+(.+)?"           # [raw, pattern]
 call_String:regex               # [match?]
 typf Match                      # [(match), bool]
 gofi @try_type_name             # []
@@ -122,10 +124,10 @@ goto @end_if_raw_is
 # case Identifier
 labl @try_identifier
 pvar 1                          # [raw]
-str "(_*[a-z]\\w+)(.+)?"        # [raw, pattern]
+str "(_*[a-z]\\w*)(.+)?"        # [raw, pattern]
 call_String:regex               # [match?]
 typf Match                      # [(match), bool]
-gofi @try_arrow                 # []
+gofi @try_equals                # []
 svar 4                          # []
 pvar 4                          # [match]
 int  1                          # [match, 1]
@@ -135,6 +137,19 @@ svar 3                          # []
 pvar 4                          # [match]
 int  2                          # [match, 2]
 call_Match:igroup               # [nextRaw]
+svar 1                          # []
+goto @end_if_raw_is
+# case "equals"
+labl @try_equals
+pvar 1                          # [raw]
+str "=(.+)?"                    # [raw, pattern]
+call_String:regex               # [match?]
+typf Match                      # [(match), bool]
+gofi @try_arrow                 # []
+call :Equals Equals             # [match, tok]
+svar 3                          # [match]
+int  1                          # [match, 1]
+call_Match:igroup               # [nextraw]
 svar 1                          # []
 goto @end_if_raw_is
 # case "arrow"

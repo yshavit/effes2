@@ -3,6 +3,13 @@ import Lexer: *
 type EfFile(types, methods)
 type EfType(name, args)
 type EfMethod(name, args, hasRv, statements)
+# statements
+# KwReturn, with no value
+type EfStatAssign(name, expr)
+
+# expressions
+type CtorCall(typeName, args)
+
 type NoParse
 type _Parsed(element, remainingTokens)
 
@@ -30,7 +37,7 @@ parseFile(toks) -> :
 
 parseType(toks) -> :
   if toks is:
-    Cons(Cons(KwType, Identifier(name)), @toks):
+    Cons(Cons(KwType, TypeName(name)), @toks):
       args = Empty
       if parseArgs(toks) is _Parsed(@args, @toks):
         ::
@@ -69,13 +76,30 @@ parseBlock(toks) -> :
 
 parseStatement(toks):
   s = ?
+  # return
   if toks is Cons(KwReturn, @toks):
     s = KwReturn
+  # assignment
+  elif toks is Cons(Identifier(@name), Cons(Equals, @toks)):
+    if parseExpression(toks) is _Parsed(@expr, @toks):
+      s = EfStatAssign(name, expr)
+    else:
+      return NoParse
   else:
     return NoParse
 
   if toks is Cons(Newline, @toks):
     return _Parsed(s, toks)
+  else:
+    return NoParse
+
+parseExpression(toks) -> :
+  # ctor
+  if toks is Cons(TypeName(@name), @toks):
+    args = Empty
+    if parseArgs(toks) is _Parsed(@args, @toks):
+      ::
+    return _Parsed(CtorCall(name, args), toks)
   else:
     return NoParse
 

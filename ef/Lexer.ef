@@ -15,6 +15,7 @@ type KwReturn
 type Arrow
 type Colon
 type Comma
+type Equals
 type OpenParen
 type CloseParen
 
@@ -47,10 +48,10 @@ type Lexer(_denter, _pending):
           item = ?
           if raw is:
             # keywords
-            m : /type\b(.*)/ :
+            m : /type\b(.+)?/ :
               item = KyType
               raw = m.group(1)
-            m : /return\b/(.*):
+            m : /return\b/(.+)?:
               item = KwReturn
               raw = m.group(1)
             # identifiers and non-consts
@@ -65,7 +66,10 @@ type Lexer(_denter, _pending):
               item = Identifier(identifier)
               raw = m.group(2)
             # operators and punctuation
-            m : /->(.+)?/ :
+            m : /=(.+)?/ :
+              item = Equals
+              raw = m.group(1)
+            m : /=(.+)?/ :
               item = Arrow
               raw = m.group(1)
             m : /:(.+)?/ :

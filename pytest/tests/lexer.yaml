@@ -35,3 +35,13 @@ stdin: return
 stdout: |
   Lexer:KwReturn
   Denter:Newline
+---
+desc: tokens
+entry_module: Lexer
+stdin: >
+  =
+  return
+stdout: |
+  Lexer:Equals
+  Lexer:KwReturn
+  Denter:Newline

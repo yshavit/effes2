@@ -64,3 +64,23 @@ stdout: |
         hasRv: True
         statements: ConsList:Cons
           [0]: Lexer:KwReturn
+---
+desc: stat assignment no args
+entry_module: Parser
+stdin: |
+  myFunc ():
+    a = Foo
+stdout: |
+  Parser:EfFile
+    types: ConsList:Empty
+    methods: ConsList:Cons
+      [0]: Parser:EfMethod
+        name: myFunc
+        args: ConsList:Empty
+        hasRv: False
+        statements: ConsList:Cons
+          [0]: Parser:EfStatAssign
+            name: a
+            expr: Parser:CtorCall
+              typeName: Foo
+              args: ConsList:Empty

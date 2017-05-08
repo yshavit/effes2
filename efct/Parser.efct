@@ -3,6 +3,13 @@ efct 0
 TYPE 0 EfFile types methods
 TYPE 0 EfType name args
 TYPE 0 EfMethod name args hasRv statements
+
+# statements
+TYPE 0 EfStatAssign name expr
+
+# expressions
+TYPE 0 CtorCall typeName args
+
 TYPE 0 NoParse
 TYPE 0 _Parsed element remainingTokens
 
@@ -277,20 +284,54 @@ rtrn
 FUNC : parseStatement 1 1 0
 # $0: toks
 # $1: result
+# $2: tmp
+# $3: tmp
 #
 # if "return"
 pvar 0                          # [toks]
 typf ConsList:Cons              # [toks?, isCons]
-gofi @no_parse                  # [toks]
+gofi @try_assignment            # [toks]
 Pfld ConsList:Cons head         # [toks, toks.h]
 type Lexer:KwReturn             # [toks, toks.h.isReturn]
-gofi @no_parse_1                # [toks]
+gofi @try_assignment_1          # [toks]
 pfld ConsList:Cons tail         # [toks.t]
 svar 0                          # []
 call Lexer:KwReturn KwReturn    # [KwR]
 svar 1                          # []
 goto @look_for_newline          # []
-#
+# "elif Cons(id, =, @toks)"
+labl @try_assignment_1          # [x]
+pop                             # []
+labl @try_assignment            # []
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+typf Lexer:Identifier           # [toks, toks.h?, toks.h.isId]
+gofi @no_parse_1                # [toks, toks.h]
+pfld Lexer:Identifier value     # [toks, toks.h.val]
+svar 2                          # [toks] : $2=name
+pfld ConsList:Cons tail         # [toks.t]
+typf ConsList:Cons              # [toks.t?, isCons]
+gofi @no_parse                  # [toks.t]
+Pfld ConsList:Cons head         # [toks.t, toks.t.h]
+type Lexer:Equals               # [toks.t, toks.t.h.isEquals]
+gofi @no_parse_1                # [toks.t]
+pfld ConsList:Cons tail         # [toks.t.t]
+svar 0                          # []
+pvar 0                          # [toks]
+call : parseExpression          # [parseRv]
+typf :_Parsed                   # [parseRv?, isParsed]
+gofi @no_parse                  # [parseRv]
+Pfld :_Parsed element           # [parseRv, elem]
+svar 3                          # [parseRv] : $3 = expr
+pfld :_Parsed remainingTokens   # [parseRv.remain]
+svar 0                          # []
+pvar 2                          # [name]
+pvar 3                          # [name, expr]
+call :EfStatAssign EfStatAssign # [EfStatAssign(~)]
+svar 1                          # []
+goto @look_for_newline          # []
 # look for newline
 labl @look_for_newline          # []
 pvar 0                          # [toks]
@@ -303,6 +344,45 @@ pfld ConsList:Cons tail         # [toks.t]
 svar 0                          # []
 pvar 1                          # [s]
 pvar 0                          # [s, toks]
+call :_Parsed _Parsed           # [_Parsed(~)]
+rtrn
+labl @no_parse_1                # [x]
+pop                             # []
+labl @no_parse                  # []
+call :NoParse NoParse           # [NoParse]
+rtrn
+
+FUNC : parseExpression 1 1 0
+# $0: toks
+# $1: tmp
+# $2: tmp
+#
+# ctor
+pvar 0                          # [toks]
+typf ConsList:Cons              # [toks?, isCons]
+gofi @no_parse                  # [toks]
+Pfld ConsList:Cons head         # [toks, toks.h]
+typf Lexer:TypeName             # [toks, toks.h?, isTypeName]
+gofi @no_parse_1                # [toks, toks.h]
+pfld Lexer:TypeName value       # [toks, toks.h.val]
+svar 1                          # [toks] : $1=name
+pfld ConsList:Cons tail         # [toks.t]
+svar 0                          # []
+call ConsList:Empty Empty       # [Empty]
+svar 2                          # [] : $2=args
+pvar 0                          # [toks]
+call : parseArgs                # [parseArgsRv]
+typf :_Parsed                   # [parseArgsRv?, isParse]
+gofi @ctor_no_args              # [parseArgsRv]
+Pfld :_Parsed element           # [parseArgsRv, elem]
+svar 2                          # [] : $2=args
+pfld :_Parsed remainingTokens   # [toks]
+svar 0                          # []
+labl @ctor_no_args              # []
+pvar 1                          # [name]
+pvar 2                          # [name, args]
+call :CtorCall CtorCall         # [CtorCall(~)]
+pvar 0                          # [CTorCall(~), toks]
 call :_Parsed _Parsed           # [_Parsed(~)]
 rtrn
 labl @no_parse_1                # [x]
