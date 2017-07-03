@@ -3,7 +3,7 @@ import Denter: Denter, Indent, Dedent, Newline
 # Identifiers and non-consts
 type TypeName(value)
 type Identifier(value)
-type LexError(value)
+type jexError(value)
 # type Quoted(value)
 # type Regex(value)
 
@@ -18,6 +18,8 @@ type Comma
 type Equals
 type OpenParen
 type CloseParen
+
+type _StringParse(parsed, tail)
 
 create(in) -> :
   return Lexer(Denter(in), Empty)
@@ -54,6 +56,15 @@ type Lexer(_denter, _pending):
             m : /return\b/(.+)?:
               item = KwReturn
               raw = m.group(1)
+            # literals
+            m : /"(.*)/ :                   #" # <-- (close the quote, for vim)
+              if this._parseString(m.group(1)) is:
+                _StringParse(@item, @raw):
+                  :::
+                LexError(@item):
+                  raw = False
+              item = parsed.parsed
+              raw = parsed.tail
             # identifiers and non-consts
             m : /(_*[A-Z][0-9A-Z_]*[a-z]\w*)(.+)?/ :
               typeName = m.group(1)
@@ -101,4 +112,18 @@ type Lexer(_denter, _pending):
             return False
       *: # one of the Denter types; just pass it through
         return raw
+
+  _parseString(line) -> :
+    sb = StringBuilder()
+    while line is:
+      m : /([^"\\]+)(.+)?/ :  # " # -- (close the quote, for vim)
+        sb.add(m.group(1))
+        line = m.group(2)
+      m : /"(.+)?/ :   # " # -- (close the quote, for vim)
+        return _StringParse(sb.get(), m.group(1))
+      # no escapes for now...
+      m : /\\/ :
+        return LexError(line)
+      m : /$/ :
+        return LexError(line)
 
