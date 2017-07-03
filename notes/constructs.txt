@@ -52,13 +52,8 @@
 ║ │ ╎ if          : 'if' expression ':' block else?
 ║ │ ╎ if-is       : 'if' expression 'is' ':' matcherlist<block>
 ║ │ ╎             ↳  Once type checking is in place, all types must be matched
-║ │ ╎ see-if-is   : 'see' 'if' expression 'is' ':' matcher
-║ │ ╎             ↳  Any matcher will work, but only really useful if at least
-║ │ ╎                one bound variable is exported (via '@'). The expression
-║ │ ╎                is always evaluated, regardless.
 ║ │ ╎ assume      : 'assume' expression
 ║ │ ╎ return      : 'return' expression?
-║ │ ╎ continue    : 'continue'
 ║ │ ╎ break       : 'break'
 ║ │ ╎ assignment  : IDENTIFIER = expression
 ║ │ ├┈
@@ -106,7 +101,7 @@
 ║ │ ╎ (bindto ':')? regex 
 ║ │ ╎ QUOTED
 ║ │ ├┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈┈
-║ │ ╎ regex: '/' (regex as parsed by Java) '/'
+║ │ ╎ regex: '~/' (regex as parsed by Java) '/'
 ║ │ ╰╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
 ║ │ 
 ║ ╰─────────────────────────────────────────────────────────────────────────────

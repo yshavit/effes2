@@ -56,7 +56,8 @@ type Denter(_in, _indents, _pending, _needTrailingNewline):
           this._needTrailingNewline = False
           this._pending = Cons(Newline, this._pending)
         return
-      *: continue # blank line
+      *:
+        ::: # blank line
 
 create(in) -> :
   return Denter(Cons(0, Empty), Empty, False)
