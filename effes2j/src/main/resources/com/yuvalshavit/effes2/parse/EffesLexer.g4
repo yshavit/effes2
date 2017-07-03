@@ -70,7 +70,7 @@ fragment GENERIC_IDENT_CHAR : [A-Za-z0-9_];
 // whitespace and comments
 NL: ('\r'? '\n' ' '*) | EOF;
 WS: [ \t]+ -> skip;
-LINE_COMMENT: '--' ~[\r\n]* -> skip;
+LINE_COMMENT: '#' ~[\r\n]* -> skip;
 
 //==========================================================================================
 // Regex mode

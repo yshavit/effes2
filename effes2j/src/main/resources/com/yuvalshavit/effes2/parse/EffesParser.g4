@@ -12,12 +12,13 @@ declaration:
 
 file:
   importLine*
-| declaration*
+  declaration*
+  EOF
 ;
 
 importLine:
-  IMPORT IDENT_NAME
-  importDeclaration (COMMA importDeclaration )*
+  IMPORT IDENT_TYPE
+  COLON importDeclaration (COMMA importDeclaration )*
 ;
 
 importDeclaration:
