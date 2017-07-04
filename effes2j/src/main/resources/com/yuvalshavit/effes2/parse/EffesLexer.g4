@@ -29,6 +29,7 @@ tokens { INDENT, DEDENT }
 // literals
 QUOTED_STRING : DQUOTE ( ~["\r\n\\] )* DQUOTE ;
 fragment DQUOTE         : '"' ;
+INT : '0' | ([1-9] [0-9]*) ;
 
 //------------------------------------------------------------------------------------------
 // keywords
@@ -56,8 +57,10 @@ EQUALS : '=' ;
 NO_OP : ':::' ;
 PAREN_OPEN : '(' ;
 PAREN_CLOSE : ')' ;
+PLUS : '+' ;
+QUESTION_MARK : '?' ;
+REGEX_START : '~/' -> mode(REGEX_MODE) ;
 SLASH : '/' ;
-SLASH_REGEX : '~/' -> mode(REGEX_MODE) ;
 
 //------------------------------------------------------------------------------------------
 // identifiers
@@ -75,9 +78,10 @@ LINE_COMMENT: '#' ~[\r\n]* -> skip;
 //==========================================================================================
 // Regex mode
 mode REGEX_MODE;
-REGEX: REGEX_CHAR '/' -> mode(DEFAULT_MODE) ;
+REGEX: REGEX_CHAR+ ;
+REGEX_END: '/' -> mode(DEFAULT_MODE) ;
 
 fragment REGEX_CHAR:
   ~[\r\n\\/]
-| ('\\' [tnrdDsSwWbBAGZzQE/] )
+| ('\\' [tnrdDsSwWbBAGZzQE\\()[\]] )
 ;

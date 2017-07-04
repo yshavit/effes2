@@ -18,7 +18,7 @@ file:
 
 importLine:
   IMPORT IDENT_TYPE
-  COLON importDeclaration (COMMA importDeclaration )*
+  COLON importDeclaration (COMMA importDeclaration )* NL
 ;
 
 importDeclaration:
@@ -31,28 +31,34 @@ importDeclaration:
 
 //------------------------------------------------------------------------------------------
 // Types and methods
-args:
+argsDeclaration:
   PAREN_OPEN
   (IDENT_NAME (COMMA IDENT_NAME)* )?
   PAREN_CLOSE
 ;
 
+argsInvocation:
+  PAREN_OPEN
+  (expression (COMMA expression)* )?
+  PAREN_CLOSE
+;
+
 methodDeclaration:
-  IDENT_NAME args
+  IDENT_NAME argsDeclaration
   ARROW?
   COLON block
 ;
 
 typeDeclaration:
   TYPE IDENT_TYPE
-  args?
-  (COLON INDENT methodDeclaration+ DEDENT)?
+  argsDeclaration?
+  ((COLON INDENT methodDeclaration+ DEDENT) | NL)
 ;
 
 //------------------------------------------------------------------------------------------
 // Statements
 block:
-  INDENT statement+ DEDENT
+  INDENT (statement)+ DEDENT
 ;
 
 elseStat:
@@ -61,16 +67,19 @@ elseStat:
 ;
 
 statement:
-  NO_OP                                                     # StatNoop
+  NO_OP NL                                                  # StatNoop
 | WHILE expression COLON block                              # StatWhile
-| WHILE expression IS blockMatchers                         # StatWhileIs
+| WHILE expression IS matcher COLON block                   # StatWhileIsSingle
+| WHILE expression IS blockMatchers                         # StatWhileIsMulti
 | IF expression COLON block elseStat?                       # StatIf
-| IF expression IS COLON blockMatchers+                     # StatIfIs
-| RETURN expression?                                        # StatReturn
-| BREAK                                                     # StatBreak
-| IDENT_NAME EQUALS expression                              # StatAssign
-| IDENT_NAME args                                           # StatMethodInvoke
-| expression DOT IDENT_NAME args                            # StatQualifiedMethodInvoke
+| IF expression IS matcher COLON block                      # StatIfIsSingle
+| IF expression IS COLON blockMatchers                      # StatIfIsMulti
+| RETURN expression? NL                                     # StatReturn
+| BREAK NL                                                  # StatBreak
+| IDENT_NAME EQUALS (expression | QUESTION_MARK) NL         # StatAssign
+| expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
+| IDENT_NAME argsInvocation NL                              # StatMethodInvoke
+| expression DOT IDENT_NAME argsInvocation NL               # StatQualifiedMethodInvoke
 ;
 
 //------------------------------------------------------------------------------------------
@@ -81,10 +90,10 @@ statement:
 expression:
   QUOTED_STRING                                             # ExprStringLiteral
 | THIS                                                      # ExprThis
-| IF expression IS COLON expressionMatcher+                 # ExprIfIs
-| IDENT_TYPE args?                                          # ExprInstantiation
-| IDENT_NAME args?                                          # ExprVariableOrMethodInvocation
-| expression DOT IDENT_NAME args?                           # ExprQualifiedVariableOrMethodInvocation
+| IF expression IS COLON NL expressionMatcher+              # ExprIfIs
+| IDENT_TYPE argsInvocation?                                # ExprInstantiation
+| IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
+| expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
 | expression IS NOT? matcher                                # ExprIsA
 ;
 
@@ -97,13 +106,13 @@ blockMatchers:
 
 
 expressionMatcher:
-  (matcher COLON expression)+
+  IDENT (matcher COLON expression NL)+ DEDENT
 ;
 
 matcher:
-  ASTERISK (COLON expression)?                                        # MatchAny
-| AT? IDENT_NAME (COLON expression)?                                  # MatchBind
-| IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?       # MatchType
-| (IDENT_NAME COLON)? SLASH_REGEX REGEX                               # MatchRegex
-| QUOTED_STRING                                                       # MatchStringLiteral
+  ASTERISK (COLON expression)?                                                       # MatchAny
+| AT? IDENT_NAME (COLON expression)?                                                 # MatchBind
+| (AT? IDENT_NAME)? IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?    # MatchType
+| (AT? IDENT_NAME COLON)? REGEX_START REGEX? REGEX_END                               # MatchRegex
+| QUOTED_STRING                                                                      # MatchStringLiteral
 ;
