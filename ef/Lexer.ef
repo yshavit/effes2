@@ -37,7 +37,7 @@ type Lexer(_denter, _pending):
 
   _loadNext() -> :
     if this._denter.next() is:
-      raw: String:
+      raw String:
         pending = Empty
         while raw is String:
           # left trim
@@ -50,14 +50,14 @@ type Lexer(_denter, _pending):
           item = ?
           if raw is:
             # keywords
-            m : ~/type\b(.+)?/ :
+            m ~/type\b(.+)?/ :
               item = KyType
               raw = m.group(1)
-            m : ~/return\b/(.+)?:
+            m ~/return\b(.+)?/ :
               item = KwReturn
               raw = m.group(1)
             # literals
-            m : ~/"(.*)/ :                   #" # <-- (close the quote, for vim)
+            m ~/"(.*)/ :                   #" # <-- (close the quote, for vim)
               if this._parseString(m.group(1)) is:
                 _StringParse(@item, @raw):
                   :::
@@ -66,37 +66,37 @@ type Lexer(_denter, _pending):
               item = parsed.parsed
               raw = parsed.tail
             # identifiers and non-consts
-            m : ~/(_*[A-Z][0-9A-Z_]*[a-z]\w*)(.+)?/ :
+            m ~/(_*[A-Z][0-9A-Z_]*[a-z]\w*)(.+)?/ :
               typeName = m.group(1)
-              assume typeName is String
+              # assume typeName is String
               item = TypeName(typeName)
               raw = m.group(2)
-            m : ~/(_*[a-z]\w+)(.+)?/ :
+            m ~/(_*[a-z]\w+)(.+)?/ :
               identifier = m.group(1)
-              assume identifier is String
+              # assume identifier is String
               item = Identifier(identifier)
               raw = m.group(2)
             # operators and punctuation
-            m : ~/=(.+)?/ :
+            m ~/=(.+)?/ :
               item = Equals
               raw = m.group(1)
-            m : ~/=(.+)?/ :
+            m ~/=(.+)?/ :
               item = Arrow
               raw = m.group(1)
-            m : ~/:(.+)?/ :
+            m ~/:(.+)?/ :
               item = Colon
               raw = m.group(1)
-            m : ~/,(.+)?/ :
+            m ~/,(.+)?/ :
               item = Comma
               raw = m.group(1)
-            m : ~/\((.+)?/ :
+            m ~/\((.+)?/ :
               item = OpenParen
               raw = m.group(1)
-            m : ~/\)(.+)?/ :
+            m ~/\)(.+)?/ :
               item = CloseParen
               raw = m.group(1)
             # other
-            m : ~// :
+            m ~// :
               item = False
               raw = False
             *:
@@ -116,14 +116,14 @@ type Lexer(_denter, _pending):
   _parseString(line) -> :
     sb = StringBuilder()
     while line is:
-      m : ~/([^"\\]+)(.+)?/ :  # " # -- (close the quote, for vim)
+      m ~/([^"\\]+)(.+)?/ :  # " # -- (close the quote, for vim)
         sb.add(m.group(1))
         line = m.group(2)
-      m : ~/"(.+)?/ :   # " # -- (close the quote, for vim)
+      m ~/"(.+)?/ :   # " # -- (close the quote, for vim)
         return _StringParse(sb.get(), m.group(1))
       # no escapes for now...
-      m : ~/\\/ :
+      m ~/\\/ :
         return LexError(line)
-      m : ~/$/ :
+      m ~/$/ :
         return LexError(line)
 

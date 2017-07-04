@@ -49,7 +49,6 @@ WHILE : 'while' ;
 // operators and punctuation
 ARROW : '->' ;
 ASTERISK : '*' ;
-AT : '@' ;
 COLON : ':' ;
 COMMA : ',' ;
 DOT : '.' ;
@@ -57,6 +56,7 @@ EQUALS : '=' ;
 NO_OP : ':::' ;
 PAREN_OPEN : '(' ;
 PAREN_CLOSE : ')' ;
+PIPE : '|' ;
 PLUS : '+' ;
 QUESTION_MARK : '?' ;
 REGEX_START : '~/' -> mode(REGEX_MODE) ;
@@ -65,7 +65,7 @@ SLASH : '/' ;
 //------------------------------------------------------------------------------------------
 // identifiers
 IDENT_TYPE : '_'* [A-Z] GENERIC_IDENT_CHAR* [a-z] GENERIC_IDENT_CHAR* ;
-IDENT_NAME : '_'* [a-z] GENERIC_IDENT_CHAR* ;
+IDENT_NAME : '@' ? '_'* [a-z] GENERIC_IDENT_CHAR* ;
 IDENT_GENERIC : [A-Z]+ ;
 fragment GENERIC_IDENT_CHAR : [A-Za-z0-9_];
 

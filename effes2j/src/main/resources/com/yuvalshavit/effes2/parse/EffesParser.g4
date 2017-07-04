@@ -18,12 +18,16 @@ file:
 
 importLine:
   IMPORT IDENT_TYPE
-  COLON importDeclaration (COMMA importDeclaration )* NL
+  COLON importDeclarations NL
 ;
 
 importDeclaration:
   IDENT_TYPE
 | IDENT_NAME
+;
+
+importDeclarations:
+  importDeclaration (COMMA importDeclaration)*
 ;
 
 //------------------------------------------------------------------------------------------
@@ -68,18 +72,27 @@ elseStat:
 
 statement:
   NO_OP NL                                                  # StatNoop
-| WHILE expression COLON block                              # StatWhile
-| WHILE expression IS matcher COLON block                   # StatWhileIsSingle
-| WHILE expression IS blockMatchers                         # StatWhileIsMulti
-| IF expression COLON block elseStat?                       # StatIf
-| IF expression IS matcher COLON block                      # StatIfIsSingle
-| IF expression IS COLON blockMatchers                      # StatIfIsMulti
+| WHILE expression statementWhileConditionAndBody           # StatWhile
+| IF expression statementIfConditionAndBody                 # StatIf
 | RETURN expression? NL                                     # StatReturn
 | BREAK NL                                                  # StatBreak
-| IDENT_NAME EQUALS (expression | QUESTION_MARK) NL         # StatAssign
-| expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
 | IDENT_NAME argsInvocation NL                              # StatMethodInvoke
+| IDENT_NAME EQUALS expression NL                           # StatAssign
+| IDENT_NAME EQUALS QUESTION_MARK NL                        # StatVarDeclare
 | expression DOT IDENT_NAME argsInvocation NL               # StatQualifiedMethodInvoke
+| expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
+;
+
+statementIfConditionAndBody:
+  COLON block elseStat?                                     # IfElseSimple
+| IS matcher COLON block                                    # IfMatchSingle
+| IS COLON blockMatchers                                    # IfMatchMulti
+;
+
+statementWhileConditionAndBody:
+  COLON block                                               # WhileSimple
+| IS matcher COLON block                                    # WhileMatchSingle
+| IS COLON blockMatchers                                    # WhileMatchMulti
 ;
 
 //------------------------------------------------------------------------------------------
@@ -88,31 +101,43 @@ statement:
 // Note: It's important that these expressions never contain a colon, so that matchers
 // within the expression are unambiguous.
 expression:
-  QUOTED_STRING                                             # ExprStringLiteral
+  expression IS NOT? matcher                                # ExprIsA
+| QUOTED_STRING                                             # ExprStringLiteral
+| INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis
-| IF expression IS COLON NL expressionMatcher+              # ExprIfIs
+| IF expression IS COLON NL expressionMatchers              # ExprIfIs
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
 | IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
 | expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
-| expression IS NOT? matcher                                # ExprIsA
 ;
 
 //------------------------------------------------------------------------------------------
 // Matchers
 
-blockMatchers:
-  INDENT (matcher COLON block)+ DEDENT
+blockMatcher:
+  matcher COLON block
 ;
 
+blockMatchers:
+  INDENT blockMatcher+ DEDENT
+;
+
+expressionMatchers:
+  matcher COLON expression NL
+;
 
 expressionMatcher:
-  IDENT (matcher COLON expression NL)+ DEDENT
+  INDENT expressionMatcher  DEDENT
 ;
 
 matcher:
-  ASTERISK (COLON expression)?                                                       # MatchAny
-| AT? IDENT_NAME (COLON expression)?                                                 # MatchBind
-| (AT? IDENT_NAME)? IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?    # MatchType
-| (AT? IDENT_NAME COLON)? REGEX_START REGEX? REGEX_END                               # MatchRegex
-| QUOTED_STRING                                                                      # MatchStringLiteral
+  IDENT_NAME? matcherPattern (PIPE expression)?                       # MatcherWithPattern
+| IDENT_NAME                                                          # MatcherJustName
+;
+
+matcherPattern:
+  ASTERISK                                                            # PatternAny
+| IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?       # PatternType
+| REGEX_START REGEX? REGEX_END                                        # PatternRegex
+| QUOTED_STRING                                                       # PatternStringLiteral
 ;
