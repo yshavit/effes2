@@ -3,20 +3,27 @@ package com.yuvalshavit.effes2.parse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Collections;
+import java.util.Deque;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.misc.Utils;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import org.antlr.v4.runtime.tree.Tree;
-import org.antlr.v4.runtime.tree.Trees;
+import org.yaml.snakeyaml.DumperOptions;
+import org.yaml.snakeyaml.Yaml;
 
+import com.google.common.collect.Iterables;
 import com.yuvalshavit.effes2.util.StdinHelper;
 
-public class ParseAndPrint {
+public class ParseUtils {
   public static void main(String[] args) throws IOException {
     if (args.length == 0) {
       while (true) {
@@ -32,8 +39,8 @@ public class ParseAndPrint {
           continue;
         }
         StringBuilder sb = new StringBuilder();
-        System.out.println("enter \"~~~\" on a line by itself to end segment");
-        StdinHelper.readUntil("> ", "~~~").forEachRemaining(l -> sb.append(l).append('\n'));
+        System.out.println("enter \"~\" on a line by itself to end segment");
+        StdinHelper.readUntil("> ", "~+").forEachRemaining(l -> sb.append(l).append('\n'));
         Function<EffesParser,Tree> rule = parser -> {
           try {
             return (Tree) ruleMethod.invoke(parser);
@@ -69,55 +76,102 @@ public class ParseAndPrint {
     parser.removeErrorListeners();
     parser.addErrorListener(new StderrParseListener(verbose));
     Tree tree = rule.apply(parser);
+
     if (tree != null) {
-      new TreePrinter(parser).walk(tree);
+      ToObjectPrinter printer = new ToObjectPrinter();
+      printer.walk(tree);
+      Object get = printer.get();
+      DumperOptions options = new DumperOptions();
+      options.setTags(Collections.emptyMap());
+      options.setPrettyFlow(true);
+      options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+      options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
+      Yaml yaml = new Yaml(options);
+      System.out.println(yaml.dump(get));
     }
     System.out.println();
   }
 
-  public static class TreePrinter {
-    private final EffesParser parser;
-    private int depth;
-    private boolean lastWasToken = true;
+  public static class ToObjectPrinter extends AbstractAstPrinter {
+    private List<Object> roots;
+    private Deque<List<Object>> path;
 
-    public TreePrinter(EffesParser parser) {
-      this.parser = parser;
+    public ToObjectPrinter(boolean includeLiterals) {
+      super(includeLiterals);
+      roots = new ArrayList<>();
+      path = new ArrayDeque<>();
     }
 
-    public void walk(Tree tree) {
-      if (lastWasToken) {
-        System.out.print(' ');
+    public ToObjectPrinter() {
+      this(false);
+    }
+
+    public Object get() {
+      if (roots.isEmpty()) {
+        return Collections.emptyList();
+      } else if (roots.size() == 1) {
+        return Iterables.getOnlyElement(roots);
       } else {
-        indent();
-      }
-      boolean currentIsToken = (tree instanceof TerminalNode);
-      if (lastWasToken && !currentIsToken) {
-        System.out.println();
-        indent();
-      }
-      lastWasToken = currentIsToken;
-      if (lastWasToken) {
-        System.out.print('\'');
-        System.out.print(Utils.escapeWhitespace(Trees.getNodeText(tree, parser), true));
-        System.out.print('\'');
-      } else {
-        System.out.print(tree.getClass().getSimpleName().replaceAll("Context$", ""));
-        if (tree.getChildCount() > 0) {
-          System.out.print(':');
-        }
-        System.out.println();
-        ++depth;
-        for (int i = 0, len = tree.getChildCount(); i < len; ++i) {
-          walk(tree.getChild(i));
-        }
-        --depth;
+        return Collections.unmodifiableList(roots);
       }
     }
 
-    private void indent() {
-      for (int i = 0; i < depth; ++i) {
-        System.out.print("  ");
+    @Override
+    protected void indent() {
+      addNode("indent");
+    }
+
+    @Override
+    protected void dedent() {
+      path.pop();
+    }
+
+    @Override
+    protected void token(String tokenName, String tokenText) {
+      add(String.format("%s (%s)", tokenText, tokenName));
+    }
+
+    @Override
+    protected void token(String tokenName) {
+      add(tokenName);
+    }
+
+    @Override
+    protected void error(String text) {
+      add("error: " + text);
+    }
+
+    @Override
+    protected void rule(String ruleName, boolean hasChildren) {
+      if (hasChildren) {
+        addNode(ruleName);
+      } else {
+        add(ruleName);
       }
+    }
+
+    @Override
+    protected void endRuleWithChildren() {
+      dedent();
+    }
+
+    private void add(Object toAdd) {
+      final List<Object> to;
+      if (path.isEmpty()) {
+        to = new ArrayList<>();
+        path.add(to);
+        roots.add(toAdd);
+      } else {
+        to = path.peek();
+      }
+      to.add(toAdd);
+    }
+
+    private void addNode(String name) {
+      List<Object> children = new ArrayList<>();
+      Map<?,?> node = Collections.singletonMap(name, children);
+      add(node);
+      path.push(children);
     }
   }
 

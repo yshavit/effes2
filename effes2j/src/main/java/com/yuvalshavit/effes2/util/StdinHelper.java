@@ -30,7 +30,7 @@ public class StdinHelper {
         if (next == null) {
           next = readLine(prompt);
         }
-        if (next == null || next.equals(stop)) {
+        if (next == null || next.matches(stop)) {
           foundEnd = true;
         }
         return !foundEnd;
