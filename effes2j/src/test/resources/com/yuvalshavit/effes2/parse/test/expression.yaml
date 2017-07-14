@@ -4,8 +4,29 @@ expected:
   ExprVariableOrMethodInvocation:
   - foo (IDENT_NAME)
 ---
-name: binary plus
-input: foo + bar
+name: method invoke no args
+input: foo()
 expected:
   ExprVariableOrMethodInvocation:
   - foo (IDENT_NAME)
+  - ArgsInvocation: []
+---
+name: method invoke one arg
+input: foo(one)
+expected:
+  ExprVariableOrMethodInvocation:
+  - foo (IDENT_NAME)
+  - ArgsInvocation:
+    - ExprVariableOrMethodInvocation:
+      - one (IDENT_NAME)
+---
+name: method invoke two args
+input: foo(one, two)
+expected:
+  ExprVariableOrMethodInvocation:
+  - foo (IDENT_NAME)
+  - ArgsInvocation:
+    - ExprVariableOrMethodInvocation:
+      - one (IDENT_NAME)
+    - ExprVariableOrMethodInvocation:
+      - two (IDENT_NAME)
