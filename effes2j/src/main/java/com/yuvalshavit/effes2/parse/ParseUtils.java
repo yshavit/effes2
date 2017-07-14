@@ -222,7 +222,8 @@ public class ParseUtils {
 
     @Override
     public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
-      System.err.printf("ambiguity between %d and %d%n", startIndex, stopIndex);
+      String exactDesc = exact ? "exact" : "inexact";
+      System.err.printf("%s ambiguity between %s and %s: %s%n", exactDesc, token(recognizer, startIndex), token(recognizer, stopIndex), ambigAlts);
     }
 
     @Override
@@ -238,5 +239,14 @@ public class ParseUtils {
         System.err.printf("context sensitivity between %d and %d%n", startIndex, stopIndex);
       }
     }
+
+    private String token(Parser recognizer, int idx) {
+      Token token = recognizer.getTokenStream().get(idx);
+      if (token == null) {
+        return "<unknown token>";
+      }
+      return String.format("%s at %d:%d", EffesParser.VOCABULARY.getDisplayName(token.getType()), token.getLine(), token.getCharPositionInLine());
+    }
+
   }
 }
