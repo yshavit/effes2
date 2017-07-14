@@ -1,3 +1,9 @@
+name: var name
+input: foo
+expected:
+  ExprVariableOrMethodInvocation:
+  - foo (IDENT_NAME)
+---
 name: binary plus
 input: foo + bar
 expected:

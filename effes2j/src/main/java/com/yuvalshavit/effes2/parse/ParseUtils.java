@@ -3,19 +3,12 @@ package com.yuvalshavit.effes2.parse;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.BitSet;
-import java.util.Collections;
-import java.util.Deque;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.misc.Utils;
 import org.antlr.v4.runtime.tree.Tree;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -31,24 +24,13 @@ public class ParseUtils {
         if (ruleName == null) {
           break;
         }
-        Method ruleMethod;
-        try {
-          ruleMethod = EffesParser.class.getDeclaredMethod(ruleName);
-        } catch (NoSuchMethodException e) {
-          System.err.println("no such rule: " + ruleName);
-          continue;
-        }
         StringBuilder sb = new StringBuilder();
         System.out.println("enter \"~\" on a line by itself to end segment");
         StdinHelper.readUntil("> ", "~+").forEachRemaining(l -> sb.append(l).append('\n'));
-        Function<EffesParser,Tree> rule = parser -> {
-          try {
-            return (Tree) ruleMethod.invoke(parser);
-          } catch (IllegalAccessException | InvocationTargetException e) {
-            System.err.println(e);
-            return null;
-          }
-        };
+        Function<EffesParser,ParserRuleContext> rule = ruleByName(ruleName);
+        if (rule == null) {
+          continue;
+        }
         parseAndPrint(rule, CharStreams.fromString(sb.toString()));
       }
     }
@@ -59,8 +41,30 @@ public class ParseUtils {
     }
   }
 
-  public static EffesParser parse(CharStream charStream, ANTLRErrorListener... errorListeners) {
+  public static Function<EffesParser,ParserRuleContext> ruleByName(String ruleName) {
+    Method ruleMethod;
+    try {
+      ruleMethod = EffesParser.class.getDeclaredMethod(ruleName);
+    } catch (NoSuchMethodException e) {
+      System.err.println("no such rule: " + ruleName);
+      return null;
+    }
+    return parser -> {
+      try {
+        return (ParserRuleContext) ruleMethod.invoke(parser);
+      } catch (IllegalAccessException | InvocationTargetException e) {
+        System.err.println(e);
+        return null;
+      }
+    };
+  }
+
+  public static <T extends ParserRuleContext> T parse(CharStream charStream, Function<EffesParser, T> rule, ANTLRErrorListener... errorListeners) {
     Lexer lexer = new EffesLexer(charStream);
+    lexer.removeErrorListeners();
+    for (ANTLRErrorListener errorListener : errorListeners) {
+      lexer.addErrorListener(errorListener);
+    }
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     tokens.fill();
     EffesParser parser = new EffesParser(tokens);
@@ -68,17 +72,36 @@ public class ParseUtils {
     for (ANTLRErrorListener errorListener : errorListeners) {
       parser.addErrorListener(errorListener);
     }
-    return parser;
+    T ast = rule.apply(parser);
+    lookForTokenAtEnd(tokens.getTokens(), ast.getStop());
+    return ast;
   }
 
-  public static EffesParser parse(String input, ANTLRErrorListener... errorListeners) {
-    return parse(CharStreams.fromString(input), errorListeners);
+  private static void lookForTokenAtEnd(List<Token> allTokens, Token needle) {
+    // To handle things like expressions, which don't end in newlines, we'll look all the way to the last non-newline/dedent/EOF
+    ListIterator<Token> lastTokensIter = allTokens.listIterator(allTokens.size());
+    while (lastTokensIter.hasPrevious()) {
+      Token token = lastTokensIter.previous();
+      if (token == needle) {
+        return;
+      }
+      int tokType = token.getType();
+      boolean isEndingWhitespace = tokType == EffesLexer.EOF || tokType == EffesLexer.NL || tokType == EffesLexer.DEDENT;
+      if (!isEndingWhitespace) {
+        break;
+      }
+    }
+    // Either we ran out of tokens, or we found a non-dedent, non-newline, non-needle token
+    throw new RuntimeException("not all input consumed");
   }
 
-  private static void parseAndPrint(Function<EffesParser,Tree> rule, CharStream charStream) {
+  public static <T extends ParserRuleContext> T parse(String input, Function<EffesParser,T> rule, ANTLRErrorListener... errorListeners) {
+    return parse(CharStreams.fromString(input), rule, errorListeners);
+  }
+
+  private static void parseAndPrint(Function<EffesParser,ParserRuleContext> rule, CharStream charStream) {
     final boolean verbose = false;
-    EffesParser parser = parse(charStream, new StderrParseListener(verbose));
-    Tree tree = rule.apply(parser);
+    Tree tree = parse(charStream, rule, new StderrParseListener(verbose));
 
     if (tree != null) {
       ToObjectPrinter printer = new ToObjectPrinter();

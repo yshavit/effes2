@@ -4,13 +4,20 @@ import static org.testng.Assert.assertEquals;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.BitSet;
+import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.antlr.v4.runtime.ANTLRErrorListener;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.RecognitionException;
+import org.antlr.v4.runtime.Recognizer;
+import org.antlr.v4.runtime.atn.ATNConfigSet;
+import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.Tree;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -39,15 +46,36 @@ public class ParseTest {
 
   @Test(dataProvider = PARSE_TESTS)
   public void parse(String fileName, TestCase testCase) throws Exception {
-    Method ruleMethod = EffesParser.class.getDeclaredMethod(fileName);
-    EffesParser parser = ParseUtils.parse(testCase.input);
-    Tree ast = (Tree) ruleMethod.invoke(parser);
+    Function<EffesParser,ParserRuleContext> rule = ParseUtils.ruleByName(fileName);
+    Tree ast = ParseUtils.parse(testCase.input, rule, throwOnError);
     ParseUtils.ToObjectPrinter toObjectPrinter = new ParseUtils.ToObjectPrinter();
     toObjectPrinter.walk(ast);
     Object result = toObjectPrinter.get();
 
     assertEquals(ParseUtils.prettyPrint(result), ParseUtils.prettyPrint(testCase.expected));
   }
+
+  private static final ANTLRErrorListener throwOnError = new ANTLRErrorListener() {
+    @Override
+    public void syntaxError(Recognizer<?,?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
+      throw new RuntimeException("syntax error at " + line + ":" + charPositionInLine);
+    }
+
+    @Override
+    public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex, BitSet conflictingAlts, ATNConfigSet configs) {
+      throw new UnsupportedOperationException(); // TODO
+    }
+
+    @Override
+    public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction, ATNConfigSet configs) {
+      throw new UnsupportedOperationException(); // TODO
+    }
+  };
 
   private static String read(String name) {
     URL url = ParseTest.class.getResource(name);
