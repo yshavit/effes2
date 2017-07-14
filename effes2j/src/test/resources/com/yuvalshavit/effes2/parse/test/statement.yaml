@@ -1,0 +1,14 @@
+name: while list is Cons
+input: |
+  while list is Cons(head, *):
+    rv = Cons(head, rv)
+    list = head
+
+expected:
+---
+name: method invoke no args
+input: foo()
+expected:
+  StatMethodInvoke:
+  - foo (IDENT_NAME)
+  - ArgsInvocation

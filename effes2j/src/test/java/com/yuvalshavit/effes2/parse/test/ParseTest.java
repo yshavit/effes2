@@ -63,7 +63,7 @@ public class ParseTest {
 
     @Override
     public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
-      throw new UnsupportedOperationException();
+      throw new RuntimeException("ambiguity");
     }
 
     @Override

@@ -91,7 +91,6 @@ statementIfConditionAndBody:
 
 statementWhileConditionAndBody:
   COLON block                                               # WhileSimple
-| IS matcher COLON block                                    # WhileMatchSingle
 | IS COLON blockMatchers                                    # WhileMatchMulti
 ;
 
