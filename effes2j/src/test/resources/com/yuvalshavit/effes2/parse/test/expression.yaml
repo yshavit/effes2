@@ -9,7 +9,7 @@ input: foo()
 expected:
   ExprVariableOrMethodInvocation:
   - foo (IDENT_NAME)
-  - ArgsInvocation: []
+  - ArgsInvocation
 ---
 name: method invoke one arg
 input: foo(one)
@@ -30,3 +30,26 @@ expected:
       - one (IDENT_NAME)
     - ExprVariableOrMethodInvocation:
       - two (IDENT_NAME)
+---
+name: if-is two
+input: |
+  if foo is:
+    Bar: one
+    *: two
+expected:
+  ExprIfIs:
+  - ExprVariableOrMethodInvocation:
+    - foo (IDENT_NAME)
+  - ExpressionMatchers:
+    - INDENT:
+      - ExpressionMatcher:
+        - MatcherWithPattern:
+          - PatternType:
+            - Bar (IDENT_TYPE)
+        - ExprVariableOrMethodInvocation:
+          - one (IDENT_NAME)
+      - ExpressionMatcher:
+        - MatcherWithPattern:
+          - PatternAny
+        - ExprVariableOrMethodInvocation:
+          - two (IDENT_NAME)

@@ -1,7 +1,12 @@
 package com.yuvalshavit.effes2.parse;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.misc.Utils;
+import org.antlr.v4.runtime.tree.ParseTree;
 import org.antlr.v4.runtime.tree.RuleNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import org.antlr.v4.runtime.tree.Tree;
@@ -28,7 +33,7 @@ public abstract class AbstractAstPrinter {
         } else {
           String tokenName = EffesParser.VOCABULARY.getSymbolicName(symbolType);
           // newlines aren't literal, since they include the subsequent indentation; but we can treat them as literal, since the INDENT/DEDENT tell us the rest
-          if (symbolType != EffesParser.NL && EffesParser.VOCABULARY.getLiteralName(symbolType) == null) {
+          if (isNonLiteralToken(symbol)) {
             String tokenText = Utils.escapeWhitespace(symbol.getText(), true);
             token(tokenName, tokenText);
           } else if (includeLiterals) {
@@ -38,21 +43,45 @@ public abstract class AbstractAstPrinter {
       }
     } else if (tree instanceof RuleNode) {
       RuleNode ruleNode = (RuleNode) tree;
-      int childCount = ruleNode.getChildCount();
+      List<ParseTree> children = getChildren(ruleNode);
       String ruleName = ruleNode.getClass().getSimpleName().replaceFirst("Context$", "");
-      boolean hasChildren = childCount > 0;
+      final boolean hasChildren = ! children.isEmpty();
       rule(ruleName, hasChildren);
-      for (int i = 0; i < childCount; ++i) {
-        walk(ruleNode.getChild(i));
-      }
       if (hasChildren) {
+        for (ParseTree child : children) {
+          walk(child);
+        }
         endRuleWithChildren();
       }
-
     } else {
       String typeDesc = tree == null ? "null" : tree.getClass().getName();
       error("unknown token Tree type: " + typeDesc);
     }
+  }
+
+  protected List<ParseTree> getChildren(RuleNode ruleNode) {
+    int childrenCountRaw = ruleNode.getChildCount();
+    if (childrenCountRaw == 0) {
+      return Collections.emptyList();
+    }
+    List<ParseTree> children = new ArrayList<>(childrenCountRaw);
+    for (int i = 0; i < childrenCountRaw; ++i) {
+      ParseTree child = ruleNode.getChild(i);
+      if (includeLiterals || (child instanceof RuleNode) || isNonLiteralToken(child)) {
+        children.add(child);
+      }
+    }
+    // If we have any children, then that's that. But if we don't, then either (a) t
+    return children;
+  }
+
+  private boolean isNonLiteralToken(ParseTree child) {
+    return (child instanceof TerminalNode) && isNonLiteralToken(((TerminalNode) child).getSymbol());
+  }
+
+  private boolean isNonLiteralToken(Token token) {
+    int symbolType = token.getType();
+    return symbolType != EffesParser.NL && EffesParser.VOCABULARY.getLiteralName(symbolType) == null;
   }
 
   protected abstract void indent();

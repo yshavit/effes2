@@ -73,6 +73,9 @@ public class ParseUtils {
       parser.addErrorListener(errorListener);
     }
     T ast = rule.apply(parser);
+    if (ast == null) {
+      throw new RuntimeException("couldn't parse input");
+    }
     lookForTokenAtEnd(tokens.getTokens(), ast.getStop());
     return ast;
   }
@@ -148,7 +151,7 @@ public class ParseUtils {
 
     @Override
     protected void indent() {
-      addNode("indent");
+      addNode("INDENT");
     }
 
     @Override

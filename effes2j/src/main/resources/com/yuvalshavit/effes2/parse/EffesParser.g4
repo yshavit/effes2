@@ -105,7 +105,7 @@ expression:
 | QUOTED_STRING                                             # ExprStringLiteral
 | INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis
-| IF expression IS COLON NL expressionMatchers              # ExprIfIs
+| IF expression IS COLON expressionMatchers                 # ExprIfIs
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
 | IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
 | expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
@@ -123,11 +123,11 @@ blockMatchers:
 ;
 
 expressionMatchers:
-  matcher COLON expression NL
+  INDENT expressionMatcher+ DEDENT
 ;
 
 expressionMatcher:
-  INDENT expressionMatcher  DEDENT
+  matcher COLON expression NL
 ;
 
 matcher:
