@@ -223,7 +223,7 @@ public class ParseUtils {
     @Override
     public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
       String exactDesc = exact ? "exact" : "inexact";
-      System.err.printf("%s ambiguity between %s and %s: %s%n", exactDesc, token(recognizer, startIndex), token(recognizer, stopIndex), ambigAlts);
+      System.err.printf("%s ambiguity at %s (starting from %s): %s%n", exactDesc, token(recognizer, stopIndex), token(recognizer, startIndex), ambigAlts);
     }
 
     @Override

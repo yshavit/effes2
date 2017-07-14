@@ -86,7 +86,6 @@ statement:
 
 statementIfConditionAndBody:
   COLON block elseStat?                                     # IfElseSimple
-| IS matcher COLON block                                    # IfMatchSingle
 | IS COLON blockMatchers                                    # IfMatchMulti
 ;
 
