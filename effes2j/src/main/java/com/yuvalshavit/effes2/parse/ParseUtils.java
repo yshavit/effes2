@@ -59,37 +59,44 @@ public class ParseUtils {
     }
   }
 
-  private static void parseAndPrint(Function<EffesParser,Tree> rule, CharStream charStream) {
-    final boolean verbose = false;
+  public static EffesParser parse(CharStream charStream, ANTLRErrorListener... errorListeners) {
     Lexer lexer = new EffesLexer(charStream);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     tokens.fill();
-    if (verbose) {
-      tokens.getTokens().forEach(tok -> System.out.printf(
-        "line %d:%d %s \"%s\"%n",
-        tok.getLine(),
-        tok.getCharPositionInLine(),
-        EffesParser.VOCABULARY.getSymbolicName(tok.getType()),
-        Utils.escapeWhitespace(tok.getText(), true)));
-    }
     EffesParser parser = new EffesParser(tokens);
     parser.removeErrorListeners();
-    parser.addErrorListener(new StderrParseListener(verbose));
+    for (ANTLRErrorListener errorListener : errorListeners) {
+      parser.addErrorListener(errorListener);
+    }
+    return parser;
+  }
+
+  public static EffesParser parse(String input, ANTLRErrorListener... errorListeners) {
+    return parse(CharStreams.fromString(input), errorListeners);
+  }
+
+  private static void parseAndPrint(Function<EffesParser,Tree> rule, CharStream charStream) {
+    final boolean verbose = false;
+    EffesParser parser = parse(charStream, new StderrParseListener(verbose));
     Tree tree = rule.apply(parser);
 
     if (tree != null) {
       ToObjectPrinter printer = new ToObjectPrinter();
       printer.walk(tree);
       Object get = printer.get();
-      DumperOptions options = new DumperOptions();
-      options.setTags(Collections.emptyMap());
-      options.setPrettyFlow(true);
-      options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-      options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
-      Yaml yaml = new Yaml(options);
-      System.out.println(yaml.dump(get));
+      System.out.println(prettyPrint(get));
     }
     System.out.println();
+  }
+
+  public static String prettyPrint(Object obj) {
+    DumperOptions options = new DumperOptions();
+    options.setTags(Collections.emptyMap());
+    options.setPrettyFlow(true);
+    options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
+    options.setDefaultScalarStyle(DumperOptions.ScalarStyle.PLAIN);
+    Yaml yaml = new Yaml(options);
+    return yaml.dump(obj);
   }
 
   public static class ToObjectPrinter extends AbstractAstPrinter {
