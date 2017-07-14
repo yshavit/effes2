@@ -75,6 +75,7 @@ statement:
 | WHILE expression statementWhileConditionAndBody           # StatWhile
 | IF expression statementIfConditionAndBody                 # StatIf
 | RETURN expression? NL                                     # StatReturn
+| RETURN expressionMultiline                                # StatReturnMultiline
 | BREAK NL                                                  # StatBreak
 | IDENT_NAME argsInvocation NL                              # StatMethodInvoke
 | IDENT_NAME EQUALS expression NL                           # StatAssign
@@ -105,11 +106,17 @@ expression:
 | QUOTED_STRING                                             # ExprStringLiteral
 | INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis
-| IF expression IS COLON expressionMatchers                 # ExprIfIs
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
 | IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
 | expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
 ;
+
+// Expressions that span more than one line. Each one of these should include its own NLs
+// as needed.
+expressionMultiline:
+  IF expression IS COLON expressionMatchers                 # ExprIfIs
+;
+
 
 //------------------------------------------------------------------------------------------
 // Matchers
