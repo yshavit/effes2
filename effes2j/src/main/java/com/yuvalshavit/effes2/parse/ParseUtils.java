@@ -1,8 +1,10 @@
 package com.yuvalshavit.effes2.parse;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.function.Function;
 
@@ -36,7 +38,38 @@ public class ParseUtils {
     }
     else {
       for (String arg : args) {
-        parseAndPrint(EffesParser::file, CharStreams.fromFileName(arg));
+        parseAndPrintFile(new File(arg));
+      }
+    }
+  }
+
+  private static void parseAndPrintFile(File file) throws IOException {
+    File[] contents = file.listFiles();
+    if (contents == null) {
+      String path = file.getPath();
+      if (path.endsWith(".ef")) {
+        System.out.println(path);
+        for (int i = 0; i < path.length(); ++i) {
+          System.out.print('=');
+        }
+        System.out.println();
+        parseAndPrint(EffesParser::file, CharStreams.fromFileName(path, StandardCharsets.UTF_8));
+        System.out.println();
+      }
+    } else {
+      Arrays.sort(contents, (a, b) -> {
+        boolean aIsDir = a.isDirectory();
+        boolean bIsDir = b.isDirectory();
+        if (aIsDir == bIsDir) {
+          return a.getName().compareTo(b.getName());
+        } else if (aIsDir) {
+          return -1;
+        } else {
+          return 1;
+        }
+      });
+      for (File content : contents) {
+        parseAndPrintFile(content);
       }
     }
   }
