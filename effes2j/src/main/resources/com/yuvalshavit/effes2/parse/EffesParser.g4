@@ -79,17 +79,20 @@ statement:
 | RETURN expression? NL                                     # StatReturn
 | RETURN expressionMultiline                                # StatReturnMultiline
 | BREAK NL                                                  # StatBreak
-| IDENT_NAME argsInvocation NL                              # StatMethodInvoke
-| IDENT_NAME EQUALS expression NL                           # StatAssign
-| IDENT_NAME EQUALS expressionMultiline                     # StatAssignMultiline
+| statementVar argsInvocation NL                            # StatMethodInvoke
+| statementVar EQUALS expression NL                         # StatAssign
+| statementVar EQUALS expressionMultiline                   # StatAssignMultiline
 | IDENT_NAME EQUALS QUESTION_MARK NL                        # StatVarDeclare
-| expression DOT IDENT_NAME argsInvocation NL               # StatQualifiedMethodInvoke
 | expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
 ;
 
 statementIfConditionAndBody:
   COLON block elseStat?                                     # IfElseSimple
 | IS COLON blockMatchers                                    # IfMatchMulti
+;
+
+statementVar:
+  ( (varsAndMethods | IDENT_TYPE) DOT)? IDENT_NAME
 ;
 
 statementWhileConditionAndBody:
@@ -108,10 +111,9 @@ expression:
 | INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
-| IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
+| varsAndMethods                                            # ExprVariableOrMethodInvocation
 | PAREN_OPEN expression PAREN_CLOSE                         # ExprParenthesis
 | NOT expression                                            # ExprNegation
-| expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
 | expression (ASTERISK | SLASH) expression                  # ExprMultOrDivide
 | expression (PLUS | DASH) expression                       # ExprPlusOrMinus
 ;
@@ -122,6 +124,11 @@ expressionMultiline:
   IF expression IS COLON expressionMatchers                 # ExprIfIs
 ;
 
+varsAndMethods:
+ (IDENT_TYPE DOT)?
+ IDENT_NAME argsInvocation?
+ (DOT IDENT_NAME argsInvocation?)*
+;
 
 //------------------------------------------------------------------------------------------
 // Matchers

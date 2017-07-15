@@ -2,41 +2,49 @@ name: var name
 input: foo
 expected:
   ExprVariableOrMethodInvocation:
-  - foo (IDENT_NAME)
+  - VarsAndMethods:
+    - foo (IDENT_NAME)
 ---
 name: method invoke no args
 input: foo()
 expected:
   ExprVariableOrMethodInvocation:
-  - foo (IDENT_NAME)
-  - ArgsInvocation
+  - VarsAndMethods:
+    - foo (IDENT_NAME)
+    - ArgsInvocation
 ---
 name: method invoke one arg
 input: foo(one)
 expected:
   ExprVariableOrMethodInvocation:
-  - foo (IDENT_NAME)
-  - ArgsInvocation:
-    - ExprVariableOrMethodInvocation:
-      - one (IDENT_NAME)
+  - VarsAndMethods:
+    - foo (IDENT_NAME)
+    - ArgsInvocation:
+      - ExprVariableOrMethodInvocation:
+        - VarsAndMethods:
+          - one (IDENT_NAME)
 ---
 name: method invoke two args
 input: foo(one, two)
 expected:
   ExprVariableOrMethodInvocation:
-  - foo (IDENT_NAME)
-  - ArgsInvocation:
-    - ExprVariableOrMethodInvocation:
-      - one (IDENT_NAME)
-    - ExprVariableOrMethodInvocation:
-      - two (IDENT_NAME)
+  - VarsAndMethods:
+    - foo (IDENT_NAME)
+    - ArgsInvocation:
+      - ExprVariableOrMethodInvocation:
+        - VarsAndMethods:
+          - one (IDENT_NAME)
+      - ExprVariableOrMethodInvocation:
+        - VarsAndMethods:
+          - two (IDENT_NAME)
 ---
 name: list is String
 input: list is String
 expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
-    - list (IDENT_NAME)
+    - VarsAndMethods:
+      - list (IDENT_NAME)
   - MatcherWithPattern:
     - PatternType:
       - String (IDENT_TYPE)
@@ -46,7 +54,8 @@ input: list is Cons(*, *)
 expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
-    - list (IDENT_NAME)
+    - VarsAndMethods:
+      - list (IDENT_NAME)
   - MatcherWithPattern:
     - PatternType:
       - Cons (IDENT_TYPE)
@@ -60,7 +69,8 @@ input: list is Cons(head, *)
 expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
-    - list (IDENT_NAME)
+    - VarsAndMethods:
+      - list (IDENT_NAME)
   - MatcherWithPattern:
     - PatternType:
       - Cons (IDENT_TYPE)
@@ -74,7 +84,8 @@ input: list is Cons(head, tail)
 expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
-    - list (IDENT_NAME)
+    - VarsAndMethods:
+      - list (IDENT_NAME)
   - MatcherWithPattern:
     - PatternType:
       - Cons (IDENT_TYPE)
@@ -82,3 +93,18 @@ expected:
         - head (IDENT_NAME)
       - MatcherJustName:
         - tail (IDENT_NAME)
+---
+name: var name
+input: list
+expected:
+  ExprVariableOrMethodInvocation:
+  - VarsAndMethods:
+    - list (IDENT_NAME)
+---
+name: static var name
+input: Something.list
+expected:
+  ExprVariableOrMethodInvocation:
+  - VarsAndMethods:
+    - Something (IDENT_TYPE)
+    - list (IDENT_NAME)
