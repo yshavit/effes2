@@ -109,6 +109,7 @@ expression:
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
 | IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
 | PAREN_OPEN expression PAREN_CLOSE                         # ExprParenthesis
+| NOT expression                                            # ExprNegation
 | expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
 | expression (ASTERISK | SLASH) expression                  # ExprMultOrDivide
 | expression (PLUS | DASH) expression                       # ExprPlusOrMinus

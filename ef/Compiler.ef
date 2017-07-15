@@ -3,7 +3,7 @@ compile(fileName) ->:
   lexer = Lexer.create(fh)
   lexed = Parser.readTokens(lexer)
   if Parser.parseFile(lexed) is:
-    f:EfFile(*):
+    f EfFile(*):
       EfctOutput.toFile(f)
       return True
     *:
@@ -11,6 +11,6 @@ compile(fileName) ->:
 
 main(args):
   for arg in args:
-    if compile(arg) is False:
+    if not compile(arg):
       return 1
   return 0
