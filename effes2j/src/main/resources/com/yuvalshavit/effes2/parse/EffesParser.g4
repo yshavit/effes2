@@ -27,7 +27,8 @@ importDeclaration:
 ;
 
 importDeclarations:
-  importDeclaration (COMMA importDeclaration)*
+  importDeclaration (COMMA importDeclaration)*              # ExplicitImports
+| ASTERISK                                                  # AllImports
 ;
 
 //------------------------------------------------------------------------------------------
@@ -79,6 +80,7 @@ statement:
 | BREAK NL                                                  # StatBreak
 | IDENT_NAME argsInvocation NL                              # StatMethodInvoke
 | IDENT_NAME EQUALS expression NL                           # StatAssign
+| IDENT_NAME EQUALS expressionMultiline                     # StatAssignMultiline
 | IDENT_NAME EQUALS QUESTION_MARK NL                        # StatVarDeclare
 | expression DOT IDENT_NAME argsInvocation NL               # StatQualifiedMethodInvoke
 | expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign

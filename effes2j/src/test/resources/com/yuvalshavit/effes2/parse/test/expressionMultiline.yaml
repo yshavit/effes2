@@ -20,3 +20,31 @@ expected:
           - PatternAny
         - ExprVariableOrMethodInvocation:
           - two (IDENT_NAME)
+---
+name: if-is two
+input: |
+  if toks is:
+      Cons(Arrow, @toks): True
+      *: False
+expected:
+  ExprIfIs:
+  - ExprVariableOrMethodInvocation:
+    - toks (IDENT_NAME)
+  - ExpressionMatchers:
+    - INDENT:
+      - ExpressionMatcher:
+        - MatcherWithPattern:
+          - PatternType:
+            - Cons (IDENT_TYPE)
+            - MatcherWithPattern:
+              - PatternType:
+                - Arrow (IDENT_TYPE)
+            - MatcherJustName:
+              - '@toks (IDENT_NAME)'
+        - ExprInstantiation:
+          - True (IDENT_TYPE)
+      - ExpressionMatcher:
+        - MatcherWithPattern:
+          - PatternAny
+        - ExprInstantiation:
+          - False (IDENT_TYPE)
