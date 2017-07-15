@@ -74,6 +74,7 @@ elseStat:
 statement:
   NO_OP NL                                                  # StatNoop
 | WHILE expression statementWhileConditionAndBody           # StatWhile
+| FOR IDENT_NAME IN expression COLON block                  # StatFor
 | IF expression statementIfConditionAndBody                 # StatIf
 | RETURN expression? NL                                     # StatReturn
 | RETURN expressionMultiline                                # StatReturnMultiline
