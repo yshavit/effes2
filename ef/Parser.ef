@@ -69,7 +69,7 @@ parseBlock(toks) -> :
     Cons(Dedent, @toks):
       return _Parsed(reverse(statements), toks)
     *:
-      if parseStatement(toks) is _Parsed(s, @toks)
+      if parseStatement(toks) is _Parsed(s, @toks):
         s = Cons(s, statements)
       else:
         return NoParse
@@ -121,12 +121,12 @@ parseArgs(toks) -> :
         Cons(CloseParen, @toks):
           names = reverse(names) # Cons pushes to back-to-front, we want front-to-back
           return _Parsed(names, toks)
-        Cons(Comma, Cons(Identifier(name), @toks))
+        Cons(Comma, Cons(Identifier(name), @toks)):
           names = Cons(name, names)
         *:
           return NoParse
     *:
-    return NoParse
+      return NoParse
 
 main(args) -> :
   Stdout.print(parseFile(readTokens(Lexer.create(Stdin))))
