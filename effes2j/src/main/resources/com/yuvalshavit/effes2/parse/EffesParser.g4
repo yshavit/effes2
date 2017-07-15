@@ -108,7 +108,10 @@ expression:
 | THIS                                                      # ExprThis
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
 | IDENT_NAME argsInvocation?                                # ExprVariableOrMethodInvocation
+| PAREN_OPEN expression PAREN_CLOSE                         # ExprParenthesis
 | expression DOT IDENT_NAME argsInvocation?                 # ExprQualifiedVariableOrMethodInvocation
+| expression (ASTERISK | SLASH) expression                  # ExprMultOrDivide
+| expression (PLUS | DASH) expression                       # ExprPlusOrMinus
 ;
 
 // Expressions that span more than one line. Each one of these should include its own NLs

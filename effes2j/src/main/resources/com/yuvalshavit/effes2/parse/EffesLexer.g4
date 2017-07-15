@@ -52,6 +52,7 @@ ARROW : '->' ;
 ASTERISK : '*' ;
 COLON : ':' ;
 COMMA : ',' ;
+DASH : '-' ;
 DOT : '.' ;
 EQUALS : '=' ;
 NO_OP : ':::' ;
