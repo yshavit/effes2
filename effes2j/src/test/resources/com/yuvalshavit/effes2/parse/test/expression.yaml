@@ -30,3 +30,55 @@ expected:
       - one (IDENT_NAME)
     - ExprVariableOrMethodInvocation:
       - two (IDENT_NAME)
+---
+name: list is String
+input: list is String
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - list (IDENT_NAME)
+  - MatcherWithPattern:
+    - PatternType:
+      - String (IDENT_TYPE)
+---
+name: list is Cons(*, *)
+input: list is Cons(*, *)
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - list (IDENT_NAME)
+  - MatcherWithPattern:
+    - PatternType:
+      - Cons (IDENT_TYPE)
+      - MatcherWithPattern:
+        - PatternAny
+      - MatcherWithPattern:
+        - PatternAny
+---
+name: list is Cons(head, *)
+input: list is Cons(head, *)
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - list (IDENT_NAME)
+  - MatcherWithPattern:
+    - PatternType:
+      - Cons (IDENT_TYPE)
+      - MatcherJustName:
+        - head (IDENT_NAME)
+      - MatcherWithPattern:
+        - PatternAny
+---
+name: list is Cons(head, tail)
+input: list is Cons(head, tail)
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - list (IDENT_NAME)
+  - MatcherWithPattern:
+    - PatternType:
+      - Cons (IDENT_TYPE)
+      - MatcherJustName:
+        - head (IDENT_NAME)
+      - MatcherJustName:
+        - tail (IDENT_NAME)
