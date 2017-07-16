@@ -6,7 +6,7 @@ input: |
 expected:
   ExprIfIs:
   - ExprVariableOrMethodInvocation:
-    - VarsAndMethods:
+    - QualifiedIdentName:
       - foo (IDENT_NAME)
   - ExpressionMatchers:
     - INDENT:
@@ -15,13 +15,13 @@ expected:
           - PatternType:
             - Bar (IDENT_TYPE)
         - ExprVariableOrMethodInvocation:
-          - VarsAndMethods:
+          - QualifiedIdentName:
             - one (IDENT_NAME)
       - ExpressionMatcher:
         - MatcherWithPattern:
           - PatternAny
         - ExprVariableOrMethodInvocation:
-          - VarsAndMethods:
+          - QualifiedIdentName:
             - two (IDENT_NAME)
 ---
 name: if-is two
@@ -32,7 +32,7 @@ input: |
 expected:
   ExprIfIs:
   - ExprVariableOrMethodInvocation:
-    - VarsAndMethods:
+    - QualifiedIdentName:
       - toks (IDENT_NAME)
   - ExpressionMatchers:
     - INDENT:

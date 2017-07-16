@@ -1,23 +1,17 @@
 package com.yuvalshavit.effes2.parse.test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.util.BitSet;
 import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
-import org.antlr.v4.runtime.ANTLRErrorListener;
-import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RecognitionException;
-import org.antlr.v4.runtime.Recognizer;
-import org.antlr.v4.runtime.atn.ATNConfigSet;
-import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.Tree;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -30,8 +24,13 @@ import com.yuvalshavit.effes2.parse.ParseUtils;
 public class ParseTest {
   public static final String PARSE_TESTS = "test1";
 
+  @Test
+  public void dataProviderWorks() throws IOException {
+    assertNotNull(readParseFiles());
+  }
+
   @DataProvider(name = PARSE_TESTS)
-  public Object[][] readParseFiles() throws IOException {
+  public static Object[][] readParseFiles() throws IOException {
     String[] files = read(".").split("\n");
     return Stream.of(files)
       .filter(f -> f.endsWith(".yaml"))
@@ -47,31 +46,19 @@ public class ParseTest {
   @Test(dataProvider = PARSE_TESTS)
   public void parse(String fileName, TestCase testCase) throws Exception {
     Function<EffesParser,ParserRuleContext> rule = ParseUtils.ruleByName(fileName);
-    Tree ast = ParseUtils.parse(testCase.input, rule, throwOnError);
+    StringBuilder errsSb = new StringBuilder();
+    Tree ast = ParseUtils.parse(testCase.input, rule, ((line, lineOffset, msg) -> errsSb.append(String.format("%d:%d: %s%n", line, lineOffset, msg))));
     ParseUtils.ToObjectPrinter toObjectPrinter = new ParseUtils.ToObjectPrinter();
     toObjectPrinter.walk(ast);
     Object result = toObjectPrinter.get();
 
+    String errMessages = errsSb.toString();
+    if (!errMessages.isEmpty()) {
+      System.err.println(errMessages); // we'll assertEquals on them later, but for now print them in case the prettyPrint fails first.
+    }
     assertEquals(ParseUtils.prettyPrint(result), ParseUtils.prettyPrint(testCase.expected));
+    assertEquals(errMessages, "", "error messages");
   }
-
-  private static final ANTLRErrorListener throwOnError = new ANTLRErrorListener() {
-    @Override
-    public void syntaxError(Recognizer<?,?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-      throw new RuntimeException("syntax error at " + line + ":" + charPositionInLine);
-    }
-
-    @Override
-    public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
-      throw new RuntimeException("ambiguity");
-    }
-
-    @Override
-    public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex, BitSet conflictingAlts, ATNConfigSet configs) { }
-
-    @Override
-    public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction, ATNConfigSet configs) { }
-  };
 
   private static String read(String name) {
     URL url = ParseTest.class.getResource(name);

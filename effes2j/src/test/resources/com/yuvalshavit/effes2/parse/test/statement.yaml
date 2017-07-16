@@ -7,7 +7,7 @@ expected:
   StatWhile:
   - ExprIsA:
     - ExprVariableOrMethodInvocation:
-      - VarsAndMethods:
+      - QualifiedIdentName:
         - list (IDENT_NAME)
     - MatcherWithPattern:
       - PatternType:
@@ -20,54 +20,54 @@ expected:
     - Block:
       - INDENT:
         - StatAssign:
-          - StatementVar:
+          - QualifiedIdentName:
             - rv (IDENT_NAME)
           - ExprInstantiation:
             - Cons (IDENT_TYPE)
             - ArgsInvocation:
               - ExprVariableOrMethodInvocation:
-                - VarsAndMethods:
+                - QualifiedIdentName:
                   - head (IDENT_NAME)
               - ExprVariableOrMethodInvocation:
-                - VarsAndMethods:
+                - QualifiedIdentName:
                   - rv (IDENT_NAME)
         - StatAssign:
-          - StatementVar:
+          - QualifiedIdentName:
             - list (IDENT_NAME)
           - ExprVariableOrMethodInvocation:
-            - VarsAndMethods:
+            - QualifiedIdentName:
               - head (IDENT_NAME)
 ---
 name: assign to cons
 input: rv = Cons(head, rv)
 expected:
   StatAssign:
-  - StatementVar:
+  - QualifiedIdentName:
     - rv (IDENT_NAME)
   - ExprInstantiation:
     - Cons (IDENT_TYPE)
     - ArgsInvocation:
       - ExprVariableOrMethodInvocation:
-        - VarsAndMethods:
+        - QualifiedIdentName:
           - head (IDENT_NAME)
       - ExprVariableOrMethodInvocation:
-        - VarsAndMethods:
+        - QualifiedIdentName:
           - rv (IDENT_NAME)
 ---
 name: assign var to var
 input: list = head
 expected:
   StatAssign:
-  - StatementVar:
+  - QualifiedIdentName:
     - list (IDENT_NAME)
   - ExprVariableOrMethodInvocation:
-    - VarsAndMethods:
+    - QualifiedIdentName:
       - head (IDENT_NAME)
 ---
 name: method invoke no args
 input: foo()
 expected:
   StatMethodInvoke:
-  - StatementVar:
+  - QualifiedIdentName:
     - foo (IDENT_NAME)
   - ArgsInvocation

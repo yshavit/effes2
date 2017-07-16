@@ -92,34 +92,33 @@ public class ParseUtils {
     };
   }
 
-  public static <T extends ParserRuleContext> T parse(CharStream charStream, Function<EffesParser, T> rule, ANTLRErrorListener... errorListeners) {
+  public static <T extends ParserRuleContext> T parse(CharStream charStream, Function<EffesParser, T> rule, SimpleParseErrorListener errorListener) {
+    ErrorListenerAdapter errorListenerAdapter = new ErrorListenerAdapter(errorListener);
     Lexer lexer = new EffesLexer(charStream);
     lexer.removeErrorListeners();
-    for (ANTLRErrorListener errorListener : errorListeners) {
-      lexer.addErrorListener(errorListener);
-    }
+    lexer.addErrorListener(errorListenerAdapter);
+
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     tokens.fill();
     EffesParser parser = new EffesParser(tokens);
     parser.removeErrorListeners();
-    for (ANTLRErrorListener errorListener : errorListeners) {
-      parser.addErrorListener(errorListener);
-    }
+    parser.addErrorListener(errorListenerAdapter);
     T ast = rule.apply(parser);
     if (ast == null) {
-      throw new RuntimeException("couldn't parse input");
+      errorListener.error(0, 0, "couldn't parse any input");
+    } else if (!lookForTokenAtEnd(tokens.getTokens(), ast.getStop())) {
+      errorListener.error(ast.getStop().getLine(), ast.getStop().getCharPositionInLine(), "Expected EOF but found extra input");
     }
-    lookForTokenAtEnd(tokens.getTokens(), ast.getStop());
     return ast;
   }
 
-  private static void lookForTokenAtEnd(List<Token> allTokens, Token needle) {
+  private static boolean lookForTokenAtEnd(List<Token> allTokens, Token needle) {
     // To handle things like expressions, which don't end in newlines, we'll look all the way to the last non-newline/dedent/EOF
     ListIterator<Token> lastTokensIter = allTokens.listIterator(allTokens.size());
     while (lastTokensIter.hasPrevious()) {
       Token token = lastTokensIter.previous();
       if (token == needle) {
-        return;
+        return true;
       }
       int tokType = token.getType();
       boolean isEndingWhitespace = tokType == EffesLexer.EOF || tokType == EffesLexer.NL || tokType == EffesLexer.DEDENT;
@@ -128,18 +127,16 @@ public class ParseUtils {
       }
     }
     // Either we ran out of tokens, or we found a non-dedent, non-newline, non-needle token
-    throw new RuntimeException("not all input consumed");
+    return false;
   }
 
-  public static <T extends ParserRuleContext> T parse(String input, Function<EffesParser,T> rule, ANTLRErrorListener... errorListeners) {
+  public static <T extends ParserRuleContext> T parse(String input, Function<EffesParser,T> rule, SimpleParseErrorListener errorListeners) {
     return parse(CharStreams.fromString(input), rule, errorListeners);
   }
 
   private static void parseAndPrint(Function<EffesParser,ParserRuleContext> rule, CharStream charStream) {
-    final boolean verbose = false;
-    Tree tree = parse(charStream, rule, new StderrParseListener(verbose));
-
-    if (tree != null) {
+    Tree tree = parse(charStream, rule, ((line, charPositionInLine, msg) -> System.err.printf("%d:%d %s%n", line, charPositionInLine, msg)));
+    if (tree != null && !systemPropertySet("noAst")) {
       ToObjectPrinter printer = new ToObjectPrinter();
       printer.walk(tree);
       Object get = printer.get();
@@ -241,45 +238,36 @@ public class ParseUtils {
     }
   }
 
-  private static class StderrParseListener implements ANTLRErrorListener {
-    private final boolean verbose;
+  private static boolean systemPropertySet(String name) {
+    String value = System.getProperty(name);
+    return value != null && (value.isEmpty() || Boolean.parseBoolean(value));
+  }
 
-    public StderrParseListener(boolean verbose) {
-      this.verbose = verbose;
+  private static class ErrorListenerAdapter implements ANTLRErrorListener {
+    private final SimpleParseErrorListener simpleHandler;
+
+    public ErrorListenerAdapter(SimpleParseErrorListener simpleHandler) {
+      this.simpleHandler = simpleHandler;
     }
 
     @Override
-    public void syntaxError(Recognizer<?,?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
-      System.err.printf("line %d:%d (%s) %s (%s)%n", line, charPositionInLine, offendingSymbol, msg, e);
+    public void syntaxError(Recognizer<?,?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException re) {
+      simpleHandler.error(line, charPositionInLine, msg);
     }
 
     @Override
     public void reportAmbiguity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, boolean exact, BitSet ambigAlts, ATNConfigSet configs) {
-      String exactDesc = exact ? "exact" : "inexact";
-      System.err.printf("%s ambiguity at %s (starting from %s): %s%n", exactDesc, token(recognizer, stopIndex), token(recognizer, startIndex), ambigAlts);
+      // nothing
     }
 
     @Override
     public void reportAttemptingFullContext(Parser recognizer, DFA dfa, int startIndex, int stopIndex, BitSet conflictingAlts, ATNConfigSet configs) {
-      if (verbose) {
-        System.err.printf("attempting full context between %d and %d%n", startIndex, stopIndex);
-      }
+      // nothing
     }
 
     @Override
     public void reportContextSensitivity(Parser recognizer, DFA dfa, int startIndex, int stopIndex, int prediction, ATNConfigSet configs) {
-      if (verbose) {
-        System.err.printf("context sensitivity between %d and %d%n", startIndex, stopIndex);
-      }
+      // nothing
     }
-
-    private String token(Parser recognizer, int idx) {
-      Token token = recognizer.getTokenStream().get(idx);
-      if (token == null) {
-        return "<unknown token>";
-      }
-      return String.format("%s at %d:%d", EffesParser.VOCABULARY.getDisplayName(token.getType()), token.getLine(), token.getCharPositionInLine());
-    }
-
   }
 }

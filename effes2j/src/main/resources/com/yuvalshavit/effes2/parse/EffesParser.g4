@@ -79,9 +79,9 @@ statement:
 | RETURN expression? NL                                     # StatReturn
 | RETURN expressionMultiline                                # StatReturnMultiline
 | BREAK NL                                                  # StatBreak
-| statementVar argsInvocation NL                            # StatMethodInvoke
-| statementVar EQUALS expression NL                         # StatAssign
-| statementVar EQUALS expressionMultiline                   # StatAssignMultiline
+| qualifiedIdentName argsInvocation NL                      # StatMethodInvoke
+| qualifiedIdentName EQUALS expression NL                   # StatAssign
+| qualifiedIdentName EQUALS expressionMultiline             # StatAssignMultiline
 | IDENT_NAME EQUALS QUESTION_MARK NL                        # StatVarDeclare
 | expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
 ;
@@ -89,10 +89,6 @@ statement:
 statementIfConditionAndBody:
   COLON block elseStat?                                     # IfElseSimple
 | IS COLON blockMatchers                                    # IfMatchMulti
-;
-
-statementVar:
-  ( (varsAndMethods | IDENT_TYPE) DOT)? IDENT_NAME
 ;
 
 statementWhileConditionAndBody:
@@ -110,8 +106,8 @@ expression:
 | QUOTED_STRING                                             # ExprStringLiteral
 | INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis
+| qualifiedIdentName argsInvocation?                        # ExprVariableOrMethodInvocation
 | IDENT_TYPE argsInvocation?                                # ExprInstantiation
-| varsAndMethods                                            # ExprVariableOrMethodInvocation
 | PAREN_OPEN expression PAREN_CLOSE                         # ExprParenthesis
 | NOT expression                                            # ExprNegation
 | expression (ASTERISK | SLASH) expression                  # ExprMultOrDivide
@@ -124,10 +120,10 @@ expressionMultiline:
   IF expression IS COLON expressionMatchers                 # ExprIfIs
 ;
 
-varsAndMethods:
+qualifiedIdentName:
  (IDENT_TYPE DOT)?
- IDENT_NAME argsInvocation?
- (DOT IDENT_NAME argsInvocation?)*
+ (IDENT_NAME argsInvocation? DOT)*
+ IDENT_NAME
 ;
 
 //------------------------------------------------------------------------------------------
