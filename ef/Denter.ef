@@ -63,7 +63,7 @@ create(in) -> :
   return Denter(Cons(0, Empty), Empty, False)
 
 main(args) -> :
-  denter = create(Stdio.in)
+  denter = create(Stdio.stdin)
   while denter.next() is:
     False:
       break

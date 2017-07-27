@@ -16,7 +16,7 @@ expected:
           - head (IDENT_NAME)
         - MatcherWithPattern:
           - PatternAny
-  - WhileSimple:
+  - WhileBodySimple:
     - Block:
       - INDENT:
         - StatAssign:
@@ -38,12 +38,47 @@ expected:
             - QualifiedIdentName:
               - head (IDENT_NAME)
 ---
-name: while Stdio.in.readLine() is line String
+name: while Stdio.stdin.readLine() is line String
 input: |
-  while Stdio.in.readLine() is line String:
+  while Stdio.stdin.readLine() is line String:
     :::
-expected: ''
-
+expected:
+  StatWhile:
+  - ExprIsA:
+    - ExprVariableOrMethodInvocation:
+      - QualifiedIdentName:
+        - Stdio (IDENT_TYPE)
+        - stdin (IDENT_NAME)
+        - readLine (IDENT_NAME)
+      - ArgsInvocation
+    - MatcherWithPattern:
+      - line (IDENT_NAME)
+      - PatternType:
+        - String (IDENT_TYPE)
+  - WhileBodySimple:
+    - Block:
+      - INDENT:
+        - StatNoop
+---
+name: while Stdio.stdin.readLine() is line
+input: |
+  while Stdio.stdin.readLine() is line:
+    :::
+expected:
+  StatWhile:
+  - ExprIsA:
+    - ExprVariableOrMethodInvocation:
+      - QualifiedIdentName:
+        - Stdio (IDENT_TYPE)
+        - stdin (IDENT_NAME)
+        - readLine (IDENT_NAME)
+      - ArgsInvocation
+    - MatcherJustName:
+      - line (IDENT_NAME)
+  - WhileBodySimple:
+    - Block:
+      - INDENT:
+        - StatNoop
 ---
 name: assign to cons
 input: rv = Cons(head, rv)
