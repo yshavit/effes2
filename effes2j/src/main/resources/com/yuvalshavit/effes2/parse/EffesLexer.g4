@@ -71,6 +71,7 @@ PLUS : '+' ;
 QUESTION_MARK : '?' ;
 REGEX_START : '~/' -> mode(REGEX_MODE) ;
 SLASH : '/' ;
+SUCH_THAT: ':?' ;
 
 //------------------------------------------------------------------------------------------
 // identifiers

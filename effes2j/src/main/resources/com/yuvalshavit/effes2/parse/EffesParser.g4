@@ -164,9 +164,12 @@ expressionMatcher:
   matcher COLON expression NL
 ;
 
+// Logically, this is: "IDENT_NAME? matcherStuff?" except that we need at least one of them.
+// If we had this as just one inlined variant, then the empty string would parse as a matcher,
+// which we don't want. So, we take the "just name, no matcher" bit and make it its own rule.
 matcher:
-  IDENT_NAME? matcherPattern (PIPE expression)?                       # MatcherWithPattern
-| IDENT_NAME                                                          # MatcherJustName
+  IDENT_NAME? matcherPattern (SUCH_THAT expression)?                  # MatcherWithPattern
+| IDENT_NAME (SUCH_THAT expression)?                                  # MatcherJustName
 ;
 
 matcherPattern:
