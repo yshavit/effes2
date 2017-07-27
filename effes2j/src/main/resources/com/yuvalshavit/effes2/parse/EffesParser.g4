@@ -99,6 +99,15 @@ statementWhileConditionAndBody:
 //------------------------------------------------------------------------------------------
 // Expressions
 
+cmp:
+  CMP_EQ
+| CMP_GE
+| CMP_GT
+| CMP_LE
+| CMP_LT
+| CMP_NE
+;
+
 // Note: It's important that these expressions never contain a colon, so that matchers
 // within the expression are unambiguous.
 expression:
@@ -112,6 +121,7 @@ expression:
 | NOT expression                                            # ExprNegation
 | expression (ASTERISK | SLASH) expression                  # ExprMultOrDivide
 | expression (PLUS | DASH) expression                       # ExprPlusOrMinus
+| expression cmp expression                                 # ExprCmp
 ;
 
 // Expressions that span more than one line. Each one of these should include its own NLs
@@ -121,8 +131,8 @@ expressionMultiline:
 ;
 
 qualifiedIdentName:
- (IDENT_TYPE DOT)?
- (IDENT_NAME argsInvocation? DOT)*
+ ((IDENT_TYPE | THIS) DOT)?         // TODO need to refactor this so that the "THIS" won't go unnoticed
+ (IDENT_NAME argsInvocation? DOT)*  // TODO need to refactor this out, so that the code can match each name+arg pair
  IDENT_NAME
 ;
 

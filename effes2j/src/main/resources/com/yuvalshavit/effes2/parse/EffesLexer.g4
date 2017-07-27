@@ -52,6 +52,12 @@ WHILE : 'while' ;
 // operators and punctuation
 ARROW : '->' ;
 ASTERISK : '*' ;
+CMP_EQ: '==' ;
+CMP_GE: '>=' ;
+CMP_GT: '>' ;
+CMP_LE: '<=' ;
+CMP_LT: '<' ;
+CMP_NE: '!=' ;
 COLON : ':' ;
 COMMA : ',' ;
 DASH : '-' ;

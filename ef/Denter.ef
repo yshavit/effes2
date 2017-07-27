@@ -21,7 +21,7 @@ type Denter(_in, _indents, _pending, _needTrailingNewline):
     # This is a while-is loop. The evaluation/assignment is done at the start of each iteration.
     # Each of the matchers must end in "continue", "break" or "return"
     while _in.readLine() is:
-      match : /^(\s*)(\S.*)$/ :
+      match : ~/^(\s*)(\S.*)$/ :
         m1 = match.group(1)
         m2 = match.group(2)
         assume m1 is String

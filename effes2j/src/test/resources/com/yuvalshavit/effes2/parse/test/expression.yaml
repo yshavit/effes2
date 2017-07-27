@@ -160,3 +160,15 @@ expected:
     - ExprVariableOrMethodInvocation:
       - QualifiedIdentName:
         - ofUs (IDENT_NAME)
+---
+input: _pending
+expected:
+  ExprVariableOrMethodInvocation:
+  - QualifiedIdentName:
+    - _pending (IDENT_NAME)
+---
+input: this._pending
+expected:
+  ExprVariableOrMethodInvocation:
+  - QualifiedIdentName:
+    - _pending (IDENT_NAME)
