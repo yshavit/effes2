@@ -131,9 +131,18 @@ expressionMultiline:
 ;
 
 qualifiedIdentName:
- ((IDENT_TYPE | THIS) DOT)?         // TODO need to refactor this so that the "THIS" won't go unnoticed
- (IDENT_NAME argsInvocation? DOT)*  // TODO need to refactor this out, so that the code can match each name+arg pair
+ (qualifiedIdentNameStart DOT)?
+ (qualifiedIdentNameMiddle DOT)*
  IDENT_NAME
+;
+
+qualifiedIdentNameMiddle:
+  IDENT_NAME argsInvocation?
+;
+
+qualifiedIdentNameStart:
+  IDENT_TYPE                                                # QualifiedIdentType
+| THIS                                                      # QualifiedIdentThis
 ;
 
 //------------------------------------------------------------------------------------------

@@ -47,8 +47,10 @@ expected:
   - ExprIsA:
     - ExprVariableOrMethodInvocation:
       - QualifiedIdentName:
-        - Stdio (IDENT_TYPE)
-        - stdin (IDENT_NAME)
+        - QualifiedIdentType:
+          - Stdio (IDENT_TYPE)
+        - QualifiedIdentNameMiddle:
+          - stdin (IDENT_NAME)
         - readLine (IDENT_NAME)
       - ArgsInvocation
     - MatcherWithPattern:
@@ -69,8 +71,10 @@ expected:
   - ExprIsA:
     - ExprVariableOrMethodInvocation:
       - QualifiedIdentName:
-        - Stdio (IDENT_TYPE)
-        - stdin (IDENT_NAME)
+        - QualifiedIdentType:
+          - Stdio (IDENT_TYPE)
+        - QualifiedIdentNameMiddle:
+          - stdin (IDENT_NAME)
         - readLine (IDENT_NAME)
       - ArgsInvocation
     - MatcherJustName:

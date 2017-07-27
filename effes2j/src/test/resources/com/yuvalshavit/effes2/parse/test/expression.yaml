@@ -106,15 +106,18 @@ input: Something.list
 expected:
   ExprVariableOrMethodInvocation:
   - QualifiedIdentName:
-    - Something (IDENT_TYPE)
+    - QualifiedIdentType:
+      - Something (IDENT_TYPE)
     - list (IDENT_NAME)
 ---
 input: Stdio.stdin.readLine()
 expected:
   ExprVariableOrMethodInvocation:
   - QualifiedIdentName:
-    - Stdio (IDENT_TYPE)
-    - stdin (IDENT_NAME)
+    - QualifiedIdentType:
+      - Stdio (IDENT_TYPE)
+    - QualifiedIdentNameMiddle:
+      - stdin (IDENT_NAME)
     - readLine (IDENT_NAME)
   - ArgsInvocation
 ---
@@ -123,8 +126,10 @@ expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
     - QualifiedIdentName:
-      - Stdio (IDENT_TYPE)
-      - stdin (IDENT_NAME)
+      - QualifiedIdentType:
+        - Stdio (IDENT_TYPE)
+      - QualifiedIdentNameMiddle:
+        - stdin (IDENT_NAME)
       - readLine (IDENT_NAME)
     - ArgsInvocation
   - MatcherWithPattern:
@@ -136,8 +141,10 @@ expected:
   ExprIsA:
   - ExprVariableOrMethodInvocation:
     - QualifiedIdentName:
-      - Stdio (IDENT_TYPE)
-      - stdin (IDENT_NAME)
+      - QualifiedIdentType:
+        - Stdio (IDENT_TYPE)
+      - QualifiedIdentNameMiddle:
+        - stdin (IDENT_NAME)
       - readLine (IDENT_NAME)
     - ArgsInvocation
   - MatcherWithPattern:
@@ -171,4 +178,19 @@ input: this._pending
 expected:
   ExprVariableOrMethodInvocation:
   - QualifiedIdentName:
+    - QualifiedIdentThis
     - _pending (IDENT_NAME)
+---
+input: this.var1.meth().var2.var3
+expected:
+  ExprVariableOrMethodInvocation:
+  - QualifiedIdentName:
+    - QualifiedIdentThis
+    - QualifiedIdentNameMiddle:
+      - var1 (IDENT_NAME)
+    - QualifiedIdentNameMiddle:
+      - meth (IDENT_NAME)
+      - ArgsInvocation
+    - QualifiedIdentNameMiddle:
+      - var2 (IDENT_NAME)
+    - var3 (IDENT_NAME)
