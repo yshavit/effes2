@@ -63,7 +63,16 @@ typeDeclaration:
 //------------------------------------------------------------------------------------------
 // Statements
 block:
-  INDENT (statement)+ DEDENT
+  INDENT
+  (blockStop | (statement+ blockStop?) )
+  DEDENT
+;
+
+blockStop:
+  BREAK NL
+| CONTINUE NL
+| RETURN expression? NL
+| RETURN expressionMultiline
 ;
 
 elseStat:
@@ -76,9 +85,6 @@ statement:
 | WHILE expression statementWhileConditionAndBody           # StatWhile
 | FOR IDENT_NAME IN expression COLON block                  # StatFor
 | IF expression statementIfConditionAndBody                 # StatIf
-| RETURN expression? NL                                     # StatReturn
-| RETURN expressionMultiline                                # StatReturnMultiline
-| BREAK NL                                                  # StatBreak
 | qualifiedIdentName argsInvocation NL                      # StatMethodInvoke
 | qualifiedIdentName EQUALS expression NL                   # StatAssign
 | qualifiedIdentName EQUALS expressionMultiline             # StatAssignMultiline
