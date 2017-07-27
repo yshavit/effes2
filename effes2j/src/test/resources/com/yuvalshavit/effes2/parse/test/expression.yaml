@@ -194,3 +194,13 @@ expected:
     - QualifiedIdentNameMiddle:
       - var2 (IDENT_NAME)
     - var3 (IDENT_NAME)
+---
+name: static method
+input: Foo.bar()
+expected:
+  ExprVariableOrMethodInvocation:
+  - QualifiedIdentName:
+    - QualifiedIdentType:
+      - Foo (IDENT_TYPE)
+    - bar (IDENT_NAME)
+  - ArgsInvocation

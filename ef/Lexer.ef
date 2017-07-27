@@ -21,8 +21,8 @@ type CloseParen
 
 type _StringParse(parsed, tail)
 
-create(in) -> :
-  return Lexer(Denter(in), Empty)
+create(stream) -> :
+  return Lexer(Denter.create(stream), Empty)
 
 type Lexer(_denter, _pending):
   next() -> :

@@ -36,7 +36,7 @@ type Denter(_in, _indents, _pending, _needTrailingNewline):
           this._indents = tail
           this._pending = Cons(Dedent, this._pending)
         # Add an indent if needed
-        if this._indents is Cons(head: head < indentCount, *):
+        if this._indents is Cons(head:? head < indentCount, *):
           this._indents = Cons(indentCount, this._indents)
           this._pending = Cons(Indent, this._pending)
         # Finally, append the rest of the string, and reverse this._pending.
@@ -59,8 +59,8 @@ type Denter(_in, _indents, _pending, _needTrailingNewline):
       *:
         ::: # blank line
 
-create(in) -> :
-  return Denter(Cons(0, Empty), Empty, False)
+create(stream) -> :
+  return Denter(Cons(0, Empty), Empty, stream, False)
 
 main(args) -> :
   denter = create(Stdio.stdin)
