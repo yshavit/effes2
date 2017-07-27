@@ -107,7 +107,7 @@ public class ParseUtils {
     if (ast == null) {
       errorListener.error(0, 0, "couldn't parse any input");
     } else if (!lookForTokenAtEnd(tokens.getTokens(), ast.getStop())) {
-      errorListener.error(ast.getStop().getLine(), ast.getStop().getCharPositionInLine(), "Expected EOF but found extra input");
+      errorListener.error(ast.getStop().getLine(), ast.getStop().getCharPositionInLine() + 1, "Expected EOF but found extra input"); // charPos is 0-indexed
     }
     return ast;
   }
@@ -252,7 +252,7 @@ public class ParseUtils {
 
     @Override
     public void syntaxError(Recognizer<?,?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException re) {
-      simpleHandler.error(line, charPositionInLine, msg);
+      simpleHandler.error(line, charPositionInLine + 1, msg); // charPos is 0-indexed
     }
 
     @Override

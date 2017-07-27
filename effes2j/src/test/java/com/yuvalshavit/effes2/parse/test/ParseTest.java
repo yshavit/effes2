@@ -47,7 +47,10 @@ public class ParseTest {
   public void parse(String fileName, TestCase testCase) throws Exception {
     Function<EffesParser,ParserRuleContext> rule = ParseUtils.ruleByName(fileName);
     StringBuilder errsSb = new StringBuilder();
-    Tree ast = ParseUtils.parse(testCase.input, rule, ((line, lineOffset, msg) -> errsSb.append(String.format("%d:%d: %s%n", line, lineOffset, msg))));
+    Tree ast = ParseUtils.parse(
+      testCase.input,
+      rule,
+      ((line, lineOffset, msg) -> errsSb.append(String.format("%s error at <%s> %d:%d: %s%n", getClass().getSimpleName(), testCase, line, lineOffset, msg))));
     ParseUtils.ToObjectPrinter toObjectPrinter = new ParseUtils.ToObjectPrinter();
     toObjectPrinter.walk(ast);
     Object result = toObjectPrinter.get();
@@ -80,7 +83,7 @@ public class ParseTest {
 
     @Override
     public String toString() {
-      return name;
+      return name == null ? input : name;
     }
   }
 

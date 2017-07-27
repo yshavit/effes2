@@ -109,7 +109,6 @@ expected:
     - Something (IDENT_TYPE)
     - list (IDENT_NAME)
 ---
-name: Stdio.stdin.readLine()
 input: Stdio.stdin.readLine()
 expected:
   ExprVariableOrMethodInvocation:
@@ -118,6 +117,33 @@ expected:
     - stdin (IDENT_NAME)
     - readLine (IDENT_NAME)
   - ArgsInvocation
+---
+input: Stdio.stdin.readLine() is String
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - QualifiedIdentName:
+      - Stdio (IDENT_TYPE)
+      - stdin (IDENT_NAME)
+      - readLine (IDENT_NAME)
+    - ArgsInvocation
+  - MatcherWithPattern:
+    - PatternType:
+      - String (IDENT_TYPE)
+---
+input: Stdio.stdin.readLine() is line String
+expected:
+  ExprIsA:
+  - ExprVariableOrMethodInvocation:
+    - QualifiedIdentName:
+      - Stdio (IDENT_TYPE)
+      - stdin (IDENT_NAME)
+      - readLine (IDENT_NAME)
+    - ArgsInvocation
+  - MatcherWithPattern:
+    - line (IDENT_NAME)
+    - PatternType:
+      - String (IDENT_TYPE)
 ---
 name: 'False'
 input: 'False'

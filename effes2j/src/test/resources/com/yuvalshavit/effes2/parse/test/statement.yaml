@@ -38,6 +38,13 @@ expected:
             - QualifiedIdentName:
               - head (IDENT_NAME)
 ---
+name: while Stdio.in.readLine() is line String
+input: |
+  while Stdio.in.readLine() is line String:
+    :::
+expected: ''
+
+---
 name: assign to cons
 input: rv = Cons(head, rv)
 expected:
