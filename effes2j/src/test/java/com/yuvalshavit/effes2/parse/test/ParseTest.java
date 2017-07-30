@@ -20,6 +20,7 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.common.io.ByteStreams;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.parse.ParseUtils;
+import com.yuvalshavit.effes2.parse.ToObjectPrinter;
 
 public class ParseTest {
   public static final String PARSE_TESTS = "test1";
@@ -51,7 +52,7 @@ public class ParseTest {
       testCase.input,
       rule,
       ((line, lineOffset, msg) -> errsSb.append(String.format("%s error at <%s> %d:%d: %s%n", getClass().getSimpleName(), testCase, line, lineOffset, msg))));
-    ParseUtils.ToObjectPrinter toObjectPrinter = new ParseUtils.ToObjectPrinter();
+    ToObjectPrinter toObjectPrinter = new ToObjectPrinter();
     toObjectPrinter.walk(ast);
     Object result = toObjectPrinter.get();
 
