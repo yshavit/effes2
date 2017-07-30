@@ -180,12 +180,12 @@ public class ParseUtils {
     }
 
     @Override
-    protected void indent() {
+    protected void tokenIndent() {
       addNode("INDENT");
     }
 
     @Override
-    protected void dedent() {
+    protected void tokenDedent() {
       path.pop();
     }
 
@@ -215,7 +215,7 @@ public class ParseUtils {
 
     @Override
     protected void endRuleWithChildren() {
-      dedent();
+      tokenDedent();
     }
 
     private void add(Object toAdd) {

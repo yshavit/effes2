@@ -27,9 +27,9 @@ public abstract class AbstractAstPrinter {
       if (symbol != null) {
         int symbolType = symbol.getType();
         if (symbolType == INDENT_TOKEN_TYPE) {
-          indent();
+          tokenIndent();
         } else if (symbolType == DEDENT_TOKEN_TYPE) {
-          dedent();
+          tokenDedent();
         } else {
           String tokenName = EffesParser.VOCABULARY.getSymbolicName(symbolType);
           // newlines aren't literal, since they include the subsequent indentation; but we can treat them as literal, since the INDENT/DEDENT tell us the rest
@@ -84,11 +84,11 @@ public abstract class AbstractAstPrinter {
     return symbolType != EffesParser.NL && EffesParser.VOCABULARY.getLiteralName(symbolType) == null;
   }
 
-  protected abstract void indent();
-  protected abstract void dedent();
   protected abstract void token(String tokenName);
   protected abstract void token(String tokenName, String tokenText);
-  protected abstract void error(String text);
+  protected abstract void tokenIndent();
+  protected abstract void tokenDedent();
   protected abstract void rule(String ruleName, boolean hasChildren);
+  protected abstract void error(String text);
   protected abstract void endRuleWithChildren();
 }
