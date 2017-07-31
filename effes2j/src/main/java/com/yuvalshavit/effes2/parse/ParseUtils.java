@@ -2,16 +2,20 @@ package com.yuvalshavit.effes2.parse;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATNConfigSet;
 import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.Tree;
 import org.yaml.snakeyaml.DumperOptions;
 import org.yaml.snakeyaml.Yaml;
 
@@ -34,8 +38,7 @@ public class ParseUtils {
         }
         parseAndPrint(rule, CharStreams.fromString(sb.toString()));
       }
-    }
-    else {
+    } else {
       for (String arg : args) {
         parseAndPrintFile(new File(arg));
       }
@@ -91,7 +94,7 @@ public class ParseUtils {
     };
   }
 
-  public static <T extends ParserRuleContext> T parse(CharStream charStream, Function<EffesParser, T> rule, SimpleParseErrorListener errorListener) {
+  public static <T extends ParserRuleContext> T parse(CharStream charStream, Function<EffesParser,T> rule, SimpleParseErrorListener errorListener) {
     ErrorListenerAdapter errorListenerAdapter = new ErrorListenerAdapter(errorListener);
     Lexer lexer = new EffesLexer(charStream);
     lexer.removeErrorListeners();
@@ -134,12 +137,18 @@ public class ParseUtils {
   }
 
   private static void parseAndPrint(Function<EffesParser,ParserRuleContext> rule, CharStream charStream) {
-    Tree tree = parse(charStream, rule, ((line, charPositionInLine, msg) -> System.err.printf("%d:%d %s%n", line, charPositionInLine, msg)));
+    ParserRuleContext tree = parse(charStream, rule, ((line, charPositionInLine, msg) -> System.err.printf("%d:%d %s%n", line, charPositionInLine, msg)));
     if (tree != null && !systemPropertySet("noAst")) {
-      ToObjectPrinter printer = new ToObjectPrinter();
-      printer.walk(tree);
-      Object get = printer.get();
-      System.out.println(prettyPrint(get));
+      if (systemPropertySet("asEf")) {
+        PrintWriter out = new PrintWriter(System.out);
+        EfPrinter.write(out, tree);
+        out.flush();
+      } else {
+        ToObjectPrinter printer = new ToObjectPrinter();
+        printer.walk(tree);
+        Object get = printer.get();
+        System.out.println(prettyPrint(get));
+      }
     }
     System.out.println();
   }

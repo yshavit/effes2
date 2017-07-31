@@ -77,7 +77,7 @@ SUCH_THAT: ':?' ;
 //------------------------------------------------------------------------------------------
 // identifiers
 IDENT_TYPE : '_'* [A-Z] GENERIC_IDENT_CHAR* [a-z] GENERIC_IDENT_CHAR* ;
-IDENT_NAME : '@' ? '_'* [a-z] GENERIC_IDENT_CHAR* ;
+IDENT_NAME : '@' ? '_'* [a-z] GENERIC_IDENT_CHAR* ; // TODO: make '@' its own token, so the parser enforces its correct use? or no, for the sake of better error messages?
 IDENT_GENERIC : [A-Z]+ ;
 fragment GENERIC_IDENT_CHAR : [A-Za-z0-9_];
 
