@@ -1,8 +1,6 @@
 package com.yuvalshavit.effes2.parse;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +34,7 @@ public class ParseUtils {
         if (rule == null) {
           continue;
         }
-        parseAndPrint(rule, CharStreams.fromString(sb.toString()));
+        parseAndPrint(rule, CharStreams.fromString(sb.toString()), System.out);
       }
     } else {
       for (String arg : args) {
@@ -55,7 +53,9 @@ public class ParseUtils {
           System.out.print('=');
         }
         System.out.println();
-        parseAndPrint(EffesParser::file, CharStreams.fromFileName(path, StandardCharsets.UTF_8));
+        try (PrintStream out = outputStream(file)) {
+          parseAndPrint(EffesParser::file, CharStreams.fromFileName(path, StandardCharsets.UTF_8), out);
+        }
         System.out.println();
       }
     } else {
@@ -74,6 +74,21 @@ public class ParseUtils {
         parseAndPrintFile(content);
       }
     }
+  }
+
+  private static PrintStream outputStream(File efFile) throws FileNotFoundException {
+    final OutputStream outStream;
+    if (systemPropertySet("toFile")) {
+      outStream = new FileOutputStream(new File(efFile.getParent(), efFile.getName() + ".generated"));
+    } else {
+      outStream = new FilterOutputStream(System.out) {
+        @Override
+        public void close() throws IOException {
+          // nothing
+        }
+      };
+    }
+    return new PrintStream(outStream);
   }
 
   public static Function<EffesParser,ParserRuleContext> ruleByName(String ruleName) {
@@ -136,18 +151,18 @@ public class ParseUtils {
     return parse(CharStreams.fromString(input), rule, errorListeners);
   }
 
-  private static void parseAndPrint(Function<EffesParser,ParserRuleContext> rule, CharStream charStream) {
-    ParserRuleContext tree = parse(charStream, rule, ((line, charPositionInLine, msg) -> System.err.printf("%d:%d %s%n", line, charPositionInLine, msg)));
+  private static void parseAndPrint(Function<EffesParser,ParserRuleContext> rule, CharStream in, PrintStream out) {
+    ParserRuleContext tree = parse(in, rule, ((line, charPositionInLine, msg) -> System.err.printf("%d:%d %s%n", line, charPositionInLine, msg)));
     if (tree != null && !systemPropertySet("noAst")) {
       if (systemPropertySet("asEf")) {
-        PrintWriter out = new PrintWriter(System.out);
-        EfPrinter.write(out, tree);
-        out.flush();
+        PrintWriter writer = new PrintWriter(out);
+        EfPrinter.write(writer, tree);
+        writer.flush();
       } else {
         ToObjectPrinter printer = new ToObjectPrinter();
         printer.walk(tree);
         Object get = printer.get();
-        System.out.println(prettyPrint(get));
+        out.println(prettyPrint(get));
       }
     }
     System.out.println();
