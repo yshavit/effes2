@@ -13,7 +13,7 @@ type CtorCall(typeName, args)
 type NoParse
 type _Parsed(element, remainingTokens)
 
-readTokens(lexer) -> :
+readTokens(lexer) ->:
   toks = Empty
   while lexer.next() is:
     False:
@@ -21,7 +21,7 @@ readTokens(lexer) -> :
     tok:
       toks = Cons(tok, toks)
 
-parseFile(toks) -> :
+parseFile(toks) ->:
   types = Empty
   methods = Empty
   while toks is not Empty:
@@ -35,7 +35,7 @@ parseFile(toks) -> :
   methods = reverse(methods)
   return EfFile(types, methods)
 
-parseType(toks) -> :
+parseType(toks) ->:
   if toks is:
     Cons(Cons(KwType, TypeName(name)), @toks):
       args = Empty
@@ -47,7 +47,7 @@ parseType(toks) -> :
     *:
       return NoParse
 
-parseMethod(toks) -> :
+parseMethod(toks) ->:
   if toks is not Cons(Identifier(@name), @toks):
     return NoParse
   if parseArgs(toks) is not _Parsed(args, @toks):
@@ -61,7 +61,7 @@ parseMethod(toks) -> :
     return NoParse
   return _Parsed(EfMethod(name, args, hasRv, statements), toks)
 
-parseBlock(toks) -> :
+parseBlock(toks) ->:
   if toks is not Cons(Indent, @toks):
     return NoParse
   statements = Empty
@@ -93,7 +93,7 @@ parseStatement(toks):
   else:
     return NoParse
 
-parseExpression(toks) -> :
+parseExpression(toks) ->:
   # ctor
   if toks is Cons(TypeName(@name), @toks):
     args = Empty
@@ -103,7 +103,7 @@ parseExpression(toks) -> :
   else:
     return NoParse
 
-parseArgs(toks) -> :
+parseArgs(toks) ->:
   if toks is:
     Cons(OpenParen, Cons(CloseParen, @toks)):
       return _Parsed(Empty, toks)
@@ -128,6 +128,6 @@ parseArgs(toks) -> :
     *:
       return NoParse
 
-main(args) -> :
+main(args) ->:
   Stdout.print(parseFile(readTokens(Lexer.create(Stdin))))
   return 0

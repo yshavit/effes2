@@ -189,9 +189,10 @@ public class EfPrinter {
       write("type %s", ctx.IDENT_TYPE());
       handleIfNotNull(ctx.argsDeclaration(), this::seeArgsDeclaration);
       List<EffesParser.MethodDeclarationContext> methodDeclarations = ctx.methodDeclaration();
-      if (methodDeclarations == null) {
+      if (methodDeclarations == null || methodDeclarations.isEmpty()) {
         nl();
       } else {
+        write(':');
         nl(1);
         methodDeclarations.forEach(this::seeMethodDeclaration);
         nl(-1);
@@ -348,7 +349,7 @@ public class EfPrinter {
       dispatch(ctx.expression());
       write(" is ");
       if (ctx.NOT() != null) {
-        write(" not ");
+        write("not ");
       }
       dispatch(ctx.matcher());
     }
@@ -422,7 +423,7 @@ public class EfPrinter {
 
     @Override
     protected void seeExprIfIs(EffesParser.ExprIfIsContext ctx) {
-      write(" if ");
+      write("if ");
       dispatch(ctx.expression());
       write(" is:");
       seeExpressionMatchers(ctx.expressionMatchers());
@@ -480,7 +481,7 @@ public class EfPrinter {
     @Override
     protected void seeExpressionMatcher(EffesParser.ExpressionMatcherContext ctx) {
       dispatch(ctx.matcher());
-      write(':');
+      write(": ");
       dispatch(ctx.expression());
       nl();
     }
@@ -492,7 +493,7 @@ public class EfPrinter {
       }
       dispatch(ctx.matcherPattern());
       if (ctx.SUCH_THAT() != null) {
-        write(":?");
+        write(":? ");
         dispatch(ctx.expression());
       }
     }
@@ -501,7 +502,7 @@ public class EfPrinter {
     protected void seeMatcherJustName(EffesParser.MatcherJustNameContext ctx) {
       write(ctx.IDENT_NAME());
       if (ctx.SUCH_THAT() != null) {
-        write(":?");
+        write(":? ");
         dispatch(ctx.expression());
       }
     }
@@ -516,7 +517,7 @@ public class EfPrinter {
       write(ctx.IDENT_TYPE());
       if (ctx.PAREN_OPEN() != null) {
         write('(');
-        handleMany(ctx.matcher(), this::dispatch);
+        handleManyWithCommas(ctx.matcher(), this::dispatch);
         write(')');
       }
     }
