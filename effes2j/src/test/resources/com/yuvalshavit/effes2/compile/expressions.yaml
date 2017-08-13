@@ -4,4 +4,4 @@ symbols:
     reg: 7
     type: null
 expect:
-  push 7
+  pvar 7

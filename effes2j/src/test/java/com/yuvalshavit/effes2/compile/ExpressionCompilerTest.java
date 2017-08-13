@@ -5,12 +5,10 @@ import static org.testng.Assert.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.yaml.snakeyaml.Yaml;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.ParseChecker;
@@ -34,7 +32,7 @@ public class ExpressionCompilerTest {
       StringBuilder sb = new StringBuilder();
       ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), op -> sb.append(op).append('\n'));
       compiler.apply(expr);
-      assertEquals(sb.toString(), testCase.expect);
+      assertEquals(sb.toString().trim(), testCase.expect);
     });
   }
 
