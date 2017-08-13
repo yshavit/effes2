@@ -64,7 +64,8 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprNegationContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    apply(input.expression());
+    out.negate();
   }
 
   @Dispatched

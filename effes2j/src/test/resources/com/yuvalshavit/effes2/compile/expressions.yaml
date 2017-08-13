@@ -49,3 +49,11 @@ symbols:
     reg: 3
 expect: |
   pvar 3
+---
+input: not foo
+symbols:
+  foo:
+    reg: 0
+expect: |
+  pvar 0
+  call_Boolean:negate
