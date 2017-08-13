@@ -16,3 +16,29 @@ expect: |
   pvar 7
   pvar 0
   call_Integer:add
+---
+input: a * (b - c)
+symbols:
+  a:
+    reg: 0
+  b:
+    reg: 1
+  c:
+    reg: 2
+expect: |
+  pvar 0
+  pvar 1
+  pvar 2
+  call_Integer:sub
+  call_Integer:mult
+---
+input: a < b
+symbols:
+  a:
+    reg: 0
+  b:
+    reg: 1
+expect: |
+  pvar 0
+  pvar 1
+  call_Integer:lt

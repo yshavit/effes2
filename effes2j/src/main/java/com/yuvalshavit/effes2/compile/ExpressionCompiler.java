@@ -25,7 +25,30 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprCmpContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    final Runnable op;
+    switch (input.cmp().getChild(TerminalNode.class, 0).getSymbol().getText()) {
+      case "<":
+        op = out::lt;
+        break;
+      case "<=":
+        op = out::le;
+        break;
+      case "==":
+        op = out::eq;
+        break;
+      case "!=":
+        op = out::ne;
+        break;
+      case ">":
+        op = out::gt;
+        break;
+      case ">=":
+        op = out::ge;
+        break;
+      default:
+        throw new IllegalArgumentException("unrecognized op: " + input);
+    }
+    binaryExpr(input.expression(), op);
   }
 
   @Dispatched
@@ -72,7 +95,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprParenthesisContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    apply(input.expression());
   }
 
   @Dispatched
@@ -87,13 +110,20 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprPlusOrMinusContext input) {
-    apply(input.expression(0));
-    apply(input.expression(1));
-    out.iAdd();
+    binaryExpr(input.expression(), input.PLUS() == null ? out::iSub : out::iAdd);
   }
 
   @Dispatched
   public void apply(EffesParser.ExprMultOrDivideContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    binaryExpr(input.expression(), input.ASTERISK() == null ? out::iSub : out::iMul);
+  }
+
+  private void binaryExpr(List<EffesParser.ExpressionContext> exprs, Runnable op) {
+    if (exprs.size() != 2) {
+      throw new IllegalArgumentException("require exactly two expressions: " + exprs);
+    }
+    apply(exprs.get(0));
+    apply(exprs.get(1));
+    op.run();
   }
 }
