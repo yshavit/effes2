@@ -32,7 +32,7 @@ public class ExpressionCompilerTest {
       StringBuilder sb = new StringBuilder();
       ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), op -> sb.append(op).append('\n'));
       compiler.apply(expr);
-      assertEquals(sb.toString().trim(), testCase.expect);
+      assertEquals(sb.toString(), testCase.expect);
     });
   }
 

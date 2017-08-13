@@ -3,5 +3,16 @@ symbols:
   a:
     reg: 7
     type: null
-expect:
+expect: |
   pvar 7
+---
+input: a + b
+symbols:
+  a:
+    reg: 7
+  b:
+    reg: 0
+expect: |
+  pvar 7
+  pvar 0
+  call_Integer:add

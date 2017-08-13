@@ -9,17 +9,18 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.VoidDispatcher;
+import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionContext> {
 
   private final Map<String,Symbol> symbolsToRegister;
-  private final Consumer<? super Op> out;
+  private final EffesOps<Void> out;
 
   public ExpressionCompiler(Map<String,Symbol> symbolsToRegister, Consumer<? super Op> out) {
     super(EffesParser.ExpressionContext.class);
     this.symbolsToRegister = symbolsToRegister;
-    this.out = out;
+    this.out = Op.factory(out::accept);
   }
 
   @Dispatched
@@ -66,7 +67,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
     String symbolName = finalName.getSymbol().getText();
     Symbol symbol = symbolsToRegister.get(symbolName);
     int reg = symbol.getReg();
-    out.accept(Op.factory.pvar(String.valueOf(reg)));
+    out.pvar(String.valueOf(reg));
   }
 
   @Dispatched
@@ -86,7 +87,9 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprPlusOrMinusContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    apply(input.expression(0));
+    apply(input.expression(1));
+    out.iAdd();
   }
 
   @Dispatched
