@@ -100,7 +100,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprIntLiteralContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    out.pushInt(input.INT().getSymbol().getText());
   }
 
   @Dispatched

@@ -57,3 +57,7 @@ symbols:
 expect: |
   pvar 0
   call_Boolean:negate
+---
+input: 1234
+expect: |
+  int 1234

@@ -3,6 +3,7 @@ package com.yuvalshavit.effes2.compile;
 import static org.testng.Assert.*;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -48,7 +49,9 @@ public class ExpressionCompilerTest {
     }
 
     Map<String,Symbol> symbols() {
-      return symbols.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> ResourceReader.convert(e.getValue(), Symbol.class)));
+      return symbols == null
+        ? Collections.emptyMap()
+        : symbols.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> ResourceReader.convert(e.getValue(), Symbol.class)));
     }
   }
 }
