@@ -42,3 +42,10 @@ expect: |
   pvar 0
   pvar 1
   call_Integer:lt
+---
+input: this
+symbols:
+  <this>:
+    reg: 3
+expect: |
+  pvar 3

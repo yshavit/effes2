@@ -13,6 +13,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionContext> {
+  public static final String THIS = "<this>";
 
   private final Map<String,Symbol> symbolsToRegister;
   private final EffesOps<Void> out;
@@ -53,7 +54,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprThisContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    pvar(THIS);
   }
 
   @Dispatched
@@ -88,9 +89,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
     TerminalNode finalName = qualifiedName.IDENT_NAME();
     String symbolName = finalName.getSymbol().getText();
-    Symbol symbol = symbolsToRegister.get(symbolName);
-    int reg = symbol.getReg();
-    out.pvar(String.valueOf(reg));
+    pvar(symbolName);
   }
 
   @Dispatched
@@ -125,5 +124,14 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
     apply(exprs.get(0));
     apply(exprs.get(1));
     op.run();
+  }
+
+  private void pvar(String symbolName) {
+    Symbol symbol = symbolsToRegister.get(symbolName);
+    if (symbol == null) {
+      throw new IllegalArgumentException("no such symbol: " + symbolName);
+    }
+    int reg = symbol.getReg();
+    out.pvar(String.valueOf(reg));
   }
 }
