@@ -45,7 +45,7 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     this.functions = dispatchSafe;
   }
 
-  public R apply(T element) {
+  public final R apply(T element) {
     @SuppressWarnings("unchecked")
     Class<? extends T> argClass = (Class<? extends T>) element.getClass();
     BiFunction<Dispatcher<T,R>,? super T,? extends R> func = functions.get(argClass);
@@ -90,7 +90,7 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
       if (methodArgClass == argClass || !argClass.isAssignableFrom(methodArgClass)) {
         throw new RuntimeException("argument to dispatched method must be a strict subclass of " + argClass + ": " + method);
       }
-      if (!resultClass.isAssignableFrom(method.getReturnType())) {
+      if (!returnTypeIsAcceptable(resultClass, method)) {
         throw new RuntimeException("return value must be a subclass of " + resultClass + ": " + method);
       }
       BiFunction<?,?,?> old = results.put(methodArgClass, (o, a) -> {
@@ -123,15 +123,21 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
         sb.append('s');
       }
       sb.append(":\n\n");
+      String resultType = resultClass.equals(Void.class) ? "void" : resultClass.getSimpleName();
       for (Class<?> subclass : subclasses) {
         sb.append("  @").append(Dispatched.class.getSimpleName()).append('\n');
-        sb.append("  public ").append(resultClass.getSimpleName()).append(" apply(").append(subclass.getSimpleName()).append(" input) {\n");
+        sb.append("  public ").append(resultType).append(" apply(").append(subclass.getSimpleName()).append(" input) {\n");
         sb.append("    throw new UnsupportedOperationException(); // TODO\n");
         sb.append("  }\n\n");
       }
       throw new RuntimeException(sb.toString());
     }
     return results;
+  }
+
+  private static boolean returnTypeIsAcceptable(Class<?> resultClass, Method method) {
+    return resultClass.isAssignableFrom(method.getReturnType())
+      || (resultClass.equals(Void.class) && method.getReturnType() == void.class);
   }
 
 }

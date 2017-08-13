@@ -4,7 +4,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 import java.io.IOException;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -26,7 +25,8 @@ public class ParseTest {
 
   @DataProvider(name = "test1")
   public static Object[][] readParseFiles() throws IOException {
-    return ResourceReader.testCases(ParseTest.class, TestCase.class);
+    String[] files = ResourceReader.read(ParseTest.class, ".").split("\n");
+    return ResourceReader.testCases(ParseTest.class, TestCase.class, files);
   }
 
   @Test(dataProvider = "test1")

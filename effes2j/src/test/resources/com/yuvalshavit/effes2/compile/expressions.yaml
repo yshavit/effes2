@@ -1,0 +1,7 @@
+input: a
+symbols:
+  a:
+    reg: 7
+    type: null
+expect:
+  push 7
