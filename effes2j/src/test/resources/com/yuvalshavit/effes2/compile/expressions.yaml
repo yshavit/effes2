@@ -61,3 +61,15 @@ expect: |
 input: 1234
 expect: |
   int 1234
+---
+input: '"hello"'
+expect: |
+  str hello
+---
+input: '"hello world"'
+expect: |
+  str "hello world"
+---
+input: '"Let''s build a ☃, man!"'
+expect: |
+  str "Let's build a \u2603, man!"

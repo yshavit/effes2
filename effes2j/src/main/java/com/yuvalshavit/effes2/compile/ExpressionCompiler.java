@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
+import com.yuvalshavit.effes2.util.EvmStrings;
 import com.yuvalshavit.effes2.util.VoidDispatcher;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
@@ -59,7 +60,9 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
 
   @Dispatched
   public void apply(EffesParser.ExprStringLiteralContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    String quotedString = input.QUOTED_STRING().getSymbol().getText();
+    quotedString = quotedString.substring(1, quotedString.length() - 1);
+    out.strPush(EvmStrings.escape(quotedString));
   }
 
   @Dispatched
