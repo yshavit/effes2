@@ -3,7 +3,6 @@ package com.yuvalshavit.effes2.compile;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.StringJoiner;
 import java.util.TreeMap;
 
 public class Scope {

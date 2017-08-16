@@ -130,8 +130,6 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
   }
 
   private void pvar(String symbolName) {
-    Symbol symbol = scope.lookUp(symbolName);
-    int reg = symbol.getReg();
-    out.pvar(String.valueOf(reg));
+    scope.lookUp(symbolName).push(out);
   }
 }

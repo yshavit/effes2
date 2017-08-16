@@ -50,7 +50,10 @@ public class ExpressionCompilerTest {
       Scope scope = new Scope();
       if (symbols != null) {
         for (Map.Entry<String,Map<?,?>> entry : symbols.entrySet()) {
-          Symbol symbol = ResourceReader.convert(entry.getValue(), Symbol.class);
+          Map<?,?> symbolAsMap = entry.getValue();
+          int reg = (Integer) symbolAsMap.get("reg");
+          String type = (String) symbolAsMap.get("type");
+          Symbol symbol = new Symbol.LocalVar(reg, type);
           scope.allocate(entry.getKey(), symbol);
         }
       }
