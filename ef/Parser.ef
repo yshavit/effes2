@@ -39,8 +39,7 @@ parseType(toks) ->:
   if toks is:
     Cons(Cons(KwType, TypeName(name)), @toks):
       args = Empty
-      if parseArgs(toks) is _Parsed(@args, @toks):
-        :::
+      parseArgs(toks) ::: _Parsed(@args, @toks)
       if toks is:
         Cons(Newline,@toks):
           return _Parsed(EfType(name, args), toks)
@@ -97,8 +96,7 @@ parseExpression(toks) ->:
   # ctor
   if toks is Cons(TypeName(@name), @toks):
     args = Empty
-    if parseArgs(toks) is _Parsed(@args, @toks):
-      :::
+    parseArgs(toks) ::: _Parsed(@args, @toks)
     return _Parsed(CtorCall(name, args), toks)
   else:
     return NoParse

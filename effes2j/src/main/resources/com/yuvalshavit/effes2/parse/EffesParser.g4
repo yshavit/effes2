@@ -82,6 +82,7 @@ elseStat:
 
 statement:
   NO_OP NL                                                  # StatNoop
+| expression NO_OP matcher NL                               # StatMatch
 | WHILE expression statementWhileConditionAndBody           # StatWhile
 | FOR IDENT_NAME IN expression COLON block                  # StatFor
 | IF expression statementIfConditionAndBody                 # StatIf

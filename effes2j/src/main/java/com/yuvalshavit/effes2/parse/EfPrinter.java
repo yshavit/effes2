@@ -256,6 +256,14 @@ public class EfPrinter {
     }
 
     @Override
+    protected void seeStatMatch(EffesParser.StatMatchContext ctx) {
+      dispatch(ctx.expression());
+      write(" ::: ");
+      dispatch(ctx.matcher());
+      nl();
+    }
+
+    @Override
     protected void seeStatWhile(EffesParser.StatWhileContext ctx) {
       write("while ");
       dispatch(ctx.expression());
