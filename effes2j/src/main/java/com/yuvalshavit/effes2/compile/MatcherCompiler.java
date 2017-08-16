@@ -2,7 +2,6 @@ package com.yuvalshavit.effes2.compile;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
-import com.yuvalshavit.effes2.util.VoidDispatcher;
 
 /**
  * <p>Compiles just the matchers for a type. The contract for this segment of EVM code is:</p>
@@ -29,7 +28,7 @@ import com.yuvalshavit.effes2.util.VoidDispatcher;
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class MatcherCompiler {
 
-  private class CompilerImpl extends VoidDispatcher<EffesParser.MatcherContext> {
+  private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
 
     private final MatcherPatternCompiler patternCompiler;
 
@@ -50,7 +49,7 @@ public class MatcherCompiler {
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
-  private class MatcherPatternCompiler extends VoidDispatcher<EffesParser.MatcherPatternContext> {
+  private class MatcherPatternCompiler extends CompileDispatcher<EffesParser.MatcherPatternContext> {
     MatcherPatternCompiler() {
       super(EffesParser.MatcherPatternContext.class);
     }

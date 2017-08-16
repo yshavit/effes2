@@ -8,11 +8,10 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
-import com.yuvalshavit.effes2.util.VoidDispatcher;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
-public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionContext> {
+public class ExpressionCompiler extends CompileDispatcher<EffesParser.ExpressionContext> {
   public static final String THIS = "<this>";
 
   private final Scope scope;

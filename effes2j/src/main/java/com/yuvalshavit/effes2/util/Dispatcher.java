@@ -37,8 +37,10 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
    * keys are T's subclasses; values are BiFunctions that take "this" and a T, and return an R
    */
   private final Map<Class<? extends T>,BiFunction<Dispatcher<T,R>,? super T,? extends R>> functions;
+  private final BiFunction<? super T, ? super Exception, ? extends RuntimeException> exceptionNormalizer;
 
-  protected Dispatcher(Class<T> parentClass, Class<R> resultClass) {
+  protected Dispatcher(Class<T> parentClass, Class<R> resultClass, BiFunction<? super T,? super Exception,? extends RuntimeException> exceptionNormalizer) {
+    this.exceptionNormalizer = exceptionNormalizer;
     @SuppressWarnings("unchecked")
     Map<Class<? extends T>,BiFunction<Dispatcher<T,R>,? super T,? extends R>> dispatchSafe =
       (Map<Class<? extends T>,BiFunction<Dispatcher<T,R>,? super T,? extends R>>) getOrCreate((Class<Dispatcher<?,?>>) getClass(), parentClass, resultClass);
@@ -93,19 +95,19 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
       if (!returnTypeIsAcceptable(resultClass, method)) {
         throw new RuntimeException("return value must be a subclass of " + resultClass + ": " + method);
       }
-      BiFunction<?,?,?> old = results.put(methodArgClass, (o, a) -> {
+      BiFunction<?,?,?> old = results.put(methodArgClass, (Dispatcher<Object,?> o, Object a) -> {
         try {
           return method.invoke(o, a);
         } catch (IllegalAccessException e) {
           throw new RuntimeException(e);
         } catch (InvocationTargetException e) {
           Throwable cause = e.getCause();
-          if (cause instanceof RuntimeException) {
-            throw ((RuntimeException) cause);
+          if (cause instanceof Exception) {
+            throw o.exceptionNormalizer.apply(a, ((Exception) cause));
           } else if (cause instanceof Error) {
-            throw ((Error) cause);
+            throw (Error) cause;
           } else {
-            throw new RuntimeException(e);
+            throw new RuntimeException("unrecognized Throwable type", e);
           }
         }
       });
