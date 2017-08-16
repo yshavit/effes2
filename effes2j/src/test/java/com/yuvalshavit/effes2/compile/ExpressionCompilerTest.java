@@ -22,12 +22,12 @@ public class ExpressionCompilerTest {
     assertNotNull(readParseFiles());
   }
 
-  @DataProvider(name = "test1")
+  @DataProvider(name = "test")
   public static Object[][] readParseFiles() throws IOException {
     return ResourceReader.testCases(ExpressionCompilerTest.class, TestCase.class, "expressions.yaml");
   }
 
-  @Test(dataProvider = "test1")
+  @Test(dataProvider = "test")
   public void compile(String fileName, TestCase testCase) throws Exception {
     ParseChecker.check(fileName, testCase.input, EffesParser::expression, expr -> {
       StringBuilder sb = new StringBuilder();
