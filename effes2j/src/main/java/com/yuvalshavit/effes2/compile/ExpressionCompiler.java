@@ -1,7 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -16,12 +15,12 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionContext> {
   public static final String THIS = "<this>";
 
-  private final Map<String,Symbol> symbolsToRegister;
+  private final Scope scope;
   private final EffesOps<Void> out;
 
-  public ExpressionCompiler(Map<String,Symbol> symbolsToRegister, Consumer<? super Op> out) {
+  public ExpressionCompiler(Scope scope, Consumer<? super Op> out) {
     super(EffesParser.ExpressionContext.class);
-    this.symbolsToRegister = symbolsToRegister;
+    this.scope = scope;
     this.out = Op.factory(out::accept);
   }
 
@@ -131,10 +130,7 @@ public class ExpressionCompiler extends VoidDispatcher<EffesParser.ExpressionCon
   }
 
   private void pvar(String symbolName) {
-    Symbol symbol = symbolsToRegister.get(symbolName);
-    if (symbol == null) {
-      throw new IllegalArgumentException("no such symbol: " + symbolName);
-    }
+    Symbol symbol = scope.lookUp(symbolName);
     int reg = symbol.getReg();
     out.pvar(String.valueOf(reg));
   }

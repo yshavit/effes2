@@ -3,10 +3,8 @@ package com.yuvalshavit.effes2.compile;
 import static org.testng.Assert.*;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -48,10 +46,15 @@ public class ExpressionCompilerTest {
       return name == null ? input : name;
     }
 
-    Map<String,Symbol> symbols() {
-      return symbols == null
-        ? Collections.emptyMap()
-        : symbols.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> ResourceReader.convert(e.getValue(), Symbol.class)));
+    Scope symbols() {
+      Scope scope = new Scope();
+      if (symbols != null) {
+        for (Map.Entry<String,Map<?,?>> entry : symbols.entrySet()) {
+          Symbol symbol = ResourceReader.convert(entry.getValue(), Symbol.class);
+          scope.allocate(entry.getKey(), symbol);
+        }
+      }
+      return scope;
     }
   }
 }

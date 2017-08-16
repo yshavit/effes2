@@ -1,5 +1,7 @@
 package com.yuvalshavit.effes2.compile;
 
+import com.google.common.base.Objects;
+
 public class Symbol {
   private int reg;
   private String type;
@@ -30,4 +32,8 @@ public class Symbol {
     this.type = type;
   }
 
+  @Override
+  public String toString() {
+    return String.format("<%d %s>", reg, Objects.firstNonNull(type, "?"));
+  }
 }
