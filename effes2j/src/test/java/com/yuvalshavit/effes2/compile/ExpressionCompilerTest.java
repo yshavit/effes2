@@ -29,7 +29,7 @@ public class ExpressionCompilerTest {
   public void compile(String fileName, TestCase testCase) throws Exception {
     ParseChecker.check(fileName, testCase.input, EffesParser::expression, expr -> {
       StringBuilder sb = new StringBuilder();
-      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), op -> sb.append(op).append('\n'));
+      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), Op.factory(op -> sb.append(op).append('\n')));
       compiler.apply(expr);
       assertEquals(sb.toString(), testCase.expect);
     });
@@ -54,7 +54,7 @@ public class ExpressionCompilerTest {
           int reg = (Integer) symbolAsMap.get("reg");
           String type = (String) symbolAsMap.get("type");
           Symbol symbol = new Symbol.LocalVar(reg, type);
-          scope.allocate(entry.getKey(), symbol);
+          scope.allocateLocal(entry.getKey(), false, symbol);
         }
       }
       return scope;

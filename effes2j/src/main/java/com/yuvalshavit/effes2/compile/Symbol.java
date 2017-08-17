@@ -16,6 +16,7 @@ public abstract class Symbol {
 
   public abstract void push(EffesOps<Void> ops);
   public abstract void store(EffesOps<Void> ops);
+  public abstract void storeNoPop(EffesOps<Void> out);
 
   public static class LocalVar extends Symbol {
     private final int reg;
@@ -34,6 +35,11 @@ public abstract class Symbol {
     @Override
     public void store(EffesOps<Void> ops) {
       ops.svar(regStr());
+    }
+
+    @Override
+    public void storeNoPop(EffesOps<Void> out) {
+      out.Svar(regStr());
     }
 
     @Override

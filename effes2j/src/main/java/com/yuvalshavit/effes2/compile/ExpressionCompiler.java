@@ -17,10 +17,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   private final Scope scope;
   private final EffesOps<Void> out;
 
-  public ExpressionCompiler(Scope scope, Consumer<? super Op> out) {
+  public ExpressionCompiler(Scope scope, EffesOps<Void> out) {
     super(EffesParser.ExpressionContext.class);
     this.scope = scope;
-    this.out = Op.factory(out::accept);
+    this.out = out;
   }
 
   @Dispatched
