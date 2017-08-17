@@ -48,7 +48,12 @@ public class MatcherCompiler {
 //  private final Consumer<EffesOps<Void>> ifMatched;
 //  private final Consumer<EffesOps<Void>> ifNotMatched;
   private final String ifNotMatchedJump; // or null, if used as an expression; TODO if I use this approach, update the javadoc for this class
+  private final boolean affirmativeExpression; // as opposed to negated
   private final LabelAssigner labelAssigner;
+
+  public static void expression(EffesParser.MatcherContext ctx, LabelAssigner labelAssigner, boolean negated, EffesOps<Void> out) {
+    throw new UnsupportedOperationException();
+  }
 
   private boolean isExpressionMatcher() {
     return ifNotMatchedJump == null;
@@ -76,7 +81,7 @@ public class MatcherCompiler {
         // always matches
         scope.allocateOrLookUp(varName, false).store(out);
         if (isExpressionMatcher()) {
-          out.bool(String.valueOf(true));
+          out.bool(String.valueOf(affirmativeExpression));
         }
       } else {
         // First we need to load the stack-top into a tmp field (without popping it), so that we can evaluate the expression.
@@ -103,7 +108,7 @@ public class MatcherCompiler {
         // If we did match: store the element, and iff we're an expression, push "true" and goto the endMatcher
         scope.allocateOrLookUp(varName, false).store(out);
         if (isExpressionMatcher()) {
-          out.bool(String.valueOf(true));
+          out.bool(String.valueOf(affirmativeExpression));
           out.gotoAbs(endMatcher);
         }
         // If we didn't match: If we're an expression, pop the element and push "false." Otherwise, keep the element and go to the ifNotMatched label. But the
@@ -111,7 +116,7 @@ public class MatcherCompiler {
         if (isExpressionMatcher()) {
           labelAssigner.place(ifNot);
           out.pop();
-          out.bool(String.valueOf(false));
+          out.bool(String.valueOf(!affirmativeExpression));
           labelAssigner.place(endMatcher);
         }
       }

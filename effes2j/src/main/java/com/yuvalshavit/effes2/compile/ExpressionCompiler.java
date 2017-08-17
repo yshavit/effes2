@@ -1,7 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -106,7 +105,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprIsAContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    apply(input.expression());
+    scope.inNewScope(() -> MatcherCompiler.expression(input.matcher(), null, input.NOT() != null, out));
   }
 
   @Dispatched
