@@ -69,6 +69,14 @@ public class MatcherCompiler {
     }
 
     @Dispatched
+    public void apply(EffesParser.MatcherAnyContext input) {
+      out.pop();
+      if (isExpressionMatcher()) {
+        out.bool(String.valueOf(affirmativeExpression));
+      }
+    }
+
+    @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
       throw new UnsupportedOperationException(); // TODO
     }
