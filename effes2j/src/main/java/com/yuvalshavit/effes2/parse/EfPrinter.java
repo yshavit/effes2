@@ -495,6 +495,11 @@ public class EfPrinter {
     }
 
     @Override
+    protected void seeMatcherAny(EffesParser.MatcherAnyContext ctx) {
+      write('*');
+    }
+
+    @Override
     protected void seeMatcherWithPattern(EffesParser.MatcherWithPatternContext ctx) {
       if (handleIfNotNull(ctx.IDENT_NAME(), this::write)) {
         write(' ');
@@ -513,11 +518,6 @@ public class EfPrinter {
         write(":? ");
         dispatch(ctx.expression());
       }
-    }
-
-    @Override
-    protected void seePatternAny(EffesParser.PatternAnyContext ctx) {
-      write('*');
     }
 
     @Override

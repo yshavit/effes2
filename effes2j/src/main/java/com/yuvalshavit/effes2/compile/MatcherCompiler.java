@@ -143,10 +143,5 @@ public class MatcherCompiler {
     public void apply(EffesParser.PatternStringLiteralContext input) {
       throw new UnsupportedOperationException(); // TODO
     }
-
-    @Dispatched
-    public void apply(EffesParser.PatternAnyContext input) {
-      throw new UnsupportedOperationException(); // TODO
-    }
   }
 }

@@ -203,16 +203,16 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeExpressionMatcher(EffesParser.ExpressionMatcherContext ctx);
 
   @Override
+  public Void visitMatcherAny(EffesParser.MatcherAnyContext ctx) { seeMatcherAny(ctx); return null; }
+  protected abstract void seeMatcherAny(EffesParser.MatcherAnyContext ctx);
+
+  @Override
   final public Void visitMatcherWithPattern(EffesParser.MatcherWithPatternContext ctx) { seeMatcherWithPattern(ctx); return null; }
   protected abstract void seeMatcherWithPattern(EffesParser.MatcherWithPatternContext ctx);
 
   @Override
   final public Void visitMatcherJustName(EffesParser.MatcherJustNameContext ctx) { seeMatcherJustName(ctx); return null; }
   protected abstract void seeMatcherJustName(EffesParser.MatcherJustNameContext ctx);
-
-  @Override
-  final public Void visitPatternAny(EffesParser.PatternAnyContext ctx) { seePatternAny(ctx); return null; }
-  protected abstract void seePatternAny(EffesParser.PatternAnyContext ctx);
 
   @Override
   final public Void visitPatternType(EffesParser.PatternTypeContext ctx) { seePatternType(ctx); return null; }

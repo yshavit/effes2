@@ -175,13 +175,13 @@ expressionMatcher:
 // If we had this as just one inlined variant, then the empty string would parse as a matcher,
 // which we don't want. So, we take the "just name, no matcher" bit and make it its own rule.
 matcher:
-  IDENT_NAME? matcherPattern (SUCH_THAT expression)?                  # MatcherWithPattern
+  ASTERISK                                                            # MatcherAny
+| IDENT_NAME? matcherPattern (SUCH_THAT expression)?                  # MatcherWithPattern
 | IDENT_NAME (SUCH_THAT expression)?                                  # MatcherJustName
 ;
 
 matcherPattern:
-  ASTERISK                                                            # PatternAny
-| IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?       # PatternType
+  IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?       # PatternType
 | REGEX_START REGEX? REGEX_END                                        # PatternRegex
 | QUOTED_STRING                                                       # PatternStringLiteral
 ;
