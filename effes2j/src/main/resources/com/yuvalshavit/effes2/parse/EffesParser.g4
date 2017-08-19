@@ -176,8 +176,8 @@ expressionMatcher:
 // which we don't want. So, we take the "just name, no matcher" bit and make it its own rule.
 matcher:
   ASTERISK                                                            # MatcherAny
-| IDENT_NAME? matcherPattern (SUCH_THAT expression)?                  # MatcherWithPattern
-| IDENT_NAME (SUCH_THAT expression)?                                  # MatcherJustName
+| (AT ? IDENT_NAME)? matcherPattern (SUCH_THAT expression)?           # MatcherWithPattern
+| AT ? IDENT_NAME (SUCH_THAT expression)?                             # MatcherJustName
 ;
 
 matcherPattern:

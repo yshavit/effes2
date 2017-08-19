@@ -501,7 +501,11 @@ public class EfPrinter {
 
     @Override
     protected void seeMatcherWithPattern(EffesParser.MatcherWithPatternContext ctx) {
-      if (handleIfNotNull(ctx.IDENT_NAME(), this::write)) {
+      if (ctx.IDENT_NAME() != null) {
+        if (ctx.AT() != null) {
+          write('@');
+        }
+        write(ctx.IDENT_NAME());
         write(' ');
       }
       dispatch(ctx.matcherPattern());
@@ -513,6 +517,9 @@ public class EfPrinter {
 
     @Override
     protected void seeMatcherJustName(EffesParser.MatcherJustNameContext ctx) {
+      if (ctx.AT() != null) {
+        write('@');
+      }
       write(ctx.IDENT_NAME());
       if (ctx.SUCH_THAT() != null) {
         write(":? ");
