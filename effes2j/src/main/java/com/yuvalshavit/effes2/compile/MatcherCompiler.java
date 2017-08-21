@@ -1,5 +1,9 @@
 package com.yuvalshavit.effes2.compile;
 
+import org.antlr.v4.runtime.Vocabulary;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
@@ -87,7 +91,7 @@ public class MatcherCompiler {
       EffesParser.ExpressionContext expression = input.expression();
       if (expression == null) {
         // always matches
-        scope.allocateOrLookUp(varName, false).store(out);
+        lookUp(varName, input.AT(), false).store(out);
         if (isExpressionMatcher()) {
           out.bool(String.valueOf(affirmativeExpression));
         }
@@ -96,8 +100,7 @@ public class MatcherCompiler {
         // We'll do that in a separate scope. Then, if the expression matches, we'll pop the stack-top into the var and do the standard ifMatched/ifNotMatched
         // work. Otherwise, we'll just do the ifNotMatched.
         scope.inNewScope(() -> {
-          Symbol symbol = scope.allocateLocal(CompilerUtil.plainVariableName(varName), true);
-          symbol.storeNoPop(out);
+          lookUp(varName, null, true).storeNoPop(out);
           new ExpressionCompiler(scope, out).apply(expression);
         });
         String ifNot;
@@ -114,7 +117,7 @@ public class MatcherCompiler {
         // original element we matched on.
         out.gotoIfNot(ifNot);
         // If we did match: store the element, and iff we're an expression, push "true" and goto the endMatcher
-        scope.allocateOrLookUp(varName, false).store(out);
+        lookUp(varName, input.AT(), false).store(out);
         if (isExpressionMatcher()) {
           out.bool(String.valueOf(affirmativeExpression));
           out.gotoAbs(endMatcher);
@@ -129,6 +132,17 @@ public class MatcherCompiler {
         }
       }
     }
+  }
+
+  private Symbol lookUp(String varName, TerminalNode at, boolean allowShadowing) {
+    Symbol symbol;
+    if (at == null) {
+      symbol = scope.allocateOrLookUp(varName, allowShadowing);
+    } else {
+      assert at.getSymbol().getType() == EffesLexer.AT : at.getSymbol().getType() + ": " + EffesLexer.VOCABULARY.getDisplayName(at.getSymbol().getType());
+      symbol = scope.lookUpInParentScope(varName);
+    }
+    return symbol;
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)

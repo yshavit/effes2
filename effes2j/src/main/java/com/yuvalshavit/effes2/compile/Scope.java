@@ -10,18 +10,28 @@ public class Scope {
   private Frame frame = new Frame(null);
 
   public Symbol lookUp(String symbolName) {
-    Symbol symbol = tryLookUp(symbolName);
+    Symbol symbol = tryLookUp(symbolName, true);
     if (symbol == null) {
       throw new NoSuchElementException("no variable named " + symbolName);
     }
     return symbol;
   }
 
-  private Symbol tryLookUp(String symbolName) {
+  public Symbol lookUpInParentScope(String symbolName) {
+    Symbol symbol = tryLookUp(symbolName, false);
+    if (symbol == null) {
+      throw new NoSuchElementException("no variable named " + symbolName);
+    }
+    return symbol;
+  }
+
+  private Symbol tryLookUp(String symbolName, boolean includeTopFrame) {
     Frame lookIn = frame;
-    if (CompilerUtil.isForEnclosingScope(symbolName)) {
+    if (!includeTopFrame) {
       lookIn = lookIn.parent;
-      symbolName = CompilerUtil.plainVariableName(symbolName);
+      if (lookIn == null) {
+        throw new IllegalStateException("no parent frame to look in");
+      }
     }
     for (; lookIn != null; lookIn = lookIn.parent) {
       Symbol symbol = lookIn.symbols.get(symbolName);
@@ -33,11 +43,8 @@ public class Scope {
   }
 
   public Symbol allocateOrLookUp(String symbolName, boolean allowShadowing) {
-    Symbol result = tryLookUp(symbolName);
+    Symbol result = tryLookUp(symbolName, true);
     if (result == null) {
-      if (CompilerUtil.isForEnclosingScope(symbolName)) {
-        throw new IllegalArgumentException("no variable in enclosing scope: " + symbolName);
-      }
       result = allocateLocal(symbolName, allowShadowing);
     }
     return result;
@@ -86,9 +93,6 @@ public class Scope {
   }
 
   public void allocateLocal(String symbolName, boolean allowShadowing, Symbol symbol) {
-    if (CompilerUtil.isForEnclosingScope(symbolName)) {
-      throw new IllegalArgumentException("can't call allocateLocal on an enclosing-scope variable name: " + symbolName);
-    }
     if (allowShadowing) {
       if (frame.symbols.containsKey(symbolName)) {
         // even with shadowing, we can't replace a variable in this same scope; can only shadow enclosing scopes

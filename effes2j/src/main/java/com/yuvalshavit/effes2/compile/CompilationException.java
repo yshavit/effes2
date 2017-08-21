@@ -6,7 +6,11 @@ import org.antlr.v4.runtime.Token;
 public class CompilationException extends RuntimeException {
 
   public CompilationException(Token start, Token stop, Exception e) {
-    super(message(start, stop, e), e);
+    super(message(start, stop, e.getMessage()), e);
+  }
+
+  public CompilationException(Token start, Token stop, String message) {
+    super(message(start, stop, message));
   }
 
   public static CompilationException normalize(ParserRuleContext ctx, Exception e) {
@@ -15,10 +19,10 @@ public class CompilationException extends RuntimeException {
       : new CompilationException(ctx.start, ctx.stop, e);
   }
 
-  private static String message(Token start, Token stop, Exception e) {
+  private static String message(Token start, Token stop, String message) {
     return String.format(
       "%s between %d:%d and %d:%d",
-      e.getMessage(),
+      message,
       start.getLine(),
       start.getCharPositionInLine() + 1,
       stop.getLine(),
