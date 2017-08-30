@@ -12,6 +12,7 @@ public class MatcherCompiler {
   private final Scope scope;
   private final EffesOps<Void> out;
   private final String noMatchLabel; // TODO need a way to provide the "before you go to this label, pop some vars" labels.
+  private final LabelAssigner labelAssigner;
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
