@@ -7,13 +7,13 @@ import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
-@Dispatcher.SubclassesAreIn(EffesParser.class)
 public class MatcherCompiler {
 
   private final Scope scope;
   private final EffesOps<Void> out;
   private final String noMatchLabel; // TODO need a way to provide the "before you go to this label, pop some vars" labels.
 
+  @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
 
     private final MatcherPatternCompiler patternCompiler;
