@@ -9,19 +9,23 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class MatcherCompiler {
 
-  private final Scope scope;
-  private final EffesOps<Void> out;
-  private final String noMatchLabel; // TODO need a way to provide the "before you go to this label, pop some vars" labels.
-  private final LabelAssigner labelAssigner;
+  private /*final*/ Scope scope;
+  private /*final*/ EffesOps<Void> out;
+  private /*final*/ String noMatchLabel; // TODO need a way to provide the "before you go to this label, pop some vars" labels.
+  private /*final*/ LabelAssigner labelAssigner;
+  private int matchStackSize;
+  private int noMatchPopsCount;
+
+  public static void expression(EffesParser.MatcherContext matcher, Object o, boolean negated, EffesOps<Void> out) {
+    throw new UnsupportedOperationException(); // TODO
+  }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
-
-    private final MatcherPatternCompiler patternCompiler;
+    final ScratchVars scratchVars = new ScratchVars();
 
     CompilerImpl() {
       super(EffesParser.MatcherContext.class);
-      patternCompiler = new MatcherPatternCompiler();
     }
 
     @Dispatched
@@ -31,7 +35,10 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      throw new UnsupportedOperationException(); // TODO
+      TerminalNode name = input.IDENT_NAME();
+      if (name != null) {
+        lookUp(name.getSymbol().getText(), input.AT(), false, scratchVars).storeNoPop(out);
+      }
     }
 
     @Dispatched
@@ -40,34 +47,44 @@ public class MatcherCompiler {
       EffesParser.ExpressionContext expression = input.expression();
       if (expression == null) {
         // always matches, so we always want to pop the value and store it to the var
-        ScratchVars scratchVars = new ScratchVars();
-        lookUp(varName, input.AT(), false, scratchVars).store(out);
-        scratchVars.commit(out); // TODO this produces "svar x, pvar x, svar y". We should post-facto optimize this to just "svar y"
+        if (input.AT() == null) {
+          scope.allocateLocal(varName, true).store(out);
+        } else {
+          scope.lookUpInParentScope(varName).store(out);
+        }
       } else {
         // First we need to load the stack-top into a tmp field (without popping it), so that we can evaluate the expression. Do that in a sub-scope.
         // Then, iff that matches, we simply commit the var (if it was to an outer scope var). Otherwise we just go to the noMatchLabel
         // We'll do that in a separate scope. Then, if the expression matches, we'll pop the stack-top into the var and do the standard ifMatched/ifNotMatched
         // work. Otherwise, we'll just do the ifNotMatched.
-        ScratchVars scratch = new ScratchVars();
         scope.inNewScope(() -> {
-          lookUp(varName, null, true, scratch).storeNoPop(out);
+          lookUp(varName, null, true, scratchVars).storeNoPop(out);
           new ExpressionCompiler(scope, out).apply(expression);
         });
         // This goto is based on the s.t. expression. So whether we take the jump or not, after this line, the s.t. is popped, and the top of the stack is the
         // original element we matched on.
         out.gotoIfNot(noMatchLabel);
-        scratch.commit(out);
+        scratchVars.commit(out);
       }
     }
   }
 
-  private Symbol lookUp(String varName, TerminalNode at, boolean allowShadowing, ScratchVars scratchVars) {
+  private void pushMatchStack() {
+    ++matchStackSize;
+  }
+
+  private void popMatchStack() {
+    noMatchPopsCount = Math.max(noMatchPopsCount, matchStackSize);
+    --matchStackSize;
+  }
+
+  private VarRef lookUp(String varName, TerminalNode at, boolean allowShadowing, ScratchVars scratchVars) {
     if (at == null) {
       return scope.allocateOrLookUp(varName, allowShadowing);
     } else {
       assert at.getSymbol().getType() == EffesLexer.AT : at.getSymbol().getType() + ": " + EffesLexer.VOCABULARY.getDisplayName(at.getSymbol().getType());
-      Symbol commit = scope.lookUpInParentScope(varName);
-      Symbol scratch = scope.allocateLocal(varName, true);
+      VarRef commit = scope.lookUpInParentScope(varName);
+      VarRef scratch = scope.allocateLocal(varName, true);
       scratchVars.add(scratch, commit);
       return scratch;
     }

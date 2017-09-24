@@ -9,7 +9,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 public class ScratchVars {
   private final List<Consumer<EffesOps<?>>> pending = new ArrayList<>();
 
-  public void add(Symbol scratchVar, Symbol commitVar) {
+  public void add(VarRef scratchVar, VarRef commitVar) {
     pending.add(ops -> {
       scratchVar.push(ops);
       commitVar.store(ops);

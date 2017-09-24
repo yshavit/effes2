@@ -9,23 +9,23 @@ public class Scope {
 
   private Frame frame = new Frame(null);
 
-  public Symbol lookUp(String symbolName) {
-    Symbol symbol = tryLookUp(symbolName, true);
-    if (symbol == null) {
+  public VarRef lookUp(String symbolName) {
+    VarRef varRef = tryLookUp(symbolName, true);
+    if (varRef == null) {
       throw new NoSuchElementException("no variable named " + symbolName);
     }
-    return symbol;
+    return varRef;
   }
 
-  public Symbol lookUpInParentScope(String symbolName) {
-    Symbol symbol = tryLookUp(symbolName, false);
-    if (symbol == null) {
+  public VarRef lookUpInParentScope(String symbolName) {
+    VarRef varRef = tryLookUp(symbolName, false);
+    if (varRef == null) {
       throw new NoSuchElementException("no variable named " + symbolName);
     }
-    return symbol;
+    return varRef;
   }
 
-  private Symbol tryLookUp(String symbolName, boolean includeTopFrame) {
+  private VarRef tryLookUp(String symbolName, boolean includeTopFrame) {
     Frame lookIn = frame;
     if (!includeTopFrame) {
       lookIn = lookIn.parent;
@@ -34,16 +34,16 @@ public class Scope {
       }
     }
     for (; lookIn != null; lookIn = lookIn.parent) {
-      Symbol symbol = lookIn.symbols.get(symbolName);
-      if (symbol != null) {
-        return symbol;
+      VarRef varRef = lookIn.symbols.get(symbolName);
+      if (varRef != null) {
+        return varRef;
       }
     }
     return null;
   }
 
-  public Symbol allocateOrLookUp(String symbolName, boolean allowShadowing) {
-    Symbol result = tryLookUp(symbolName, true);
+  public VarRef allocateOrLookUp(String symbolName, boolean allowShadowing) {
+    VarRef result = tryLookUp(symbolName, true);
     if (result == null) {
       result = allocateLocal(symbolName, allowShadowing);
     }
@@ -92,7 +92,7 @@ public class Scope {
     return sb.toString();
   }
 
-  public void allocateLocal(String symbolName, boolean allowShadowing, Symbol symbol) {
+  public void allocateLocal(String symbolName, boolean allowShadowing, VarRef varRef) {
     if (allowShadowing) {
       if (frame.symbols.containsKey(symbolName)) {
         // even with shadowing, we can't replace a variable in this same scope; can only shadow enclosing scopes
@@ -102,17 +102,17 @@ public class Scope {
     else if (lookUp(symbolName) != null) {
       throw new IllegalStateException("symbol name already taken: " + symbolName);
     }
-    frame.symbols.put(symbolName, symbol);
+    frame.symbols.put(symbolName, varRef);
   }
 
-  public Symbol allocateLocal(String symbolName, boolean allowShadowing) {
-    Symbol symbol = new Symbol.LocalVar(frame.firstAvailableReg++, null);
-    allocateLocal(symbolName, allowShadowing, symbol);
-    return symbol;
+  public VarRef allocateLocal(String symbolName, boolean allowShadowing) {
+    VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg++, null);
+    allocateLocal(symbolName, allowShadowing, varRef);
+    return varRef;
   }
 
   private static class Frame {
-    private final Map<String,Symbol> symbols = new HashMap<>();
+    private final Map<String,VarRef> symbols = new HashMap<>();
     private final Frame parent;
     private int firstAvailableReg;
 

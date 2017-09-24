@@ -509,10 +509,6 @@ public class EfPrinter {
         write(' ');
       }
       dispatch(ctx.matcherPattern());
-      if (ctx.SUCH_THAT() != null) {
-        write(":? ");
-        dispatch(ctx.expression());
-      }
     }
 
     @Override

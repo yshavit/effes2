@@ -140,7 +140,7 @@ expressionMultiline:
 qualifiedIdentName:
  (qualifiedIdentNameStart DOT)?
  IDENT_NAME
- (qualifiedIdentNameMiddle DOT)*
+ (DOT qualifiedIdentNameMiddle)*
 ;
 
 qualifiedIdentNameMiddle:
@@ -176,7 +176,7 @@ expressionMatcher:
 // which we don't want. So, we take the "just name, no matcher" bit and make it its own rule.
 matcher:
   ASTERISK                                                            # MatcherAny
-| (AT ? IDENT_NAME)? matcherPattern (SUCH_THAT expression)?           # MatcherWithPattern
+| (AT ? IDENT_NAME)? matcherPattern                                   # MatcherWithPattern
 | AT ? IDENT_NAME (SUCH_THAT expression)?                             # MatcherJustName
 ;
 

@@ -53,8 +53,8 @@ public class ExpressionCompilerTest {
           Map<?,?> symbolAsMap = entry.getValue();
           int reg = (Integer) symbolAsMap.get("reg");
           String type = (String) symbolAsMap.get("type");
-          Symbol symbol = new Symbol.LocalVar(reg, type);
-          scope.allocateLocal(entry.getKey(), false, symbol);
+          VarRef varRef = new VarRef.LocalVar(reg, type);
+          scope.allocateLocal(entry.getKey(), false, varRef);
         }
       }
       return scope;

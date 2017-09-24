@@ -3,10 +3,10 @@ package com.yuvalshavit.effes2.compile;
 import com.google.common.base.Objects;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
-public abstract class Symbol {
+public abstract class VarRef {
   private final String type;
 
-  public Symbol(String type) {
+  public VarRef(String type) {
     this.type = type;
   }
 
@@ -18,7 +18,7 @@ public abstract class Symbol {
   public abstract void store(EffesOps<?> ops);
   public abstract void storeNoPop(EffesOps<?> out);
 
-  public static class LocalVar extends Symbol {
+  public static class LocalVar extends VarRef {
     private final int reg;
     private String regStr;
 
