@@ -15,14 +15,16 @@ public class MatcherCompiler {
   private /*final*/ LabelAssigner labelAssigner;
   private int matchStackSize;
   private int noMatchPopsCount;
+  private final CompilerImpl matcherCompiler = new CompilerImpl();
+  private final MatcherPatternCompiler matcherPatternCompiler = new MatcherPatternCompiler();
 
-  public static void expression(EffesParser.MatcherContext matcher, Object o, boolean negated, EffesOps<Void> out) {
+  public static void expression(EffesParser.MatcherContext matcher, Object notSureWhatThisIsFor, boolean negated, EffesOps<Void> out) {
     throw new UnsupportedOperationException(); // TODO
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
-    final ScratchVars scratchVars = new ScratchVars();
+    final ScratchVars scratchVars = new ScratchVars(); // TODO need to commit it at end
 
     CompilerImpl() {
       super(EffesParser.MatcherContext.class);
@@ -39,6 +41,7 @@ public class MatcherCompiler {
       if (name != null) {
         lookUp(name.getSymbol().getText(), input.AT(), false, scratchVars).storeNoPop(out);
       }
+      matcherPatternCompiler.apply(input.matcherPattern());
     }
 
     @Dispatched
@@ -61,10 +64,10 @@ public class MatcherCompiler {
           lookUp(varName, null, true, scratchVars).storeNoPop(out);
           new ExpressionCompiler(scope, out).apply(expression);
         });
-        // This goto is based on the s.t. expression. So whether we take the jump or not, after this line, the s.t. is popped, and the top of the stack is the
-        // original element we matched on.
+        // This goto is based on the SUCH_THAT expression. So whether we take the jump or not, after this line, the SUCH_THAT is popped, and the top of the
+        // stack is the original element we matched on.
         out.gotoIfNot(noMatchLabel);
-        scratchVars.commit(out);
+        // TODO need to pop here (if not expression?)
       }
     }
   }
