@@ -106,7 +106,9 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   @Dispatched
   public void apply(EffesParser.ExprIsAContext input) {
     apply(input.expression());
-    scope.inNewScope(() -> MatcherCompiler.expression(input.matcher(), null, input.NOT() != null, out));
+
+//    scope.inNewScope(() -> MatcherCompiler.expression(input.matcher(), null, input.NOT() != null, out));
+    throw new UnsupportedOperationException(); // TODO
   }
 
   @Dispatched

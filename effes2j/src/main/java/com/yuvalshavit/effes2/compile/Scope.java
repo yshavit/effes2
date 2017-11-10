@@ -105,10 +105,14 @@ public class Scope {
     frame.symbols.put(symbolName, varRef);
   }
 
-  public VarRef allocateLocal(String symbolName, boolean allowShadowing) {
-    VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg++, null);
+  public VarRef allocateLocal(String symbolName, boolean allowShadowing, String type) {
+    VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg++, type);
     allocateLocal(symbolName, allowShadowing, varRef);
     return varRef;
+  }
+
+  public VarRef allocateLocal(String symbolName, boolean allowShadowing) {
+    return allocateLocal(symbolName, allowShadowing, (String) null);
   }
 
   private static class Frame {

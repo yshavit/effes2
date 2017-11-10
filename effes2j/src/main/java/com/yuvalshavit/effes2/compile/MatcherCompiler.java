@@ -1,117 +1,188 @@
 package com.yuvalshavit.effes2.compile;
 
+import java.util.regex.Pattern;
+
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
+import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class MatcherCompiler {
 
-  private /*final*/ Scope scope;
-  private /*final*/ EffesOps<Void> out;
-  private /*final*/ String noMatchLabel; // TODO need a way to provide the "before you go to this label, pop some vars" labels.
-  private /*final*/ LabelAssigner labelAssigner;
-  private int matchStackSize;
-  private int noMatchPopsCount;
-  private final CompilerImpl matcherCompiler = new CompilerImpl();
-  private final MatcherPatternCompiler matcherPatternCompiler = new MatcherPatternCompiler();
+  private final Scope scope;
+  private final String labelIfMatched;
+  private final String labelNoMatch;
+  private final boolean keepIfNoMatch;
+  private final LabelAssigner labelAssigner;
+  private final EffesOps<Void> out;
+  private final ScratchVars scratchVars;
+  private int depth;
 
-  public static void expression(EffesParser.MatcherContext matcher, Object notSureWhatThisIsFor, boolean negated, EffesOps<Void> out) {
-    throw new UnsupportedOperationException(); // TODO
+  public static void compile(
+    EffesParser.MatcherContext matcherContext,
+    String labelIfMatched,
+    String labelNoMatch,
+    boolean keepIfNoMatch,
+    Scope scope,
+    LabelAssigner labelAssigner,
+    EffesOps<Void> out)
+  {
+    MatcherCompiler compiler = new MatcherCompiler(labelIfMatched, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
+    MatcherImpl matcherImpl = compiler.new MatcherImpl();
+    matcherImpl.apply(matcherContext);
+  }
+
+  private MatcherCompiler(
+    String labelIfMatched,
+    String labelNoMatch,
+    boolean keepIfNoMatch,
+    Scope scope,
+    LabelAssigner labelAssigner,
+    EffesOps<Void> out)
+  {
+    this.scope = scope;
+    this.labelIfMatched = labelIfMatched;
+    this.labelNoMatch = labelNoMatch;
+    this.keepIfNoMatch = keepIfNoMatch;
+    this.labelAssigner = labelAssigner;
+    this.out = out;
+    scratchVars = new ScratchVars();
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
-  private class CompilerImpl extends CompileDispatcher<EffesParser.MatcherContext> {
-    final ScratchVars scratchVars = new ScratchVars(); // TODO need to commit it at end
+  private class MatcherImpl extends CompileDispatcher<EffesParser.MatcherContext> {
 
-    CompilerImpl() {
+    MatcherImpl() {
       super(EffesParser.MatcherContext.class);
     }
 
     @Dispatched
     public void apply(EffesParser.MatcherAnyContext input) {
-      out.pop();
+      handle(null, null, null, null, MatcherCompiler.this::handleSuccess);
     }
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      TerminalNode name = input.IDENT_NAME();
-      if (name != null) {
-        lookUp(name.getSymbol().getText(), input.AT(), false, scratchVars).storeNoPop(out);
-      }
-      matcherPatternCompiler.apply(input.matcherPattern());
+      handle(input.AT(), input.IDENT_NAME(), null, null, () -> new MatcherPatternImpl().apply(input.matcherPattern()));
     }
 
     @Dispatched
     public void apply(EffesParser.MatcherJustNameContext input) {
-      String varName = input.IDENT_NAME().getSymbol().getText();
-      EffesParser.ExpressionContext expression = input.expression();
-      if (expression == null) {
-        // always matches, so we always want to pop the value and store it to the var
-        if (input.AT() == null) {
-          scope.allocateLocal(varName, true).store(out);
-        } else {
-          scope.lookUpInParentScope(varName).store(out);
-        }
-      } else {
-        // First we need to load the stack-top into a tmp field (without popping it), so that we can evaluate the expression. Do that in a sub-scope.
-        // Then, iff that matches, we simply commit the var (if it was to an outer scope var). Otherwise we just go to the noMatchLabel
-        // We'll do that in a separate scope. Then, if the expression matches, we'll pop the stack-top into the var and do the standard ifMatched/ifNotMatched
-        // work. Otherwise, we'll just do the ifNotMatched.
-        scope.inNewScope(() -> {
-          lookUp(varName, null, true, scratchVars).storeNoPop(out);
-          new ExpressionCompiler(scope, out).apply(expression);
-        });
-        // This goto is based on the SUCH_THAT expression. So whether we take the jump or not, after this line, the SUCH_THAT is popped, and the top of the
-        // stack is the original element we matched on.
-        out.gotoIfNot(noMatchLabel);
-        // TODO need to pop here (if not expression?)
-      }
-    }
-  }
-
-  private void pushMatchStack() {
-    ++matchStackSize;
-  }
-
-  private void popMatchStack() {
-    noMatchPopsCount = Math.max(noMatchPopsCount, matchStackSize);
-    --matchStackSize;
-  }
-
-  private VarRef lookUp(String varName, TerminalNode at, boolean allowShadowing, ScratchVars scratchVars) {
-    if (at == null) {
-      return scope.allocateOrLookUp(varName, allowShadowing);
-    } else {
-      assert at.getSymbol().getType() == EffesLexer.AT : at.getSymbol().getType() + ": " + EffesLexer.VOCABULARY.getDisplayName(at.getSymbol().getType());
-      VarRef commit = scope.lookUpInParentScope(varName);
-      VarRef scratch = scope.allocateLocal(varName, true);
-      scratchVars.add(scratch, commit);
-      return scratch;
+      handle(
+        input.AT(),
+        input.IDENT_NAME(),
+        null,
+        () -> new ExpressionCompiler(scope, out).apply(input.expression()),
+        MatcherCompiler.this::handleSuccess);
     }
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
-  private class MatcherPatternCompiler extends CompileDispatcher<EffesParser.MatcherPatternContext> {
-    MatcherPatternCompiler() {
+  private class MatcherPatternImpl extends CompileDispatcher<EffesParser.MatcherPatternContext> {
+    MatcherPatternImpl() {
       super(EffesParser.MatcherPatternContext.class);
     }
 
     @Dispatched
     public void apply(EffesParser.PatternRegexContext input) {
-      throw new UnsupportedOperationException(); // TODO
+      handle(
+        null,
+        null,
+        EffesNativeType.STRING.getEvmType(),
+        checkRegex(input.REGEX().getSymbol().getText()),
+        MatcherCompiler.this::handleSuccess);
     }
 
     @Dispatched
     public void apply(EffesParser.PatternTypeContext input) {
-      throw new UnsupportedOperationException(); // TODO
+      handle(
+        null,
+        null,
+        input.IDENT_TYPE().getSymbol().getText(),
+        null,
+        () -> input.matcher().forEach(childContext -> new MatcherImpl().apply(childContext))
+      );
     }
 
     @Dispatched
     public void apply(EffesParser.PatternStringLiteralContext input) {
-      throw new UnsupportedOperationException(); // TODO
+      handle(
+        null,
+        null,
+        EffesNativeType.STRING.getEvmType(),
+        checkRegex(Pattern.quote(input.QUOTED_STRING().getSymbol().getText())),
+        MatcherCompiler.this::handleSuccess);
     }
+
+    private Runnable checkRegex(String regex) {
+      return () -> {
+        out.strPush(regex);
+        out.stringRegex();
+        out.type(EffesNativeType.MATCH.getEvmType());
+      };
+    }
+  }
+
+  private void handle(TerminalNode varBindAt, TerminalNode varBind, String type, Runnable suchThat, Runnable next) {
+    // stack coming in: [... target]
+    if (varBind != null) {
+      String varName = varBind.getSymbol().getText();
+      final VarRef varRef;
+      if (varBindAt == null) {
+        // local var, just allocate it. We'll only ever care about the var if the type matches, so assume that type
+        varRef = scope.allocateLocal(varName, true, type);
+      } else {
+        assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
+        VarRef eventualBind = scope.lookUpInParentScope(varName);
+        varRef = scope.allocateLocal(varName, true, type);
+        scratchVars.add(varRef, eventualBind);
+      }
+      varRef.storeNoPop(out);
+    }
+    if (type != null) {
+      String typeMatchLabel = labelAssigner.allocate(String.format("match.%d.%s", depth, type));
+      out.typp(type);
+      ++depth;
+      // stack: [... target, isRightType]
+      out.gotoIf(typeMatchLabel);
+      // stack: [... target]
+      // If we get past the goto, that means we had a type mismatch. Handle the failure (that'll include a goto).
+      // Otherwise, we're done with the type check, so just provide the gotoIf's destination pin
+      handleFailure();
+      labelAssigner.place(typeMatchLabel);
+    }
+    if (suchThat != null) {
+      String suchThatSuccessLabel = labelAssigner.allocate(String.format("match.%d.suchThat", depth));
+      suchThat.run();
+      // stack: [... target, suchThat]
+      out.gotoIf(suchThatSuccessLabel);
+      // stack: [... target]
+      // Same branching as the "if type != null" bit
+      handleFailure();
+      labelAssigner.place(suchThatSuccessLabel);
+    }
+    next.run();
+    if (type != null) {
+      --depth;
+    }
+  }
+
+  private void handleFailure() {
+    int pops = keepIfNoMatch ? (depth - 1) : depth;
+    for (int i = 0; i < pops; ++i) {
+      out.pop();
+    }
+    out.gotoAbs(labelNoMatch);
+  }
+
+  private void handleSuccess() {
+    scratchVars.commit(out);
+    for (int i = 0; i < depth; ++i) {
+      out.pop();
+    }
+    out.gotoIf(labelIfMatched);
   }
 }
