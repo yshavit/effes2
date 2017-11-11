@@ -50,6 +50,7 @@ public class MatcherCompiler {
     this.labelAssigner = labelAssigner;
     this.out = out;
     scratchVars = new ScratchVars();
+    depth = 1;
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)

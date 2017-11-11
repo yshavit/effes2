@@ -1,0 +1,6 @@
+name: wild
+keepIfNotMatched: true
+match: '*'
+expect: |
+  pop
+  goif @goHereIfMatched

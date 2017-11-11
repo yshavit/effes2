@@ -95,6 +95,7 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
       if (!returnTypeIsAcceptable(resultClass, method)) {
         throw new RuntimeException("return value must be a subclass of " + resultClass + ": " + method);
       }
+      method.setAccessible(true);
       BiFunction<?,?,?> old = results.put(methodArgClass, (Dispatcher<Object,?> o, Object a) -> {
         try {
           return method.invoke(o, a);

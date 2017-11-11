@@ -29,7 +29,7 @@ public class ExpressionCompilerTest {
   public void compile(String fileName, TestCase testCase) throws Exception {
     ParseChecker.check(fileName, testCase.input, EffesParser::expression, expr -> {
       StringBuilder sb = new StringBuilder();
-      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), Op.factory(op -> sb.append(op).append('\n')));
+      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), TUtils.opsToString(sb));
       compiler.apply(expr);
       assertEquals(sb.toString(), testCase.expect);
     });
