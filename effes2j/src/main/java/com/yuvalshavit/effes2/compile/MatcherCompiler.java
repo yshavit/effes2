@@ -76,7 +76,7 @@ public class MatcherCompiler {
         input.AT(),
         input.IDENT_NAME(),
         null,
-        () -> new ExpressionCompiler(scope, out).apply(input.expression()),
+        input.expression() == null ? null : () -> new ExpressionCompiler(scope, out).apply(input.expression()),
         MatcherCompiler.this::handleSuccess);
     }
   }
@@ -104,7 +104,12 @@ public class MatcherCompiler {
         null,
         input.IDENT_TYPE().getSymbol().getText(),
         null,
-        () -> input.matcher().forEach(childContext -> new MatcherImpl().apply(childContext))
+        () -> {
+          ++depth;
+          input.matcher().forEach(childContext -> new MatcherImpl().apply(childContext));
+          --depth;
+          handleSuccess();
+        }
       );
     }
 
@@ -144,9 +149,8 @@ public class MatcherCompiler {
       varRef.storeNoPop(out);
     }
     if (type != null) {
-      String typeMatchLabel = labelAssigner.allocate(String.format("match.%d.%s", depth, type));
+      String typeMatchLabel = labelAssigner.allocate(String.format("match_%d_%s", depth, type));
       out.typp(type);
-      ++depth;
       // stack: [... target, isRightType]
       out.gotoIf(typeMatchLabel);
       // stack: [... target]
@@ -156,7 +160,7 @@ public class MatcherCompiler {
       labelAssigner.place(typeMatchLabel);
     }
     if (suchThat != null) {
-      String suchThatSuccessLabel = labelAssigner.allocate(String.format("match.%d.suchThat", depth));
+      String suchThatSuccessLabel = labelAssigner.allocate(String.format("match_%d_suchThat", depth));
       suchThat.run();
       // stack: [... target, suchThat]
       out.gotoIf(suchThatSuccessLabel);
@@ -166,9 +170,6 @@ public class MatcherCompiler {
       labelAssigner.place(suchThatSuccessLabel);
     }
     next.run();
-    if (type != null) {
-      --depth;
-    }
   }
 
   private void handleFailure() {
@@ -184,6 +185,6 @@ public class MatcherCompiler {
     for (int i = 0; i < depth; ++i) {
       out.pop();
     }
-    out.gotoIf(labelIfMatched);
+    out.gotoAbs(labelIfMatched);
   }
 }

@@ -16,8 +16,8 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 // Not really a unit test per se; more like a small compile-and-run test
 public class MatcherCompilerTest {
-  private static final String LABEL_IF_MATCHED = "@goHereIfMatched";
-  private static final String LABEL_IF_NOT_MATCHED = "@goHereIfNotMatched";
+  private static final String LABEL_IF_MATCHED_ = "@MATCHED";
+  private static final String LABEL_IF_NOT_MATCHED_ = "@UNMATCHED";
 
   @Test
   public void dataProviderWorks() throws IOException {
@@ -39,16 +39,23 @@ public class MatcherCompilerTest {
         scope.allocateLocal(variable, false);
       }
       LabelAssigner labelAssigner = new LabelAssigner(ops);
-      MatcherCompiler.compile(matcherContext, LABEL_IF_MATCHED, LABEL_IF_NOT_MATCHED, testCase.keepIfNotMatched, scope, labelAssigner, ops);
+      MatcherCompiler.compile(matcherContext, testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
       assertEquals(sb.toString(), testCase.expect, testName);
     });
   }
 
   public static class TestCase {
     public String name;
+    public String labelIfMatched = LABEL_IF_MATCHED_;
+    public String labelIfNotMatched = LABEL_IF_NOT_MATCHED_;
     public Set<String> variables = Collections.emptySet();
     public boolean keepIfNotMatched;
     public String match;
     public String expect;
+
+    @Override
+    public String toString() {
+      return name;
+    }
   }
 }

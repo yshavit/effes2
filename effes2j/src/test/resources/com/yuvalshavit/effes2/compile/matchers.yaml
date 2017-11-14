@@ -1,6 +1,77 @@
-name: wild
+name: wild, keep unmatched
 keepIfNotMatched: true
 match: '*'
 expect: |
   pop
-  goif @goHereIfMatched
+  goto @MATCHED
+---
+name: wild, pop unmatched
+keepIfNotMatched: false
+match: '*'
+expect: |
+  pop
+  goto @MATCHED
+---
+name: just name
+keepIfNotMatched: true
+match: 'abc'
+expect: |
+  Svar 0
+  pop
+  goto @MATCHED
+---
+name: guarded name, keep unmatched
+keepIfNotMatched: true
+match: abc :? abc == 1
+expect: |
+  Svar 0
+  pvar 0
+  int 1
+  call_Integer:eq
+  goif match_1_suchThat
+  goto @UNMATCHED
+  labl match_1_suchThat
+  pop
+  goto @MATCHED
+---
+name: guarded name, pop unmatched
+keepIfNotMatched: false
+match: abc :? abc == 1
+expect: |
+  Svar 0
+  pvar 0
+  int 1
+  call_Integer:eq
+  goif match_1_suchThat
+  pop
+  goto @UNMATCHED
+  labl match_1_suchThat
+  pop
+  goto @MATCHED
+---
+name: singleton type pattern
+keepIfNotMatched: false
+match: Nothing
+expect: |
+  typp Nothing
+  goif match_1_Nothing
+  pop
+  goto @UNMATCHED
+  labl match_1_Nothing
+  pop
+  goto @MATCHED
+---
+name: regex type pattern
+keepIfNotMatched: false
+match: '~/foo (\\w+)/'
+expect: ''
+---
+name: string literal pattern
+keepIfNotMatched: false
+match: '"foo bar"'
+expect: ''
+---
+name: complex
+keepIfNotMatched: true
+match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/pattern.*/)) :? abc < to_int(patty.group(1))
+expect: ''
