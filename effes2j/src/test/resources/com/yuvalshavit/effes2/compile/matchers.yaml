@@ -123,11 +123,67 @@ expect: |
 name: complex
 keepIfNotMatched: true
 match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\\d+/)) :? abc < to_int(patty))
+typeFields:
+  Triple: [t0, t1, t2]
+  Pair: [p0, p1]
 expect: |
   #                         # [val]
   typp Triple               # [val, isTriple]
   goif match_1_Triple       # [val]
   goto @UNMATCHED           # [val]
   labl match_1_Triple       # [val]
-  Svar 0                    # [val] -- {$0=val} ERROR! SHOULD BE FETCHING THE FIELD!
-  ...
+  Pfld Triple t0            # [val, t0]
+  pop                       # [val]
+  Pfld Triple t1            # [val, t1]
+  Svar 0                    # [val, t1]                   -- {$0=t1}
+  pvar 0                    # [val, t1, t1]               -- {$0=t1}
+  int 1                     # [val, t1, t1, 1]            -- {$0=t1}
+  call_Integer:gt           # [val, t1, t1=1]             -- {$0=t1}
+  goif match_2_suchThat     # [val, t1]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1} TODO unset this?
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_2_suchThat     # [val, t1]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  Pfld Triple t2            # [val, t2]                   -- {$0=t1}
+  typp Pair                 # [val, t2, t2isPair]         -- {$0=t1}
+  goif match_2_Pair         # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_2_Pair         # [val, t2]                   -- {$0=t1}
+  Pfld Pair p0              # [val, t2, pair.p0]          -- {$0=t1}
+  typp String               # [val, t2, p0, p0IsString]   -- {$0=t1}
+  goif match_3_String       # [val, t2, p0]               -- {$0=t1}
+  pop                       # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_3_String       # [val, t2, p0]               -- {$0=t1}
+  str "\\Qlit string\\E"    # [val, t2, p0, litStr]       -- {$0=t1}
+  call_String:regex         # [val, t2, p0, matchOrFalse] -- {$0=t1}
+  type Match                # [val, t2, p0, isMatch]      -- {$0=t1}
+  goif match_3_suchThat     # [val, t2, p0]               -- {$0=t1}
+  pop                       # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_3_suchThat     # [val, t2, p0]               -- {$0=t1}
+  pop                       # [val, t2]                   -- {$0=t1}
+  Pfld Pair p1              # [val, t2, p1]               -- {$0=t1}
+  Svar 1                    # [val, t2, p1]               -- {$0=t1}
+  typp String               # [val, t2, p1, p1IsString]   -- {$0=t1}
+  goif match_4_String TODO  # [val, t2, p1]               -- {$0=t1}   BROKEN! ACTUAL HAS 3 DUPE'D
+  pop                       # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_4_String
+  str "\\\\d+"
+  call_String:regex
+  type Match
+  goif match_4_suchThat
+  TODO where is the to_int function?!
+  pop
+  pop
+  goto @UNMATCHED
+  labl match_4_suchThat
+  pop
+  pop
+  pop
+  goto @MATCHED

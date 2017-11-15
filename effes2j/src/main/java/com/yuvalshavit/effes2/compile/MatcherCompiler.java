@@ -1,5 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -14,6 +15,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 public class MatcherCompiler {
 
   private final Scope scope;
+  private final FieldLookup fieldLookup;
   private final String labelIfMatched;
   private final String labelNoMatch;
   private final boolean keepIfNoMatch;
@@ -24,6 +26,7 @@ public class MatcherCompiler {
 
   public static void compile(
     EffesParser.MatcherContext matcherContext,
+    FieldLookup fieldLookup,
     String labelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
@@ -31,7 +34,7 @@ public class MatcherCompiler {
     LabelAssigner labelAssigner,
     EffesOps<Void> out)
   {
-    MatcherCompiler compiler = new MatcherCompiler(labelIfMatched, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
+    MatcherCompiler compiler = new MatcherCompiler(fieldLookup, labelIfMatched, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
@@ -43,6 +46,7 @@ public class MatcherCompiler {
   }
 
   private MatcherCompiler(
+    FieldLookup fieldLookup,
     String labelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
@@ -51,6 +55,7 @@ public class MatcherCompiler {
     EffesOps<Void> out)
   {
     this.scope = scope;
+    this.fieldLookup = fieldLookup;
     this.labelIfMatched = labelIfMatched;
     this.labelNoMatch = labelNoMatch;
     this.keepIfNoMatch = keepIfNoMatch;
@@ -106,14 +111,22 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.PatternTypeContext input) {
+      String typeName = input.IDENT_TYPE().getSymbol().getText();
       handle(
         null,
         null,
-        input.IDENT_TYPE().getSymbol().getText(),
+        typeName,
         null,
         () -> {
           ++depth;
-          input.matcher().forEach(childContext -> new MatcherImpl().apply(childContext));
+          List<EffesParser.MatcherContext> matcher = input.matcher();
+          for (int childIdx = 0; childIdx < matcher.size(); childIdx++) {
+            EffesParser.MatcherContext childContext = matcher.get(childIdx);
+            String fieldName = fieldLookup.fieldName(typeName, childIdx);
+            out.PushField(typeName, fieldName);
+            new MatcherImpl().apply(childContext);
+            out.pop();
+          }
           --depth;
         }
       );

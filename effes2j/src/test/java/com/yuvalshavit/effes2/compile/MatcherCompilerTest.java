@@ -4,6 +4,8 @@ import static org.testng.Assert.*;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,21 +43,18 @@ public class MatcherCompilerTest {
         scope.allocateLocal(variable, false);
       }
       LabelAssigner labelAssigner = new LabelAssigner(ops);
-      MatcherCompiler.compile(matcherContext, testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
-      assertEquals(sb.toString(), trimComments(testCase.expect), testName);
+      MatcherCompiler.compile(matcherContext, testCase.fieldLookup(), testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
+      assertEquals(sb.toString(), testCase.trimmedExpected(), testName);
     });
   }
 
-  private String trimComments(String string) {
-    return string.replaceAll(" *#.*\n", "\n")
-      .replaceAll("^\n*", ""); // remove blank lines
-  }
 
   public static class TestCase {
     public String name;
     public String labelIfMatched = LABEL_IF_MATCHED_;
     public String labelIfNotMatched = LABEL_IF_NOT_MATCHED_;
     public Set<String> variables = Collections.emptySet();
+    public Map<String,List<String>> typeFields = Collections.emptyMap();
     public boolean keepIfNotMatched;
     public String match;
     public String expect;
@@ -63,6 +62,26 @@ public class MatcherCompilerTest {
     @Override
     public String toString() {
       return name;
+    }
+
+    FieldLookup fieldLookup() {
+      return (type, index) -> {
+        List<String> fields = typeFields.get(type);
+        if (fields == null) {
+          throw new RuntimeException("test error: undefined type " + type);
+        }
+        try {
+          return fields.get(index);
+        } catch (IndexOutOfBoundsException e) {
+          throw new RuntimeException("test error: bad field access for type " + type, e);
+        }
+      };
+    }
+
+    private String trimmedExpected() {
+      return expect
+        .replaceAll(" *#.*\n", "\n")
+        .replaceAll("^\n*", ""); // remove blank lines
     }
   }
 }
