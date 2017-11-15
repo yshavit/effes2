@@ -2,6 +2,7 @@ package com.yuvalshavit.effes2.compile;
 
 import static java.util.Objects.requireNonNull;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;
@@ -38,6 +39,9 @@ public class Op {
     requireNonNull(andThen);
     @SuppressWarnings("unchecked")
     EffesOps<R> instance = (EffesOps<R>) Proxy.newProxyInstance(Op.class.getClassLoader(), new Class[] {EffesOps.class}, ((proxy, method, args) -> {
+      if (method.getDeclaringClass() == Object.class && method.getName().equals("toString")) {
+        return handler.toString();
+      }
       OperationFactory opFactory = method.getAnnotation(OperationFactory.class);
       if (opFactory == null) {
         throw new RuntimeException("not an " + OperationFactory.class.getSimpleName());

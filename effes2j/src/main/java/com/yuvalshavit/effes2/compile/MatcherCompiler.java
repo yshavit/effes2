@@ -34,6 +34,12 @@ public class MatcherCompiler {
     MatcherCompiler compiler = new MatcherCompiler(labelIfMatched, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
+    // The above would have written all of the gotos for failure. Now write the success case.
+    compiler.scratchVars.commit(compiler.out);
+    for (int i = 0; i < compiler.depth; ++i) {
+      compiler.out.pop();
+    }
+    compiler.out.gotoAbs(compiler.labelIfMatched);
   }
 
   private MatcherCompiler(
@@ -63,7 +69,7 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherAnyContext input) {
-      handle(null, null, null, null, MatcherCompiler.this::handleSuccess);
+      handle(null, null, null, null, null);
     }
 
     @Dispatched
@@ -78,7 +84,7 @@ public class MatcherCompiler {
         input.IDENT_NAME(),
         null,
         input.expression() == null ? null : () -> new ExpressionCompiler(scope, out).apply(input.expression()),
-        MatcherCompiler.this::handleSuccess);
+        null);
     }
   }
 
@@ -95,7 +101,7 @@ public class MatcherCompiler {
         null,
         EffesNativeType.STRING.getEvmType(),
         checkRegex(input.REGEX().getSymbol().getText()),
-        MatcherCompiler.this::handleSuccess);
+        null);
     }
 
     @Dispatched
@@ -109,7 +115,6 @@ public class MatcherCompiler {
           ++depth;
           input.matcher().forEach(childContext -> new MatcherImpl().apply(childContext));
           --depth;
-          handleSuccess();
         }
       );
     }
@@ -121,7 +126,7 @@ public class MatcherCompiler {
         null,
         EffesNativeType.STRING.getEvmType(),
         checkRegex(Pattern.quote(ExpressionCompiler.getQuotedString(input.QUOTED_STRING()))),
-        MatcherCompiler.this::handleSuccess);
+        null);
     }
 
     private Runnable checkRegex(String regex) {
@@ -170,7 +175,9 @@ public class MatcherCompiler {
       handleFailure();
       labelAssigner.place(suchThatSuccessLabel);
     }
-    next.run();
+    if (next != null) {
+      next.run();
+    }
   }
 
   private void handleFailure() {
@@ -181,11 +188,4 @@ public class MatcherCompiler {
     out.gotoAbs(labelNoMatch);
   }
 
-  private void handleSuccess() {
-    scratchVars.commit(out);
-    for (int i = 0; i < depth; ++i) {
-      out.pop();
-    }
-    out.gotoAbs(labelIfMatched);
-  }
 }

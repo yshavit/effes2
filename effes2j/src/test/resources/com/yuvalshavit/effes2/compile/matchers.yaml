@@ -123,4 +123,11 @@ expect: |
 name: complex
 keepIfNotMatched: true
 match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\\d+/)) :? abc < to_int(patty))
-expect: ''
+expect: |
+  #                         # [val]
+  typp Triple               # [val, isTriple]
+  goif match_1_Triple       # [val]
+  goto @UNMATCHED           # [val]
+  labl match_1_Triple       # [val]
+  Svar 0                    # [val] -- {$0=val} ERROR! SHOULD BE FETCHING THE FIELD!
+  ...
