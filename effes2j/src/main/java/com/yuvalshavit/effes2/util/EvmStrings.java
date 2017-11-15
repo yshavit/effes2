@@ -51,4 +51,56 @@ public class EvmStrings {
     sb.append('"');
     return sb.toString();
   }
+
+  /**
+   * Translates escape characters to their equivalents. For instance, the two characters '\' and '\t' will become a tab.
+   */
+  public static String unEscape(String string) {
+    if (string.chars().noneMatch(c -> c == '\\')) {
+      return string;
+    }
+    StringBuilder sb = new StringBuilder(string.length());
+    boolean prevWasEsc = false;
+    for (int i = 0; i < string.length(); ++i) {
+      char c = string.charAt(i);
+      if (prevWasEsc) {
+        final char esc;
+        switch (c) {
+          case 'b':
+            esc = '\b';
+            break;
+          case 't':
+            esc = '\t';
+            break;
+          case 'n':
+            esc = '\n';
+            break;
+          case 'f':
+            esc = '\f';
+            break;
+          case 'r':
+            esc = '\r';
+            break;
+          case '"':
+            esc = '"';
+            break;
+          case '\\':
+            esc = '\\';
+            break;
+          default:
+            throw new IllegalArgumentException("unrecognized escape: \\" + c + " in " + string);
+        }
+        sb.append(esc);
+        prevWasEsc = false;
+      } else if (c == '\\') {
+        prevWasEsc = true;
+      } else {
+        sb.append(c);
+      }
+    }
+    if (prevWasEsc) {
+      throw new IllegalArgumentException("can't end with unescaped backslash: " + string);
+    }
+    return sb.toString();
+  }
 }

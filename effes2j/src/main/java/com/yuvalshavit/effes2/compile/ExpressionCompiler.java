@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
@@ -57,8 +58,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprStringLiteralContext input) {
-    String quotedString = input.QUOTED_STRING().getSymbol().getText();
-    quotedString = quotedString.substring(1, quotedString.length() - 1);
+    TerminalNode terminalNode = input.QUOTED_STRING();
+    String quotedString = getQuotedString(terminalNode);
     out.strPush(EvmStrings.escape(quotedString));
   }
 
@@ -119,6 +120,15 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   @Dispatched
   public void apply(EffesParser.ExprMultOrDivideContext input) {
     binaryExpr(input.expression(), input.ASTERISK() == null ? out::iSub : out::iMul);
+  }
+
+  public static String getQuotedString(TerminalNode node) {
+    if (node.getSymbol().getType() != EffesLexer.QUOTED_STRING) {
+      throw new IllegalArgumentException("wrong token type: " + EffesParser.VOCABULARY.getDisplayName(node.getSymbol().getType()));
+    }
+    String fullToken = node.getSymbol().getText();
+    String withinQuotes = fullToken.substring(1, fullToken.length() - 1);
+    return EvmStrings.unEscape(withinQuotes);
   }
 
   private void binaryExpr(List<EffesParser.ExpressionContext> exprs, Runnable op) {

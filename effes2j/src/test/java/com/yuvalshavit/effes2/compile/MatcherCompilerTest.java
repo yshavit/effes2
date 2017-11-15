@@ -5,6 +5,8 @@ import static org.testng.Assert.*;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -40,8 +42,13 @@ public class MatcherCompilerTest {
       }
       LabelAssigner labelAssigner = new LabelAssigner(ops);
       MatcherCompiler.compile(matcherContext, testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
-      assertEquals(sb.toString(), testCase.expect, testName);
+      assertEquals(sb.toString(), trimComments(testCase.expect), testName);
     });
+  }
+
+  private String trimComments(String string) {
+    return string.replaceAll(" *#.*\n", "\n")
+      .replaceAll("^\n*", ""); // remove blank lines
   }
 
   public static class TestCase {

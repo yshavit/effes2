@@ -7,6 +7,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
+import com.yuvalshavit.effes2.util.EvmStrings;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
@@ -119,13 +120,13 @@ public class MatcherCompiler {
         null,
         null,
         EffesNativeType.STRING.getEvmType(),
-        checkRegex(Pattern.quote(input.QUOTED_STRING().getSymbol().getText())),
+        checkRegex(Pattern.quote(ExpressionCompiler.getQuotedString(input.QUOTED_STRING()))),
         MatcherCompiler.this::handleSuccess);
     }
 
     private Runnable checkRegex(String regex) {
       return () -> {
-        out.strPush(regex);
+        out.strPush(EvmStrings.escape(regex));
         out.stringRegex();
         out.type(EffesNativeType.MATCH.getEvmType());
       };

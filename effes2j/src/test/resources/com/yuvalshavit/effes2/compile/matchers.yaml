@@ -61,17 +61,66 @@ expect: |
   pop
   goto @MATCHED
 ---
-name: regex type pattern
-keepIfNotMatched: false
-match: '~/foo (\\w+)/'
-expect: ''
+name: regex type pattern, keep unmatched
+keepIfNotMatched: true
+match: '~/foo (\w+)/'
+expect: |
+  #                       # [val]
+  typp String             # [val, isStr]
+  goif match_1_String     # [val]
+  goto @UNMATCHED         # [val]
+  labl match_1_String     # [val]
+  str "foo (\\w+)"        # [val, pattern]
+  call_String:regex       # [val, matchOrFalse]
+  type Match              # [val, isMatch]
+  goif match_1_suchThat   # [val]
+  goto @UNMATCHED         # [val]
+  labl match_1_suchThat   # [val]
+  pop                     # []
+  goto @MATCHED           # []
 ---
+name: regex type pattern, pop unmatched
+keepIfNotMatched: false
+match: '~/foo (\w+)/'
+expect: |
+  #                       # [val]
+  typp String             # [val, isStr]
+  goif match_1_String     # [val]
+  pop                     # [], due to keepIfNotMatched = false
+  goto @UNMATCHED         # []
+  labl match_1_String     # [val]
+  str "foo (\\w+)"        # [val, pattern]
+  call_String:regex       # [val, matchOrFalse]
+  type Match              # [val, isMatch]
+  goif match_1_suchThat   # [val]
+  pop                     # [], due to keepIfNotMatched = false
+  goto @UNMATCHED         # []
+  labl match_1_suchThat   # [val]
+  pop                     # []
+  goto @MATCHED           # []
+---
+# Note that this is pretty much the same as the regex test,
+# but with the regex string being literal
 name: string literal pattern
 keepIfNotMatched: false
-match: '"foo bar"'
-expect: ''
+match: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
+expect: |
+  typp String
+  goif match_1_String
+  pop
+  goto @UNMATCHED
+  labl match_1_String
+  str "\\Qfoo\\bar\\E"
+  call_String:regex
+  type Match
+  goif match_1_suchThat
+  pop
+  goto @UNMATCHED
+  labl match_1_suchThat
+  pop
+  goto @MATCHED
 ---
 name: complex
 keepIfNotMatched: true
-match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/pattern.*/)) :? abc < to_int(patty.group(1))
+match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\\d+/)) :? abc < to_int(patty))
 expect: ''
