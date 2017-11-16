@@ -7,6 +7,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class LabelAssigner {
   private static final char SEGMENT_DELIMITER = '.';
+  private static final char DISAMBIGUATION_DELIMITER = ':';
   private final Map<String,Boolean> names = new HashMap<>();
   private final EffesOps<Void> out;
 
@@ -25,7 +26,7 @@ public class LabelAssigner {
     int disambiguation = 0;
     String allocatedName = description;
     while (names.putIfAbsent(allocatedName, true) != null) { // try to put new keys until we succeed
-      allocatedName = description + '$' + (++disambiguation);
+      allocatedName = description + DISAMBIGUATION_DELIMITER + (++disambiguation);
     }
     return allocatedName;
   }
