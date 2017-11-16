@@ -122,7 +122,7 @@ expect: |
 ---
 name: complex
 keepIfNotMatched: true
-match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/)) :? abc < to_int(patty))
+match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/))
 typeFields:
   Triple: [t0, t1, t2]
   Pair: [p0, p1]
@@ -185,6 +185,5 @@ expect: |
   pop                       # [val, t2]                   -- {$0=t1, $1=p1}
   pop                       # [val]                       -- {$0=t1, $1=p1}
   pop                       # []                          -- {$0=t1, $1=p1}
-  TODO where is the to_int function?
   TODO where is committing the tmp vars?
   goto @MATCHED             # []                          -- {$0=t1, $1=p1}
