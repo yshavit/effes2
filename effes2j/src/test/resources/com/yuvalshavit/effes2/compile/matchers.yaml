@@ -173,17 +173,19 @@ expect: |
   pop                       # [val, t2]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
   goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_3_String$1
-  str "\\\\d+"
-  call_String:regex
-  type Match
-  goif match_3_suchThat$1
-  TODO where is the to_int function?!
-  pop
-  pop
-  goto @UNMATCHED
-  labl match_3_suchThat$1
-  pop
-  pop
-  pop
-  goto @MATCHED
+  labl match_3_String$1     # [val, t2, p1]               -- {$0=t1}
+  str "\\\\d+"              # [val, t2, p1, digRegex]     -- {$0=t1}
+  call_String:regex         # [val, t2, p1, matchOrFalse] -- {$0=t1}
+  type Match                # [val, t2, p1, isMatch]      -- {$0=t1}
+  goif match_3_suchThat$1   # [val, t2, p1]               -- {$0=t1}
+  pop                       # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  goto @UNMATCHED           # [val]                       -- {$0=t1}
+  labl match_3_suchThat$1   # [val, t2, p1]               -- {$0=t1}
+  TODO where is storing to $1?
+  pop                       # [val, t2]                   -- {$0=t1}
+  pop                       # [val]                       -- {$0=t1}
+  pop                       # []                          -- {$0=t1}
+  TODO where is the to_int function?
+  TODO where is committing the tmp vars?
+  goto @MATCHED             # []                          -- {$0=t1}
