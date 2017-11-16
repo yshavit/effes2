@@ -169,20 +169,20 @@ expect: |
   Pfld Pair p1              # [val, t2, p1]               -- {$0=t1}
   Svar 1                    # [val, t2, p1]               -- {$0=t1}
   typp String               # [val, t2, p1, p1IsString]   -- {$0=t1}
-  goif match_4_String TODO  # [val, t2, p1]               -- {$0=t1}   BROKEN! ACTUAL HAS 3 DUPE'D
+  goif match_3_String$1     # [val, t2, p1]               -- {$0=t1}
   pop                       # [val, t2]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
   goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_4_String
+  labl match_3_String$1
   str "\\\\d+"
   call_String:regex
   type Match
-  goif match_4_suchThat
+  goif match_3_suchThat$1
   TODO where is the to_int function?!
   pop
   pop
   goto @UNMATCHED
-  labl match_4_suchThat
+  labl match_3_suchThat$1
   pop
   pop
   pop

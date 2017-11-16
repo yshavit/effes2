@@ -1,13 +1,13 @@
 package com.yuvalshavit.effes2.compile;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class LabelAssigner {
   private static final char SEGMENT_DELIMITER = '.';
-  private final Set<String> names = new HashSet<>();
+  private final Map<String,Boolean> names = new HashMap<>();
   private final EffesOps<Void> out;
 
   public LabelAssigner(EffesOps<Void> out) {
@@ -24,14 +24,14 @@ public class LabelAssigner {
     validate(description);
     int disambiguation = 0;
     String allocatedName = description;
-    while (!names.add(allocatedName)) {
-      allocatedName = description + '-' + (++disambiguation);
+    while (names.putIfAbsent(allocatedName, true) != null) { // try to put new keys until we succeed
+      allocatedName = description + '$' + (++disambiguation);
     }
     return allocatedName;
   }
 
   public void place(String name) {
-    if (!names.remove(name)) {
+    if (!names.replace(name, true, false)) {
       throw new IllegalArgumentException("unknown (or already-placed) label: " + name);
     }
     out.label(name);
