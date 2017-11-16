@@ -20,4 +20,10 @@ public final class TUtils {
       }
     });
   }
+
+  static String trimExpectedOps(String ops) {
+    return ops
+      .replaceAll(" *#.*\n", "\n")
+      .replaceAll("^\n*", ""); // remove blank lines
+  }
 }

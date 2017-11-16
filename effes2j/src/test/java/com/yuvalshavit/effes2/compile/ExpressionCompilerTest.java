@@ -12,6 +12,7 @@ import org.testng.annotations.Test;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.ParseChecker;
 import com.yuvalshavit.effes2.util.ResourceReader;
+import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class ExpressionCompilerTest {
 
@@ -29,9 +30,18 @@ public class ExpressionCompilerTest {
   public void compile(String fileName, TestCase testCase) throws Exception {
     ParseChecker.check(fileName, testCase.input, EffesParser::expression, expr -> {
       StringBuilder sb = new StringBuilder();
-      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), TUtils.opsToString(sb));
+      EffesOps<Void> out = TUtils.opsToString(sb);
+      FieldLookup fieldLookup = (type, index) -> {
+        if (type.equals("One") && index == 0) {
+          return "value";
+        } else {
+          throw new UnsupportedOperationException(String.format("unsupported field lookup on %s[%d]", type, index));
+        }
+      };
+      LabelAssigner labelAssigner = new LabelAssigner(out);
+      ExpressionCompiler compiler = new ExpressionCompiler(testCase.symbols(), fieldLookup, labelAssigner, out);
       compiler.apply(expr);
-      assertEquals(sb.toString(), testCase.expect);
+      assertEquals(sb.toString(), TUtils.trimExpectedOps(testCase.expect));
     });
   }
 
@@ -48,6 +58,7 @@ public class ExpressionCompilerTest {
 
     Scope symbols() {
       Scope scope = new Scope();
+      scope.push();
       if (symbols != null) {
         for (Map.Entry<String,Map<?,?>> entry : symbols.entrySet()) {
           Map<?,?> symbolAsMap = entry.getValue();

@@ -15,11 +15,15 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   public static final String THIS = "<this>";
 
   private final Scope scope;
+  private final FieldLookup fieldLookup;
+  private final LabelAssigner labelAssigner;
   private final EffesOps<Void> out;
 
-  public ExpressionCompiler(Scope scope, EffesOps<Void> out) {
+  public ExpressionCompiler(Scope scope, FieldLookup fieldLookup, LabelAssigner labelAssigner, EffesOps<Void> out) {
     super(EffesParser.ExpressionContext.class);
     this.scope = scope;
+    this.fieldLookup = fieldLookup;
+    this.labelAssigner = labelAssigner;
     this.out = out;
   }
 
@@ -107,9 +111,19 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   @Dispatched
   public void apply(EffesParser.ExprIsAContext input) {
     apply(input.expression());
+    boolean ifMatchedValue = input.NOT() == null;
 
-//    scope.inNewScope(() -> MatcherCompiler.expression(input.matcher(), null, input.NOT() != null, out));
-    throw new UnsupportedOperationException(); // TODO
+    // TODO note! Scope should be assigned outside of this, at the statement level. That way, you can have:
+    //     if foo is One(bar):
+    //        doSomethingWith(bar)
+    String isAFalse = labelAssigner.allocate("isA_false");
+    String isADone = labelAssigner.allocate("isA_done");
+    MatcherCompiler.compile(input.matcher(), fieldLookup, null, isAFalse, false, scope, labelAssigner, out);
+    out.bool(Boolean.toString(ifMatchedValue)); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
+    out.gotoAbs(isADone);
+    labelAssigner.place(isAFalse);
+    out.bool(Boolean.toString(!ifMatchedValue));
+    labelAssigner.place(isADone);
   }
 
   @Dispatched

@@ -118,7 +118,7 @@ cmp:
 // Note: It's important that these expressions never contain a colon, so that matchers
 // within the expression are unambiguous.
 expression:
-  expression IS NOT? matcher                                # ExprIsA
+  expression IS NOT? matcherPattern                         # ExprIsA
 | QUOTED_STRING                                             # ExprStringLiteral
 | INT                                                       # ExprIntLiteral
 | THIS                                                      # ExprThis

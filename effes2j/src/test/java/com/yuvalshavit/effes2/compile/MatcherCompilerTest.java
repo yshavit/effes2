@@ -43,7 +43,7 @@ public class MatcherCompilerTest {
       LabelAssigner labelAssigner = new LabelAssigner(ops);
       scope.push();
       MatcherCompiler.compile(matcherContext, testCase.fieldLookup(), testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
-      assertEquals(sb.toString(), testCase.trimmedExpected(), testName);
+      assertEquals(sb.toString(), TUtils.trimExpectedOps(testCase.expect), testName);
     });
   }
 
@@ -74,12 +74,6 @@ public class MatcherCompilerTest {
           throw new RuntimeException("test error: bad field access for type " + type, e);
         }
       };
-    }
-
-    private String trimmedExpected() {
-      return expect
-        .replaceAll(" *#.*\n", "\n")
-        .replaceAll("^\n*", ""); // remove blank lines
     }
   }
 }

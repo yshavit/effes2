@@ -16,7 +16,6 @@ public class MatcherCompiler {
 
   private final Scope scope;
   private final FieldLookup fieldLookup;
-  private final String labelIfMatched;
   private final String labelNoMatch;
   private final boolean keepIfNoMatch;
   private final LabelAssigner labelAssigner;
@@ -34,7 +33,7 @@ public class MatcherCompiler {
     LabelAssigner labelAssigner,
     EffesOps<Void> out)
   {
-    MatcherCompiler compiler = new MatcherCompiler(fieldLookup, labelIfMatched, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
+    MatcherCompiler compiler = new MatcherCompiler(fieldLookup, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
@@ -42,12 +41,13 @@ public class MatcherCompiler {
     for (int i = 0; i < compiler.depth; ++i) {
       compiler.out.pop();
     }
-    compiler.out.gotoAbs(compiler.labelIfMatched);
+    if (labelIfMatched != null) {
+      compiler.out.gotoAbs(labelIfMatched);
+    }
   }
 
   private MatcherCompiler(
     FieldLookup fieldLookup,
-    String labelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
     Scope scope,
@@ -56,7 +56,6 @@ public class MatcherCompiler {
   {
     this.scope = scope;
     this.fieldLookup = fieldLookup;
-    this.labelIfMatched = labelIfMatched;
     this.labelNoMatch = labelNoMatch;
     this.keepIfNoMatch = keepIfNoMatch;
     this.labelAssigner = labelAssigner;
@@ -88,7 +87,7 @@ public class MatcherCompiler {
         input.AT(),
         input.IDENT_NAME(),
         null,
-        input.expression() == null ? null : () -> new ExpressionCompiler(scope, out).apply(input.expression()),
+        input.expression() == null ? null : () -> new ExpressionCompiler(scope, fieldLookup, labelAssigner, out).apply(input.expression()),
         null);
     }
   }

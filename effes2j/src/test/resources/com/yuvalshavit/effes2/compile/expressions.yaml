@@ -73,3 +73,70 @@ expect: |
 input: '"Let''s build a ☃, man!"'
 expect: |
   str "Let's build a \u2603, man!"
+---
+input: 'foo is One(bar)'
+symbols:
+  foo:
+    reg: 0
+expect: |
+  pvar 0            # [foo]
+  typp One          # [foo, isOne]
+  goif match_1_One  # [foo]
+  pop               # []
+  goto isA_false    # []
+  labl match_1_One  # [foo]
+  Pfld One value    # [foo, foo.value]
+  Svar 1            # [foo, foo.value]  {$1=foo.value}  // Yes, really should be $1, not $0 as now
+  pop               # [foo]
+  pop               # []
+  bool true         # [true]
+  goto isA_done     # [true]
+  labl isA_false    # []
+  bool false        # [false]
+  labl isA_done     # [trueOrFalse]
+---
+input: 'foo is One(@bar)'
+symbols:
+  foo:
+    reg: 0
+  bar:
+    reg: 1
+expect: |
+  pvar 0            # [foo]
+  typp One          # [foo, isOne]
+  goif match_1_One  # [foo]
+  pop               # []
+  goto isA_false    # []
+  labl match_1_One  # [foo]
+  Pfld One value    # [foo, foo.value]
+  Svar 2            # [foo, foo.value]              {$2=foo.value}
+  pvar 2            # [foo, foo.value, foo.value]   {$2=foo.value}
+  svar 1            # [foo, foo.value]              {$1=foo.value, $2=foo.value}
+  pop               # [foo]
+  pop               # []
+  bool true         # [true]
+  goto isA_done     # [true]
+  labl isA_false    # []
+  bool false        # [false]
+  labl isA_done     # [trueOrFalse]
+---
+input: 'foo is not One(bar)'
+symbols:
+  foo:
+    reg: 0
+expect: |
+  pvar 0            # [foo]
+  typp One          # [foo, isOne]
+  goif match_1_One  # [foo]
+  pop               # []
+  goto isA_false    # []
+  labl match_1_One  # [foo]
+  Pfld One value    # [foo, foo.value]
+  Svar 1            # [foo, foo.value]  {$1=foo.value}  // Yes, really should be $1, not $0 as now
+  pop               # [foo]
+  pop               # []
+  bool true         # [false]
+  goto isA_done     # [false]
+  labl isA_false    # []
+  bool false        # [true]
+  labl isA_done     # [trueOrFalse]
