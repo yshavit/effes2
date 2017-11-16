@@ -185,5 +185,4 @@ expect: |
   pop                       # [val, t2]                   -- {$0=t1, $1=p1}
   pop                       # [val]                       -- {$0=t1, $1=p1}
   pop                       # []                          -- {$0=t1, $1=p1}
-  TODO where is committing the tmp vars?
   goto @MATCHED             # []                          -- {$0=t1, $1=p1}
