@@ -122,7 +122,7 @@ expect: |
 ---
 name: complex
 keepIfNotMatched: true
-match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\\d+/)) :? abc < to_int(patty))
+match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/)) :? abc < to_int(patty))
 typeFields:
   Triple: [t0, t1, t2]
   Pair: [p0, p1]
@@ -174,7 +174,7 @@ expect: |
   pop                       # [val]                       -- {$0=t1}
   goto @UNMATCHED           # [val]                       -- {$0=t1}
   labl match_3_String:1     # [val, t2, p1]               -- {$0=t1}
-  str "\\\\d+"              # [val, t2, p1, digRegex]     -- {$0=t1}
+  str "\\d+"                # [val, t2, p1, digRegex]     -- {$0=t1}
   call_String:regex         # [val, t2, p1, matchOrFalse] -- {$0=t1}
   type Match                # [val, t2, p1, isMatch]      -- {$0=t1}
   goif match_3_suchThat:1   # [val, t2, p1]               -- {$0=t1}
