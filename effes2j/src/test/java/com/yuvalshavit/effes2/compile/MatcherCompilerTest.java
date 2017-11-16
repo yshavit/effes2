@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -37,21 +36,22 @@ public class MatcherCompilerTest {
       StringBuilder sb = new StringBuilder();
       EffesOps<Void> ops = TUtils.opsToString(sb);
       Scope scope = new Scope();
+      scope.push();
       for (String variable : testCase.variables) {
         scope.allocateLocal(variable, false);
       }
       LabelAssigner labelAssigner = new LabelAssigner(ops);
+      scope.push();
       MatcherCompiler.compile(matcherContext, testCase.fieldLookup(), testCase.labelIfMatched, testCase.labelIfNotMatched, testCase.keepIfNotMatched, scope, labelAssigner, ops);
       assertEquals(sb.toString(), testCase.trimmedExpected(), testName);
     });
   }
 
-
   public static class TestCase {
     public String name;
     public String labelIfMatched = LABEL_IF_MATCHED_;
     public String labelIfNotMatched = LABEL_IF_NOT_MATCHED_;
-    public Set<String> variables = Collections.emptySet();
+    public List<String> variables = Collections.emptyList();
     public Map<String,List<String>> typeFields = Collections.emptyMap();
     public boolean keepIfNotMatched;
     public String match;

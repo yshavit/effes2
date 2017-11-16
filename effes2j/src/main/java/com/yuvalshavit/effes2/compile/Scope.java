@@ -99,7 +99,7 @@ public class Scope {
         throw new IllegalStateException("symbol name already taken: " + symbolName);
       }
     }
-    else if (lookUp(symbolName) != null) {
+    else if (tryLookUp(symbolName, false) != null) {
       throw new IllegalStateException("symbol name already taken: " + symbolName);
     }
     frame.symbols.put(symbolName, varRef);
@@ -124,7 +124,7 @@ public class Scope {
       this.parent = parent;
       firstAvailableReg = (parent == null)
         ? 0
-        : (parent.firstAvailableReg + 1);
+        : parent.firstAvailableReg;
     }
 
     @Override

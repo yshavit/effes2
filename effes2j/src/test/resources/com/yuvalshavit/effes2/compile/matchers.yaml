@@ -49,6 +49,23 @@ expect: |
   pop
   goto @MATCHED
 ---
+name: guarded name to parent scope
+keepIfNotMatched: true
+variables: [oneVar, abc, twoVar]
+match: '@abc :? abc == 1'
+expect: |
+  Svar 3
+  pvar 3
+  int 1
+  call_Integer:eq
+  goif match_1_suchThat
+  goto @UNMATCHED
+  labl match_1_suchThat
+  pvar 3
+  svar 1
+  pop
+  goto @MATCHED
+---
 name: singleton type pattern
 keepIfNotMatched: false
 match: Nothing
