@@ -18,7 +18,7 @@ public class ParseChecker {
     R ast = ParseUtils.parse(
       input,
       rule,
-      ((line, lineOffset, msg) -> errsSb.append(String.format("error at <%s> %d:%d: %s%n", description, line, lineOffset, msg))));
+      (line, lineOffset, msg) -> errsSb.append(String.format("error at <%s> %d:%d: %s%n", description, line, lineOffset, msg)));
 
     String errMessages = errsSb.toString();
     if (!errMessages.isEmpty()) {
