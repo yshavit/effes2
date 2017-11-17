@@ -14,8 +14,7 @@ expected:
         - Cons (IDENT_TYPE)
         - MatcherJustName:
           - head (IDENT_NAME)
-        - MatcherWithPattern:
-          - PatternAny
+        - MatcherAny
   - WhileBodySimple:
     - Block:
       - INDENT:
@@ -49,10 +48,10 @@ expected:
       - QualifiedIdentName:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
+        - stdin (IDENT_NAME)
         - QualifiedIdentNameMiddle:
-          - stdin (IDENT_NAME)
-        - readLine (IDENT_NAME)
-      - ArgsInvocation
+          - readLine (IDENT_NAME)
+          - ArgsInvocation
     - MatcherWithPattern:
       - line (IDENT_NAME)
       - PatternType:
@@ -73,10 +72,10 @@ expected:
       - QualifiedIdentName:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
+        - stdin (IDENT_NAME)
         - QualifiedIdentNameMiddle:
-          - stdin (IDENT_NAME)
-        - readLine (IDENT_NAME)
-      - ArgsInvocation
+          - readLine (IDENT_NAME)
+          - ArgsInvocation
     - MatcherJustName:
       - line (IDENT_NAME)
   - WhileBodySimple:

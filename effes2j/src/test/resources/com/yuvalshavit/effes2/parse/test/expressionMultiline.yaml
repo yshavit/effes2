@@ -18,8 +18,7 @@ expected:
           - QualifiedIdentName:
             - one (IDENT_NAME)
       - ExpressionMatcher:
-        - MatcherWithPattern:
-          - PatternAny
+        - MatcherAny
         - ExprVariableOrMethodInvocation:
           - QualifiedIdentName:
             - two (IDENT_NAME)
@@ -44,11 +43,10 @@ expected:
               - PatternType:
                 - Arrow (IDENT_TYPE)
             - MatcherJustName:
-              - '@toks (IDENT_NAME)'
+              - toks (IDENT_NAME)
         - ExprInstantiation:
           - True (IDENT_TYPE)
       - ExpressionMatcher:
-        - MatcherWithPattern:
-          - PatternAny
+        - MatcherAny
         - ExprInstantiation:
           - False (IDENT_TYPE)

@@ -45,16 +45,6 @@ expected:
   - PatternType:
     - SomeType (IDENT_TYPE)
 ---
-name: no-arg type with such-that
-input: SomeType :? someCond
-expected:
-  MatcherWithPattern:
-  - PatternType:
-    - SomeType (IDENT_TYPE)
-  - ExprVariableOrMethodInvocation:
-    - QualifiedIdentName:
-      - someCond (IDENT_NAME)
----
 name: unnamed type with just-name arg
 input: SomeType(arg1)
 expected:
@@ -78,5 +68,4 @@ expected:
 name: wildcard
 input: '*'
 expected:
-  MatcherWithPattern:
-  - PatternAny
+  MatcherAny
