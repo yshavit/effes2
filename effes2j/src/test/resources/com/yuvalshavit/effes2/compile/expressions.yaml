@@ -86,7 +86,7 @@ expect: |
   goto isA_false    # []
   labl match_1_One  # [foo]
   Pfld One value    # [foo, foo.value]
-  Svar 1            # [foo, foo.value]  {$1=foo.value}  // Yes, really should be $1, not $0 as now
+  Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
   bool true         # [true]
@@ -132,11 +132,11 @@ expect: |
   goto isA_false    # []
   labl match_1_One  # [foo]
   Pfld One value    # [foo, foo.value]
-  Svar 1            # [foo, foo.value]  {$1=foo.value}  // Yes, really should be $1, not $0 as now
+  Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
-  bool true         # [false]
+  bool false        # [false]
   goto isA_done     # [false]
   labl isA_false    # []
-  bool false        # [true]
+  bool true         # [true]
   labl isA_done     # [trueOrFalse]
