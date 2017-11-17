@@ -92,7 +92,7 @@ public class Scope {
     return sb.toString();
   }
 
-  public void allocateLocal(String symbolName, boolean allowShadowing, VarRef varRef) {
+  public void allocateLocal(String symbolName, boolean allowShadowing, VarRef.LocalVar varRef) {
     if (allowShadowing) {
       if (frame.symbols.containsKey(symbolName)) {
         // even with shadowing, we can't replace a variable in this same scope; can only shadow enclosing scopes
@@ -103,10 +103,11 @@ public class Scope {
       throw new IllegalStateException("symbol name already taken: " + symbolName);
     }
     frame.symbols.put(symbolName, varRef);
+    frame.firstAvailableReg = Math.max(varRef.reg(), frame.firstAvailableReg) + 1;
   }
 
   public VarRef allocateLocal(String symbolName, boolean allowShadowing, String type) {
-    VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg++, type);
+    VarRef.LocalVar varRef = new VarRef.LocalVar(frame.firstAvailableReg, type);
     allocateLocal(symbolName, allowShadowing, varRef);
     return varRef;
   }

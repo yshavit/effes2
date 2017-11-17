@@ -27,6 +27,10 @@ public abstract class VarRef {
       this.reg = reg;
     }
 
+    public int reg() {
+      return reg;
+    }
+
     @Override
     public void push(EffesOps<?> ops) {
       ops.pvar(regStr());
