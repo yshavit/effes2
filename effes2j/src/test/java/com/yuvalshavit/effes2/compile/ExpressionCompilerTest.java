@@ -68,6 +68,7 @@ public class ExpressionCompilerTest {
           scope.allocateLocal(entry.getKey(), false, varRef);
         }
       }
+      scope.push();
       return scope;
     }
   }
