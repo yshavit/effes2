@@ -90,7 +90,7 @@ statement:
 | qualifiedIdentName EQUALS expression NL                   # StatAssign
 | qualifiedIdentName EQUALS expressionMultiline             # StatAssignMultiline
 | IDENT_NAME EQUALS QUESTION_MARK NL                        # StatVarDeclare
-| expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
+//| expression DOT IDENT_NAME EQUALS expression NL            # StatQualifiedAssign
 ;
 
 statementIfConditionAndBody:

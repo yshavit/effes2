@@ -99,10 +99,6 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeStatVarDeclare(EffesParser.StatVarDeclareContext ctx);
 
   @Override
-  final public Void visitStatQualifiedAssign(EffesParser.StatQualifiedAssignContext ctx) { seeStatQualifiedAssign(ctx); return null; }
-  protected abstract void seeStatQualifiedAssign(EffesParser.StatQualifiedAssignContext ctx);
-
-  @Override
   final public Void visitIfElseSimple(EffesParser.IfElseSimpleContext ctx) { seeIfElseSimple(ctx); return null; }
   protected abstract void seeIfElseSimple(EffesParser.IfElseSimpleContext ctx);
 

@@ -312,15 +312,7 @@ public class EfPrinter {
     protected void seeStatVarDeclare(EffesParser.StatVarDeclareContext ctx) {
       write("%s = ?", ctx.IDENT_NAME()).nl();
     }
-
-    @Override
-    protected void seeStatQualifiedAssign(EffesParser.StatQualifiedAssignContext ctx) {
-      dispatch(ctx.expression(0));
-      write(".%s = ", ctx.IDENT_NAME());
-      dispatch(ctx.expression(1));
-      nl();
-    }
-
+    
     @Override
     protected void seeIfElseSimple(EffesParser.IfElseSimpleContext ctx) {
       write(':');
