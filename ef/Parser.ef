@@ -41,7 +41,7 @@ parseType(toks) ->:
       args = Empty
       parseArgs(toks) ::: _Parsed(@args, @toks)
       if toks is:
-        Cons(Newline,@toks):
+        Cons(Newline, @toks):
           return _Parsed(EfType(name, args), toks)
     *:
       return NoParse

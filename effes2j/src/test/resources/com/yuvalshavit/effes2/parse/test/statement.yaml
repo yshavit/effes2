@@ -49,7 +49,7 @@ expected:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
         - stdin (IDENT_NAME)
-        - QualifiedIdentNameMiddle:
+        - QualifiedIdentNameEnd:
           - readLine (IDENT_NAME)
           - ArgsInvocation
     - MatcherWithPattern:
@@ -73,7 +73,7 @@ expected:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
         - stdin (IDENT_NAME)
-        - QualifiedIdentNameMiddle:
+        - QualifiedIdentNameEnd:
           - readLine (IDENT_NAME)
           - ArgsInvocation
     - MatcherJustName:

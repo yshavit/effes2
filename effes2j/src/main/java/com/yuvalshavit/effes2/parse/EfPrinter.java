@@ -442,15 +442,15 @@ public class EfPrinter {
       if (handleIfNotNull(ctx.qualifiedIdentNameStart(), this::dispatch)) {
         write('.');
       }
-      for (EffesParser.QualifiedIdentNameMiddleContext middle : ctx.qualifiedIdentNameMiddle()) {
-        seeQualifiedIdentNameMiddle(middle);
-        write('.');
-      }
       write(ctx.IDENT_NAME());
+      for (EffesParser.QualifiedIdentNameEndContext middle : ctx.qualifiedIdentNameEnd()) {
+        write('.');
+        seeQualifiedIdentNameEnd(middle);
+      }
     }
 
     @Override
-    protected void seeQualifiedIdentNameMiddle(EffesParser.QualifiedIdentNameMiddleContext ctx) {
+    protected void seeQualifiedIdentNameEnd(EffesParser.QualifiedIdentNameEndContext ctx) {
       write(ctx.IDENT_NAME());
       handleIfNotNull(ctx.argsInvocation(), this::seeArgsInvocation);
     }

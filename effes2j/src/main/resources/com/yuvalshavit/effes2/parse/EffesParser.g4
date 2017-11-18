@@ -140,10 +140,10 @@ expressionMultiline:
 qualifiedIdentName:
  (qualifiedIdentNameStart DOT)?
  IDENT_NAME
- (DOT qualifiedIdentNameMiddle)*
+ (DOT qualifiedIdentNameEnd)*
 ;
 
-qualifiedIdentNameMiddle:
+qualifiedIdentNameEnd:
   IDENT_NAME argsInvocation?
 ;
 

@@ -103,7 +103,7 @@ type Lexer(_denter, _pending):
               item = LexError(raw)
               raw = False
           if item is not False:
-           pending = Cons(item, pending)
+            pending = Cons(item, pending)
         if reverse(pending) is:
           Cons(head, tail):
             this._pending = tail

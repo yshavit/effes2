@@ -114,7 +114,7 @@ expected:
     - QualifiedIdentType:
       - Stdio (IDENT_TYPE)
     - stdin (IDENT_NAME)
-    - QualifiedIdentNameMiddle:
+    - QualifiedIdentNameEnd:
       - readLine (IDENT_NAME)
       - ArgsInvocation
 ---
@@ -126,7 +126,7 @@ expected:
       - QualifiedIdentType:
         - Stdio (IDENT_TYPE)
       - stdin (IDENT_NAME)
-      - QualifiedIdentNameMiddle:
+      - QualifiedIdentNameEnd:
         - readLine (IDENT_NAME)
         - ArgsInvocation
   - MatcherWithPattern:
@@ -141,7 +141,7 @@ expected:
       - QualifiedIdentType:
         - Stdio (IDENT_TYPE)
       - stdin (IDENT_NAME)
-      - QualifiedIdentNameMiddle:
+      - QualifiedIdentNameEnd:
         - readLine (IDENT_NAME)
         - ArgsInvocation
   - MatcherWithPattern:
@@ -184,12 +184,12 @@ expected:
   - QualifiedIdentName:
     - QualifiedIdentThis
     - var1 (IDENT_NAME)
-    - QualifiedIdentNameMiddle:
+    - QualifiedIdentNameEnd:
       - meth (IDENT_NAME)
       - ArgsInvocation
-    - QualifiedIdentNameMiddle:
+    - QualifiedIdentNameEnd:
       - var2 (IDENT_NAME)
-    - QualifiedIdentNameMiddle:
+    - QualifiedIdentNameEnd:
       - var3 (IDENT_NAME)
 ---
 name: static method

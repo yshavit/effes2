@@ -88,7 +88,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     }
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
-    List<EffesParser.QualifiedIdentNameMiddleContext> qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
+    List<EffesParser.QualifiedIdentNameEndContext> qualifiedMiddle = qualifiedName.qualifiedIdentNameEnd();
     if (qualifiedStart != null || !qualifiedMiddle.isEmpty()) {
       throw new UnsupportedOperationException();
     }
