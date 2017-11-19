@@ -1,9 +1,11 @@
 package com.yuvalshavit.effes2.compile;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.google.common.collect.Lists;
 import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
@@ -84,7 +86,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     EffesParser.ArgsInvocationContext argsInvocation = input.argsInvocation();
 
     if (argsInvocation != null) {
-      throw new UnsupportedOperationException();
+      if (!compileMethodInvocation(qualifiedName, argsInvocation)) {
+        throw new CompilationException(input, "method does not specify a return value");
+      }
+      return;
     }
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
@@ -157,4 +162,76 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   private void pvar(String symbolName) {
     scope.lookUp(symbolName).push(out);
   }
+
+  public boolean compileMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx, EffesParser.ArgsInvocationContext argsInvocation) {
+    VarRef instanceVar = null; // TODO!! And when you fix this, if it's by creating a CompilationContext, then make sure to fix the "throw new" below
+    TypeInfo typeInfo = null; // TODO here too
+    // First the invocation args, in reverse order.
+    Lists.reverse(argsInvocation.expression()).forEach(this::apply);
+
+    // Then the target instance, if any.
+    EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
+    List<EffesParser.QualifiedIdentNameMiddleContext> targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
+    final String methodName = targetCtx.IDENT_NAME().getText();
+    final String targetType;
+    if (targetNameStartCtx instanceof EffesParser.QualifiedIdentTypeContext) {
+      // static method
+      if (!targetNameMidCtx.isEmpty()) {
+        throw new CompilationException(targetCtx, "can't have qualified static methods"); // TODO special case Stdio :-(
+      }
+      targetType = ((EffesParser.QualifiedIdentTypeContext) targetNameStartCtx).IDENT_TYPE().getText();
+    } else if (targetNameStartCtx instanceof EffesParser.QualifiedIdentThisContext) {
+      // method explicitly on "this"
+      if (!targetNameMidCtx.isEmpty()) {
+        throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
+      }
+      if (instanceVar == null) {
+        throw new CompilationException(targetCtx.getStart(), argsInvocation.getStop(), "can't use \"this\" in static context");
+      }
+      instanceVar.push(out);
+      targetType = instanceVar.getType();
+    } else if (targetNameStartCtx == null) {
+      if (targetNameMidCtx.size() == 0) {
+        if (instanceVar == null) {
+          throw new CompilationException(targetCtx.getStart(), argsInvocation.getStop(), "can't use \"this\" in static context");
+        }
+        targetType = instanceVar.getType();
+      } else if (targetNameMidCtx.size() == 1) {
+        String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
+        VarRef targetVar = scope.lookUp(varName);
+        if (targetVar == null) {
+          throw new CompilationException(targetCtx, "no local var named " + varName);
+        }
+        targetType = targetVar.getType();
+        targetVar.push(out);
+      } else {
+        throw new CompilationException(targetCtx, "unsupported multi-part qualified method invocation");
+      }
+    } else {
+      throw new CompilationException(targetNameStartCtx, "unsupported rule type: " + targetNameStartCtx.getClass().getSimpleName());
+    }
+
+    if (targetType == null) {
+      throw new CompilationException(targetCtx, "couldn't determine type");
+    }
+
+    MethodInfo methodInfo = typeInfo.getMethod(targetType, methodName);
+    if (methodInfo == null) {
+      throw new CompilationException(targetCtx, "type " + targetType + " doesn't have a method named " + methodName);
+    } else if (methodInfo.getDeclaredArgsCount() != argsInvocation.expression().size()) {
+      throw new CompilationException(
+        targetCtx,
+        String.format(
+          "%s.%s expects %d arg%s, found %d",
+          targetType,
+          methodName,
+          methodInfo.getDeclaredArgsCount(),
+          methodInfo.getDeclaredArgsCount() == 1 ? "" : "s",
+          argsInvocation.expression().size()));
+    }
+
+    out.call(targetType, methodName);
+    return methodInfo.hasReturnValue();
+  }
+
 }

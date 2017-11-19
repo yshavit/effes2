@@ -16,15 +16,16 @@ public abstract class VarRef {
 
   public abstract void push(EffesOps<?> ops);
   public abstract void store(EffesOps<?> ops);
-  public abstract void storeNoPop(EffesOps<?> out);
+  public abstract void storeNoPop(EffesOps<?> ops);
 
   public static class LocalVar extends VarRef {
     private final int reg;
-    private String regStr;
+    private final String regStr;
 
     public LocalVar(int reg, String type) {
       super(type);
       this.reg = reg;
+      this.regStr = String.valueOf(reg);
     }
 
     public int reg() {
@@ -33,31 +34,51 @@ public abstract class VarRef {
 
     @Override
     public void push(EffesOps<?> ops) {
-      ops.pvar(regStr());
+      ops.pvar(regStr);
     }
 
     @Override
     public void store(EffesOps<?> ops) {
-      ops.svar(regStr());
+      ops.svar(regStr);
     }
 
     @Override
-    public void storeNoPop(EffesOps<?> out) {
-      out.Svar(regStr());
+    public void storeNoPop(EffesOps<?> ops) {
+      ops.Svar(regStr);
     }
 
     @Override
     public String toString() {
       return String.format("<%d %s>", reg, Objects.firstNonNull(getType(), "?"));
     }
+  }
 
-    private String regStr() {
-      String rv = regStr;
-      if (rv == null) {
-        rv = String.valueOf(reg);
-        regStr = rv;
-      }
-      return rv;
+  public static class InstanceAndFieldVar extends VarRef {
+    private final VarRef instance;
+    private final String fieldName;
+
+    public InstanceAndFieldVar(VarRef instance, String fieldName, String fieldType) {
+      super(fieldType);
+      this.instance = instance;
+      this.fieldName = fieldName;
+    }
+
+    @Override
+    public void push(EffesOps<?> ops) {
+      instance.push(ops);
+      ops.pushField(instance.getType(), fieldName);
+    }
+
+    @Override
+    public void store(EffesOps<?> ops) {
+      instance.push(ops);
+      ops.storeField(instance.getType(), fieldName);
+    }
+
+    @Override
+    public void storeNoPop(EffesOps<?> ops) {
+      ops.copy();
+      store(ops);
     }
   }
 }

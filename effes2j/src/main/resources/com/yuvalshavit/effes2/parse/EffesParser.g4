@@ -144,7 +144,7 @@ qualifiedIdentName:
 ;
 
 qualifiedIdentNameMiddle:
-  IDENT_NAME argsInvocation? DOT
+  IDENT_NAME /* argsInvocation? */ DOT
 ;
 
 qualifiedIdentNameStart:

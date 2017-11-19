@@ -10,11 +10,15 @@ public class Scope {
   private Frame frame = new Frame(null);
 
   public VarRef lookUp(String symbolName) {
-    VarRef varRef = tryLookUp(symbolName, true);
+    VarRef varRef = tryLookUp(symbolName);
     if (varRef == null) {
       throw new NoSuchElementException("no variable named " + symbolName);
     }
     return varRef;
+  }
+
+  public VarRef tryLookUp(String symbolName) {
+    return tryLookUp(symbolName, true);
   }
 
   public VarRef lookUpInParentScope(String symbolName) {

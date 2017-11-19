@@ -454,7 +454,7 @@ public class EfPrinter {
     @Override
     protected void seeQualifiedIdentNameMiddle(EffesParser.QualifiedIdentNameMiddleContext ctx) {
       write(ctx.IDENT_NAME());
-      handleIfNotNull(ctx.argsInvocation(), this::seeArgsInvocation);
+      // handleIfNotNull(ctx.argsInvocation(), this::seeArgsInvocation);
     }
 
     @Override
