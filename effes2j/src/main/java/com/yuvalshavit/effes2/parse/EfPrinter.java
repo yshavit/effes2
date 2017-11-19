@@ -1,6 +1,7 @@
 package com.yuvalshavit.effes2.parse;
 
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Iterator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -17,6 +18,15 @@ public class EfPrinter {
 
   public static void write(PrintWriter out, ParseTree tree) {
     tree.accept(new PrintVisitor(out));
+  }
+
+  @SuppressWarnings("unused") // useful for debugging, if nothing else!
+  public static String writeToString(ParseTree tree) {
+    StringWriter stringWriter = new StringWriter();
+    PrintWriter printer = new PrintWriter(stringWriter);
+    write(printer, tree);
+    printer.flush();
+    return stringWriter.toString();
   }
 
   private static class PrintVisitor extends VoidEffesParserVisitor {
@@ -434,15 +444,15 @@ public class EfPrinter {
       if (handleIfNotNull(ctx.qualifiedIdentNameStart(), this::dispatch)) {
         write('.');
       }
-      write(ctx.IDENT_NAME());
-      for (EffesParser.QualifiedIdentNameEndContext middle : ctx.qualifiedIdentNameEnd()) {
+      for (EffesParser.QualifiedIdentNameMiddleContext middle : ctx.qualifiedIdentNameMiddle()) {
+        seeQualifiedIdentNameMiddle(middle);
         write('.');
-        seeQualifiedIdentNameEnd(middle);
       }
+      write(ctx.IDENT_NAME());
     }
 
     @Override
-    protected void seeQualifiedIdentNameEnd(EffesParser.QualifiedIdentNameEndContext ctx) {
+    protected void seeQualifiedIdentNameMiddle(EffesParser.QualifiedIdentNameMiddleContext ctx) {
       write(ctx.IDENT_NAME());
       handleIfNotNull(ctx.argsInvocation(), this::seeArgsInvocation);
     }

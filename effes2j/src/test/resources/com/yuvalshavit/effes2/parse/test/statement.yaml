@@ -48,10 +48,10 @@ expected:
       - QualifiedIdentName:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
-        - stdin (IDENT_NAME)
-        - QualifiedIdentNameEnd:
-          - readLine (IDENT_NAME)
-          - ArgsInvocation
+        - QualifiedIdentNameMiddle:
+          - stdin (IDENT_NAME)
+        - readLine (IDENT_NAME)
+      - ArgsInvocation
     - MatcherWithPattern:
       - line (IDENT_NAME)
       - PatternType:
@@ -72,10 +72,10 @@ expected:
       - QualifiedIdentName:
         - QualifiedIdentType:
           - Stdio (IDENT_TYPE)
-        - stdin (IDENT_NAME)
-        - QualifiedIdentNameEnd:
-          - readLine (IDENT_NAME)
-          - ArgsInvocation
+        - QualifiedIdentNameMiddle:
+          - stdin (IDENT_NAME)
+        - readLine (IDENT_NAME)
+      - ArgsInvocation
     - MatcherJustName:
       - line (IDENT_NAME)
   - WhileBodySimple:

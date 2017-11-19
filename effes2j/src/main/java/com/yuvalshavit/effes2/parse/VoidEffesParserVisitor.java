@@ -171,8 +171,8 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeQualifiedIdentName(EffesParser.QualifiedIdentNameContext ctx);
 
   @Override
-  final public Void visitQualifiedIdentNameEnd(EffesParser.QualifiedIdentNameEndContext ctx) { seeQualifiedIdentNameEnd(ctx); return null; }
-  protected abstract void seeQualifiedIdentNameEnd(EffesParser.QualifiedIdentNameEndContext ctx);
+  final public Void visitQualifiedIdentNameMiddle(EffesParser.QualifiedIdentNameMiddleContext ctx) { seeQualifiedIdentNameMiddle(ctx); return null; }
+  protected abstract void seeQualifiedIdentNameMiddle(EffesParser.QualifiedIdentNameMiddleContext ctx);
 
   @Override
   final public Void visitQualifiedIdentType(EffesParser.QualifiedIdentTypeContext ctx) { seeQualifiedIdentType(ctx); return null; }

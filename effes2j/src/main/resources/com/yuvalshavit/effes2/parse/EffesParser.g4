@@ -139,12 +139,12 @@ expressionMultiline:
 
 qualifiedIdentName:
  (qualifiedIdentNameStart DOT)?
+ qualifiedIdentNameMiddle*
  IDENT_NAME
- (DOT qualifiedIdentNameEnd)*
 ;
 
-qualifiedIdentNameEnd:
-  IDENT_NAME argsInvocation?
+qualifiedIdentNameMiddle:
+  IDENT_NAME argsInvocation? DOT
 ;
 
 qualifiedIdentNameStart:
