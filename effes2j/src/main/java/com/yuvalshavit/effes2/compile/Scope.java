@@ -106,7 +106,7 @@ public class Scope {
     frame.firstAvailableReg = Math.max(varRef.reg(), frame.firstAvailableReg) + 1;
   }
 
-  public VarRef allocateLocal(String symbolName, boolean allowShadowing, String type) {
+  public VarRef.LocalVar allocateLocal(String symbolName, boolean allowShadowing, String type) {
     VarRef.LocalVar varRef = new VarRef.LocalVar(frame.firstAvailableReg, type);
     allocateLocal(symbolName, allowShadowing, varRef);
     return varRef;
@@ -116,16 +116,29 @@ public class Scope {
     return allocateLocal(symbolName, allowShadowing, (String) null);
   }
 
+  /**
+   * Allocates an anonymous local variable.
+   */
+  public VarRef.LocalVar allocateAnoymous(String typeName) {
+    int varIdx = frame.firstAvailableAnonymousVar++;
+    String varName = "$" + varIdx; // not a legal var name in Effes, so we don't need to check availability
+    return allocateLocal(varName, false, typeName);
+  }
+
   private static class Frame {
     private final Map<String,VarRef> symbols = new HashMap<>();
     private final Frame parent;
     private int firstAvailableReg;
+    private int firstAvailableAnonymousVar;
 
     Frame(Frame parent) {
       this.parent = parent;
       firstAvailableReg = (parent == null)
         ? 0
         : parent.firstAvailableReg;
+      firstAvailableAnonymousVar = (parent == null)
+        ? 0
+        : parent.firstAvailableAnonymousVar;
     }
 
     @Override
