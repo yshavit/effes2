@@ -104,7 +104,7 @@ public class MatcherCompiler {
           List<EffesParser.MatcherContext> matcher = input.matcher();
           for (int childIdx = 0; childIdx < matcher.size(); childIdx++) {
             EffesParser.MatcherContext childContext = matcher.get(childIdx);
-            String fieldName = cc.fieldLookup.fieldName(typeName, childIdx);
+            String fieldName = cc.typeInfo.fieldName(typeName, childIdx);
             cc.out.PushField(typeName, fieldName);
             new MatcherImpl().apply(childContext);
             cc.out.pop();

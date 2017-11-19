@@ -6,7 +6,6 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 class CompilerContext {
   final Scope scope;
-  final FieldLookup fieldLookup;
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
@@ -14,14 +13,12 @@ class CompilerContext {
 
   public CompilerContext(
     Scope scope,
-    FieldLookup fieldLookup,
     LabelAssigner labelAssigner,
     EffesOps<Void> out,
     TypeInfo typeInfo,
     VarRef instanceVar)
   {
     this.scope = scope;
-    this.fieldLookup = fieldLookup;
     this.labelAssigner = labelAssigner;
     this.out = out;
     this.typeInfo = typeInfo;
