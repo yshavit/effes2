@@ -6,41 +6,21 @@ import java.util.Deque;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
-import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class StatementCompiler extends CompileDispatcher<EffesParser.StatementContext> {
 
-  private final Scope scope;
-  private final FieldLookup fieldLookup;
-  private final TypeInfo typeInfo;
-  private final LabelAssigner labelAssigner;
-  private final EffesOps<Void> out;
+  private final CompilerContext cc;
   private final Deque<String> breakLabels;
   private final Deque<String> continueLabels;
-  private final VarRef thisVar;
   private final ExpressionCompiler expressionCompiler;
 
-  public StatementCompiler(
-    String instanceContextType,
-    Scope scope,
-    FieldLookup fieldLookup,
-    TypeInfo typeInfo,
-    LabelAssigner labelAssigner,
-    EffesOps<Void> out)
-  {
+  public StatementCompiler(CompilerContext cc) {
     super(EffesParser.StatementContext.class);
-    this.scope = scope;
-    this.fieldLookup = fieldLookup;
-    this.typeInfo = typeInfo;
-    this.labelAssigner = labelAssigner;
-    this.out = out;
+    this.cc = cc;
     breakLabels = new ArrayDeque<>();
     continueLabels = new ArrayDeque<>();
-    thisVar = (instanceContextType == null)
-      ? null
-      : new VarRef.LocalVar(0, instanceContextType);
-    expressionCompiler = new ExpressionCompiler(scope, fieldLookup, labelAssigner, out);
+    expressionCompiler = new ExpressionCompiler(cc);
   }
 
   @Dispatched
@@ -53,38 +33,38 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     String iterVarname = ctx.IDENT_NAME().getSymbol().getText();
     EffesParser.ExpressionContext iterateOver = ctx.expression();
     EffesParser.BlockContext body = ctx.block();
-    scope.inNewScope(() -> {
-      VarRef iterVar = scope.allocateLocal(iterVarname, false);
-      VarRef.LocalVar iterLen = scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
-      VarRef.LocalVar iterIdx = scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
+    cc.scope.inNewScope(() -> {
+      VarRef iterVar = cc.scope.allocateLocal(iterVarname, false);
+      VarRef.LocalVar iterLen = cc.scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
+      VarRef.LocalVar iterIdx = cc.scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
-      out.copy();
-      out.arrayLen();
-      iterLen.store(out);
-      out.pushInt("0");
-      iterIdx.store(out);
+      cc.out.copy();
+      cc.out.arrayLen();
+      iterLen.store(cc.out);
+      cc.out.pushInt("0");
+      iterIdx.store(cc.out);
       // Now the loop. At the top of each iteration, the stack's top contains the iterateOver value.
-      String loopTopLabel = labelAssigner.allocate("loopTop");
-      String loopDoneLabel = labelAssigner.allocate("loopDone");
+      String loopTopLabel = cc.labelAssigner.allocate("loopTop");
+      String loopDoneLabel = cc.labelAssigner.allocate("loopDone");
       breakLabels.push(loopDoneLabel);
       continueLabels.push(loopTopLabel);
-      labelAssigner.place(loopTopLabel);
+      cc.labelAssigner.place(loopTopLabel);
       // if arr.len >= idx goto done
-      iterLen.push(out);
-      iterIdx.push(out);
-      out.ge();
-      out.gotoIfNot(loopDoneLabel);
+      iterLen.push(cc.out);
+      iterIdx.push(cc.out);
+      cc.out.ge();
+      cc.out.gotoIfNot(loopDoneLabel);
       // otherwise: var, body, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
-      out.copy();
-      iterIdx.push(out);
-      out.arrayGet();
-      iterVar.store(out);
+      cc.out.copy();
+      iterIdx.push(cc.out);
+      cc.out.arrayGet();
+      iterVar.store(cc.out);
       compileBlock(body);
-      out.gotoAbs(loopTopLabel);
+      cc.out.gotoAbs(loopTopLabel);
       // end the loop
-      labelAssigner.place(loopDoneLabel);
+      cc.labelAssigner.place(loopDoneLabel);
       breakLabels.pop();
       continueLabels.pop();
     });
@@ -94,7 +74,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   public void apply(EffesParser.StatAssignContext ctx) {
     VarRef var = getVar(ctx.qualifiedIdentName());
     expressionCompiler.apply(ctx.expression());
-    var.store(out);
+    var.store(cc.out);
   }
 
   @Dispatched
@@ -104,7 +84,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatVarDeclareContext ctx) {
-    scope.allocateLocal(ctx.IDENT_NAME().getText(), false);
+    cc.scope.allocateLocal(ctx.IDENT_NAME().getText(), false);
   }
 
   @Dispatched
@@ -114,7 +94,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     boolean hasRv = expressionCompiler.compileMethodInvocation(targetCtx, argsInvocation);
 
     if (hasRv) {
-      out.pop();
+      cc.out.pop();
     }
   }
 
@@ -142,20 +122,20 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (label == null) {
           throw new CompilationException(ctx, "no break target available");
         }
-        out.gotoAbs(label);
+        cc.out.gotoAbs(label);
       } else if (blockStop.CONTINUE() != null) {
         String label = continueLabels.peek();
         if (label == null) {
           throw new CompilationException(ctx, "no continue target available");
         }
-        out.gotoAbs(label);
+        cc.out.gotoAbs(label);
       } else if (blockStop.RETURN() != null) {
         if (blockStop.expression() != null) {
           expressionCompiler.apply(blockStop.expression());
         } else if (blockStop.expressionMultiline() != null) {
           compileExpressionMultiline(blockStop.expressionMultiline());
         }
-        out.rtrn();
+        cc.out.rtrn();
       } else {
         throw new CompilationException(ctx, "unsupported block stop: " + blockStop.getClass().getSimpleName());
       }
@@ -174,13 +154,13 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
         throw new CompilationException(ctx.start, ctx.stop, "unsupported");
       }
-      return getInstanceVar(ctx);
+      return getInstanceField(ctx);
     } else if (start == null) {
       // just a var name; it's either a local var or an instance var on "this"
       String varName = ctx.IDENT_NAME().getText();
-      VarRef result = scope.lookUp(varName);
+      VarRef result = cc.scope.lookUp(varName);
       if (result == null) {
-        result = getInstanceVar(ctx);
+        result = getInstanceField(ctx);
       }
       return result;
     } else {
@@ -188,16 +168,14 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     }
   }
 
-  private VarRef getInstanceVar(EffesParser.QualifiedIdentNameContext ctx) {
+  private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx) {
     String fieldName = ctx.IDENT_NAME().getText();
-    if (thisVar == null) {
-      throw new CompilationException(ctx.getStart(), ctx.getStop(), "can't use \"this\" in static context");
-    }
-    String varType = thisVar.getType();
-    if (typeInfo.hasField(varType, fieldName)) {
+    VarRef instanceVar = cc.getInstanceContextVar(ctx.getStart(), ctx.getStart());
+    String varType = instanceVar.getType();
+    if (cc.typeInfo.hasField(varType, fieldName)) {
       throw new CompilationException(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol(), "unknown field " + fieldName + " on type " + varType);
     }
-    return new VarRef.InstanceAndFieldVar(thisVar, fieldName, null);
+    return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, null);
   }
 
 }

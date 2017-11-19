@@ -10,56 +10,39 @@ import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
-import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class MatcherCompiler {
 
-  private final Scope scope;
-  private final FieldLookup fieldLookup;
+  private final CompilerContext cc;
   private final String labelNoMatch;
   private final boolean keepIfNoMatch;
-  private final LabelAssigner labelAssigner;
-  private final EffesOps<Void> out;
   private final ScratchVars scratchVars;
   private int depth;
 
   public static void compile(
     EffesParser.MatcherContext matcherContext,
-    FieldLookup fieldLookup,
     String labelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
-    Scope scope,
-    LabelAssigner labelAssigner,
-    EffesOps<Void> out)
+    CompilerContext compilerContext)
   {
-    MatcherCompiler compiler = new MatcherCompiler(fieldLookup, labelNoMatch, keepIfNoMatch, scope, labelAssigner, out);
+    MatcherCompiler compiler = new MatcherCompiler(labelNoMatch, keepIfNoMatch, compilerContext);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
-    compiler.scratchVars.commit(compiler.out);
+    compiler.scratchVars.commit(compilerContext.out);
     for (int i = 0; i < compiler.depth; ++i) {
-      compiler.out.pop();
+      compilerContext.out.pop();
     }
     if (labelIfMatched != null) {
-      compiler.out.gotoAbs(labelIfMatched);
+      compilerContext.out.gotoAbs(labelIfMatched);
     }
   }
 
-  private MatcherCompiler(
-    FieldLookup fieldLookup,
-    String labelNoMatch,
-    boolean keepIfNoMatch,
-    Scope scope,
-    LabelAssigner labelAssigner,
-    EffesOps<Void> out)
-  {
-    this.scope = scope;
-    this.fieldLookup = fieldLookup;
+  private MatcherCompiler(String labelNoMatch, boolean keepIfNoMatch, CompilerContext cc) {
     this.labelNoMatch = labelNoMatch;
     this.keepIfNoMatch = keepIfNoMatch;
-    this.labelAssigner = labelAssigner;
-    this.out = out;
+    this.cc = cc;
     scratchVars = new ScratchVars();
     depth = 1;
   }
@@ -87,7 +70,7 @@ public class MatcherCompiler {
         input.AT(),
         input.IDENT_NAME(),
         null,
-        input.expression() == null ? null : () -> new ExpressionCompiler(scope, fieldLookup, labelAssigner, out).apply(input.expression()),
+        input.expression() == null ? null : () -> new ExpressionCompiler(cc).apply(input.expression()),
         null);
     }
   }
@@ -121,10 +104,10 @@ public class MatcherCompiler {
           List<EffesParser.MatcherContext> matcher = input.matcher();
           for (int childIdx = 0; childIdx < matcher.size(); childIdx++) {
             EffesParser.MatcherContext childContext = matcher.get(childIdx);
-            String fieldName = fieldLookup.fieldName(typeName, childIdx);
-            out.PushField(typeName, fieldName);
+            String fieldName = cc.fieldLookup.fieldName(typeName, childIdx);
+            cc.out.PushField(typeName, fieldName);
             new MatcherImpl().apply(childContext);
-            out.pop();
+            cc.out.pop();
           }
           --depth;
         }
@@ -143,9 +126,9 @@ public class MatcherCompiler {
 
     private Runnable checkRegex(String regex) {
       return () -> {
-        out.strPush(EvmStrings.escape(regex));
-        out.stringRegex();
-        out.type(EffesNativeType.MATCH.getEvmType());
+        cc.out.strPush(EvmStrings.escape(regex));
+        cc.out.stringRegex();
+        cc.out.type(EffesNativeType.MATCH.getEvmType());
       };
     }
   }
@@ -157,35 +140,35 @@ public class MatcherCompiler {
       final VarRef varRef;
       if (varBindAt == null) {
         // local var, just allocate it. We'll only ever care about the var if the type matches, so assume that type
-        varRef = scope.allocateLocal(varName, true, type);
+        varRef = cc.scope.allocateLocal(varName, true, type);
       } else {
         assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
-        VarRef eventualBind = scope.lookUpInParentScope(varName);
-        varRef = scope.allocateLocal(varName, true, type);
+        VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
+        varRef = cc.scope.allocateLocal(varName, true, type);
         scratchVars.add(varRef, eventualBind);
       }
-      varRef.storeNoPop(out);
+      varRef.storeNoPop(cc.out);
     }
     if (type != null) {
-      String typeMatchLabel = labelAssigner.allocate(String.format("match_%d_%s", depth, type));
-      out.typp(type);
+      String typeMatchLabel = cc.labelAssigner.allocate(String.format("match_%d_%s", depth, type));
+      cc.out.typp(type);
       // stack: [... target, isRightType]
-      out.gotoIf(typeMatchLabel);
+      cc.out.gotoIf(typeMatchLabel);
       // stack: [... target]
       // If we get past the goto, that means we had a type mismatch. Handle the failure (that'll include a goto).
       // Otherwise, we're done with the type check, so just provide the gotoIf's destination pin
       handleFailure();
-      labelAssigner.place(typeMatchLabel);
+      cc.labelAssigner.place(typeMatchLabel);
     }
     if (suchThat != null) {
-      String suchThatSuccessLabel = labelAssigner.allocate(String.format("match_%d_suchThat", depth));
+      String suchThatSuccessLabel = cc.labelAssigner.allocate(String.format("match_%d_suchThat", depth));
       suchThat.run();
       // stack: [... target, suchThat]
-      out.gotoIf(suchThatSuccessLabel);
+      cc.out.gotoIf(suchThatSuccessLabel);
       // stack: [... target]
       // Same branching as the "if type != null" bit
       handleFailure();
-      labelAssigner.place(suchThatSuccessLabel);
+      cc.labelAssigner.place(suchThatSuccessLabel);
     }
     if (next != null) {
       next.run();
@@ -195,9 +178,9 @@ public class MatcherCompiler {
   private void handleFailure() {
     int pops = keepIfNoMatch ? (depth - 1) : depth;
     for (int i = 0; i < pops; ++i) {
-      out.pop();
+      cc.out.pop();
     }
-    out.gotoAbs(labelNoMatch);
+    cc.out.gotoAbs(labelNoMatch);
   }
 
 }

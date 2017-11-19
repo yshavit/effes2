@@ -1,7 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -10,23 +9,16 @@ import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
-import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class ExpressionCompiler extends CompileDispatcher<EffesParser.ExpressionContext> {
   public static final String THIS = "<this>";
 
-  private final Scope scope;
-  private final FieldLookup fieldLookup;
-  private final LabelAssigner labelAssigner;
-  private final EffesOps<Void> out;
+  private final CompilerContext cc;
 
-  public ExpressionCompiler(Scope scope, FieldLookup fieldLookup, LabelAssigner labelAssigner, EffesOps<Void> out) {
+  public ExpressionCompiler(CompilerContext cc) {
     super(EffesParser.ExpressionContext.class);
-    this.scope = scope;
-    this.fieldLookup = fieldLookup;
-    this.labelAssigner = labelAssigner;
-    this.out = out;
+    this.cc = cc;
   }
 
   @Dispatched
@@ -34,22 +26,22 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     final Runnable op;
     switch (input.cmp().getChild(TerminalNode.class, 0).getSymbol().getText()) {
       case "<":
-        op = out::lt;
+        op = cc.out::lt;
         break;
       case "<=":
-        op = out::le;
+        op = cc.out::le;
         break;
       case "==":
-        op = out::eq;
+        op = cc.out::eq;
         break;
       case "!=":
-        op = out::ne;
+        op = cc.out::ne;
         break;
       case ">":
-        op = out::gt;
+        op = cc.out::gt;
         break;
       case ">=":
-        op = out::ge;
+        op = cc.out::ge;
         break;
       default:
         throw new IllegalArgumentException("unrecognized op: " + input);
@@ -66,13 +58,13 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   public void apply(EffesParser.ExprStringLiteralContext input) {
     TerminalNode terminalNode = input.QUOTED_STRING();
     String quotedString = getQuotedString(terminalNode);
-    out.strPush(EvmStrings.escape(quotedString));
+    cc.out.strPush(EvmStrings.escape(quotedString));
   }
 
   @Dispatched
   public void apply(EffesParser.ExprNegationContext input) {
     apply(input.expression());
-    out.negate();
+    cc.out.negate();
   }
 
   @Dispatched
@@ -110,7 +102,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprIntLiteralContext input) {
-    out.pushInt(input.INT().getSymbol().getText());
+    cc.out.pushInt(input.INT().getSymbol().getText());
   }
 
   @Dispatched
@@ -121,24 +113,24 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     // TODO note! Scope should be assigned outside of this, at the statement level. That way, you can have:
     //     if foo is One(bar):
     //        doSomethingWith(bar)
-    String isAFalse = labelAssigner.allocate("isA_false");
-    String isADone = labelAssigner.allocate("isA_done");
-    MatcherCompiler.compile(input.matcher(), fieldLookup, null, isAFalse, false, scope, labelAssigner, out);
-    out.bool(Boolean.toString(ifMatchedValue)); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
-    out.gotoAbs(isADone);
-    labelAssigner.place(isAFalse);
-    out.bool(Boolean.toString(!ifMatchedValue));
-    labelAssigner.place(isADone);
+    String isAFalse = cc.labelAssigner.allocate("isA_false");
+    String isADone = cc.labelAssigner.allocate("isA_done");
+    MatcherCompiler.compile(input.matcher(), null, isAFalse, false, cc);
+    cc.out.bool(Boolean.toString(ifMatchedValue)); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
+    cc.out.gotoAbs(isADone);
+    cc.labelAssigner.place(isAFalse);
+    cc.out.bool(Boolean.toString(!ifMatchedValue));
+    cc.labelAssigner.place(isADone);
   }
 
   @Dispatched
   public void apply(EffesParser.ExprPlusOrMinusContext input) {
-    binaryExpr(input.expression(), input.PLUS() == null ? out::iSub : out::iAdd);
+    binaryExpr(input.expression(), input.PLUS() == null ? cc.out::iSub : cc.out::iAdd);
   }
 
   @Dispatched
   public void apply(EffesParser.ExprMultOrDivideContext input) {
-    binaryExpr(input.expression(), input.ASTERISK() == null ? out::iSub : out::iMul);
+    binaryExpr(input.expression(), input.ASTERISK() == null ? cc.out::iSub : cc.out::iMul);
   }
 
   public static String getQuotedString(TerminalNode node) {
@@ -160,12 +152,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   }
 
   private void pvar(String symbolName) {
-    scope.lookUp(symbolName).push(out);
+    cc.scope.lookUp(symbolName).push(cc.out);
   }
 
   public boolean compileMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx, EffesParser.ArgsInvocationContext argsInvocation) {
-    VarRef instanceVar = null; // TODO!! And when you fix this, if it's by creating a CompilationContext, then make sure to fix the "throw new" below
-    TypeInfo typeInfo = null; // TODO here too
     // First the invocation args, in reverse order.
     Lists.reverse(argsInvocation.expression()).forEach(this::apply);
 
@@ -185,25 +175,20 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       if (!targetNameMidCtx.isEmpty()) {
         throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
       }
-      if (instanceVar == null) {
-        throw new CompilationException(targetCtx.getStart(), argsInvocation.getStop(), "can't use \"this\" in static context");
-      }
-      instanceVar.push(out);
+      VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
+      instanceVar.push(cc.out);
       targetType = instanceVar.getType();
     } else if (targetNameStartCtx == null) {
       if (targetNameMidCtx.size() == 0) {
-        if (instanceVar == null) {
-          throw new CompilationException(targetCtx.getStart(), argsInvocation.getStop(), "can't use \"this\" in static context");
-        }
-        targetType = instanceVar.getType();
+        targetType = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop()).getType();
       } else if (targetNameMidCtx.size() == 1) {
         String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
-        VarRef targetVar = scope.lookUp(varName);
+        VarRef targetVar = cc.scope.lookUp(varName);
         if (targetVar == null) {
           throw new CompilationException(targetCtx, "no local var named " + varName);
         }
         targetType = targetVar.getType();
-        targetVar.push(out);
+        targetVar.push(cc.out);
       } else {
         throw new CompilationException(targetCtx, "unsupported multi-part qualified method invocation");
       }
@@ -215,7 +200,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(targetCtx, "couldn't determine type");
     }
 
-    MethodInfo methodInfo = typeInfo.getMethod(targetType, methodName);
+    MethodInfo methodInfo = cc.typeInfo.getMethod(targetType, methodName);
     if (methodInfo == null) {
       throw new CompilationException(targetCtx, "type " + targetType + " doesn't have a method named " + methodName);
     } else if (methodInfo.getDeclaredArgsCount() != argsInvocation.expression().size()) {
@@ -230,7 +215,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    out.call(targetType, methodName);
+    cc.out.call(targetType, methodName);
     return methodInfo.hasReturnValue();
   }
 
