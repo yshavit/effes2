@@ -9,14 +9,14 @@ class CompilerContext {
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
-  private final VarRef instanceVar;
+  private final VarRef.LocalVar instanceVar;
 
   public CompilerContext(
     Scope scope,
     LabelAssigner labelAssigner,
     EffesOps<Void> out,
     TypeInfo typeInfo,
-    VarRef instanceVar)
+    VarRef.LocalVar instanceVar)
   {
     this.scope = scope;
     this.labelAssigner = labelAssigner;

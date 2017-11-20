@@ -178,20 +178,6 @@ expected:
     - QualifiedIdentThis
     - _pending (IDENT_NAME)
 ---
-input: this.var1.meth().var2.var3
-expected:
-  ExprVariableOrMethodInvocation:
-  - QualifiedIdentName:
-    - QualifiedIdentThis
-    - QualifiedIdentNameMiddle:
-      - var1 (IDENT_NAME)
-    - QualifiedIdentNameMiddle:
-      - meth (IDENT_NAME)
-      - ArgsInvocation
-    - QualifiedIdentNameMiddle:
-      - var2 (IDENT_NAME)
-    - var3 (IDENT_NAME)
----
 name: static method
 input: Foo.bar()
 expected:

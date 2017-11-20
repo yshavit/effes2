@@ -1,5 +1,5 @@
 input: a
-symbols:
+localVars:
   a:
     reg: 7
     type: null
@@ -7,7 +7,7 @@ expect: |
   pvar 7
 ---
 input: a + b
-symbols:
+localVars:
   a:
     reg: 7
   b:
@@ -18,7 +18,7 @@ expect: |
   call_Integer:add
 ---
 input: a * (b - c)
-symbols:
+localVars:
   a:
     reg: 0
   b:
@@ -33,7 +33,7 @@ expect: |
   call_Integer:mult
 ---
 input: a < b
-symbols:
+localVars:
   a:
     reg: 0
   b:
@@ -44,14 +44,14 @@ expect: |
   call_Integer:lt
 ---
 input: this
-symbols:
+localVars:
   <this>:
     reg: 3
 expect: |
   pvar 3
 ---
 input: not foo
-symbols:
+localVars:
   foo:
     reg: 0
 expect: |
@@ -75,7 +75,10 @@ expect: |
   str "Let's build a \u2603, man!"
 ---
 input: 'foo is One(bar)'
-symbols:
+types:
+  One:
+    fields: [value]
+localVars:
   foo:
     reg: 0
 expect: |
@@ -96,7 +99,10 @@ expect: |
   labl isA_done     # [trueOrFalse]
 ---
 input: 'foo is One(@bar)'
-symbols:
+types:
+  One:
+    fields: [value]
+localVars:
   foo:
     reg: 0
   bar:
@@ -121,7 +127,10 @@ expect: |
   labl isA_done     # [trueOrFalse]
 ---
 input: 'foo is not One(bar)'
-symbols:
+types:
+  One:
+    fields: [value]
+localVars:
   foo:
     reg: 0
 expect: |

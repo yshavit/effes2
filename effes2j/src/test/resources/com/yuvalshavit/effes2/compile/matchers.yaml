@@ -1,28 +1,28 @@
 name: wild, keep unmatched
-keepIfNotMatched: true
-match: '*'
+options: { keepIfNotMatched: true }
+input: '*'
 expect: |
   pop
   goto @MATCHED
 ---
 name: wild, pop unmatched
-keepIfNotMatched: false
-match: '*'
+options: { keepIfNotMatched: false }
+input: '*'
 expect: |
   pop
   goto @MATCHED
 ---
 name: just name
-keepIfNotMatched: true
-match: 'abc'
+options: { keepIfNotMatched: true }
+input: 'abc'
 expect: |
   Svar 0
   pop
   goto @MATCHED
 ---
 name: guarded name, keep unmatched
-keepIfNotMatched: true
-match: abc :? abc == 1
+options: { keepIfNotMatched: true }
+input: abc :? abc == 1
 expect: |
   Svar 0
   pvar 0
@@ -35,8 +35,8 @@ expect: |
   goto @MATCHED
 ---
 name: guarded name, pop unmatched
-keepIfNotMatched: false
-match: abc :? abc == 1
+options: { keepIfNotMatched: false }
+input: abc :? abc == 1
 expect: |
   Svar 0
   pvar 0
@@ -50,9 +50,12 @@ expect: |
   goto @MATCHED
 ---
 name: guarded name to parent scope
-keepIfNotMatched: true
-variables: [oneVar, abc, twoVar]
-match: '@abc :? abc == 1'
+options: { keepIfNotMatched: true }
+localVars:
+  oneVar: {reg: 0}
+  abc: {reg: 1}
+  twoVar: {reg: 2}
+input: '@abc :? abc == 1'
 expect: |
   Svar 3
   pvar 3
@@ -67,8 +70,8 @@ expect: |
   goto @MATCHED
 ---
 name: singleton type pattern
-keepIfNotMatched: false
-match: Nothing
+options: { keepIfNotMatched: false }
+input: Nothing
 expect: |
   typp Nothing
   goif match_1_Nothing
@@ -79,8 +82,8 @@ expect: |
   goto @MATCHED
 ---
 name: regex type pattern, keep unmatched
-keepIfNotMatched: true
-match: '~/foo (\w+)/'
+options: { keepIfNotMatched: true }
+input: '~/foo (\w+)/'
 expect: |
   #                       # [val]
   typp String             # [val, isStr]
@@ -97,8 +100,8 @@ expect: |
   goto @MATCHED           # []
 ---
 name: regex type pattern, pop unmatched
-keepIfNotMatched: false
-match: '~/foo (\w+)/'
+options: { keepIfNotMatched: false }
+input: '~/foo (\w+)/'
 expect: |
   #                       # [val]
   typp String             # [val, isStr]
@@ -119,8 +122,8 @@ expect: |
 # Note that this is pretty much the same as the regex test,
 # but with the regex string being literal
 name: string literal pattern
-keepIfNotMatched: false
-match: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
+options: { keepIfNotMatched: false }
+input: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
 expect: |
   typp String
   goif match_1_String
@@ -138,11 +141,13 @@ expect: |
   goto @MATCHED
 ---
 name: complex
-keepIfNotMatched: true
-match: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/))
-typeFields:
-  Triple: [t0, t1, t2]
-  Pair: [p0, p1]
+options: { keepIfNotMatched: true }
+input: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/))
+types:
+  Triple:
+    fields: [t0, t1, t2]
+  Pair:
+    fields: [p0, p1]
 expect: |
   #                         # [val]
   typp Triple               # [val, isTriple]
