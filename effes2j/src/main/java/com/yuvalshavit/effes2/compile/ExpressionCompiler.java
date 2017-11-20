@@ -163,38 +163,42 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
     List<EffesParser.QualifiedIdentNameMiddleContext> targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
     final String methodName = targetCtx.IDENT_NAME().getText();
-    final String targetType;
-    if (targetNameStartCtx instanceof EffesParser.QualifiedIdentTypeContext) {
-      // static method
-      if (!targetNameMidCtx.isEmpty()) {
-        throw new CompilationException(targetCtx, "can't have qualified static methods"); // TODO special case Stdio :-(
-      }
-      targetType = ((EffesParser.QualifiedIdentTypeContext) targetNameStartCtx).IDENT_TYPE().getText();
-    } else if (targetNameStartCtx instanceof EffesParser.QualifiedIdentThisContext) {
-      // method explicitly on "this"
-      if (!targetNameMidCtx.isEmpty()) {
-        throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
-      }
-      VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
-      instanceVar.push(cc.out);
-      targetType = instanceVar.getType();
-    } else if (targetNameStartCtx == null) {
-      if (targetNameMidCtx.size() == 0) {
-        targetType = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop()).getType();
-      } else if (targetNameMidCtx.size() == 1) {
-        String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
-        VarRef targetVar = cc.scope.lookUp(varName);
-        if (targetVar == null) {
-          throw new CompilationException(targetCtx, "no local var named " + varName);
+    String targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, String.class)
+      .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
+        // static method
+        if (!targetNameMidCtx.isEmpty()) {
+          throw new CompilationException(targetCtx, "can't have qualified static methods"); // TODO special case Stdio :-(
         }
-        targetType = targetVar.getType();
-        targetVar.push(cc.out);
-      } else {
-        throw new CompilationException(targetCtx, "unsupported multi-part qualified method invocation");
-      }
-    } else {
-      throw new CompilationException(targetNameStartCtx, "unsupported rule type: " + targetNameStartCtx.getClass().getSimpleName());
-    }
+        // TODO: validate the method is really static. Maybe return the fact that we expect it to be, and the code below can validate.
+        return c.IDENT_TYPE().getText();
+      })
+      .when(EffesParser.QualifiedIdentThisContext.class, c -> {
+        // method explicitly on "this"
+        if (!targetNameMidCtx.isEmpty()) {
+          throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
+        }
+        VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
+        instanceVar.push(cc.out);
+        return instanceVar.getType();
+      })
+      .whenNull(() -> {
+        final String result;
+        if (targetNameMidCtx.size() == 0) {
+          result = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop()).getType();
+        } else if (targetNameMidCtx.size() == 1) {
+          String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
+          VarRef targetVar = cc.scope.lookUp(varName);
+          if (targetVar == null) {
+            throw new CompilationException(targetCtx, "no local var named " + varName);
+          }
+          result = targetVar.getType();
+          targetVar.push(cc.out);
+        } else {
+          throw new CompilationException(targetCtx, "unsupported multi-part qualified method invocation");
+        }
+        return result;
+      })
+      .on(targetNameStartCtx);
 
     if (targetType == null) {
       throw new CompilationException(targetCtx, "couldn't determine type");

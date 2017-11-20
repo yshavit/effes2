@@ -8,10 +8,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -71,14 +73,8 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     // (3) create the map of Dispatched methods, making sure to check for dupes
     // (4) make sure there are no subclasses left over
 
-    // 1
-    Set<Class<?>> subclasses = Stream.of(search)
-      .map(Class::getClasses)
-      .flatMap(Stream::of)
-      .filter(cls -> argClass != cls && argClass.isAssignableFrom(cls))
-      .collect(Collectors.toSet());
-
-    // 2 - 3
+    // 1 - 3
+    Set<Class<?>> subclasses = findSubclasses(argClass, search);
     Map<Class<?>,BiFunction<?,?,?>> results = new HashMap<>(subclasses.size());
     for (Method method : dispatcherClass.getDeclaredMethods()) {
       if (method.getAnnotation(Dispatched.class) == null) {
@@ -138,9 +134,84 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     return results;
   }
 
+  private static Set<Class<?>> findSubclasses(Class<?> superClass, Class<?>... subclassesAreIn) {
+    return Stream.of(subclassesAreIn)
+        .map(Class::getClasses)
+        .flatMap(Stream::of)
+        .filter(cls -> superClass != cls && superClass.isAssignableFrom(cls))
+        .collect(Collectors.toSet());
+  }
+
   private static boolean returnTypeIsAcceptable(Class<?> resultClass, Method method) {
     return resultClass.isAssignableFrom(method.getReturnType())
       || (resultClass.equals(Void.class) && method.getReturnType() == void.class);
+  }
+
+  public static <I,R> AdHocDispatcher<I,R> dispatch(Class<I> inputBaseClass, Class<?> lookIn, Class<R> resultClass) {
+    // We don't actually care about resultClass: it's just there to help Java's type inference. Still, I don't want to leak that to the API, so this trick lets
+    // me suppress its unused-ness without putting the annotation up in the method signature.
+    @SuppressWarnings("unused")
+    Class<?> ignore = resultClass;
+    return new AdHocDispatcher<>(inputBaseClass, lookIn);
+  }
+
+
+  public static <I,R> AdHocDispatcher<I,R> dispatch(Class<I> inputBaseClass, Class<R> resultClass) {
+    Class<?> enclosingClass = inputBaseClass.getEnclosingClass();
+    if (enclosingClass == null) {
+      throw new IllegalArgumentException(String.format("%s has no enclosing class. Call the overload with lookIn", inputBaseClass.getSimpleName()));
+    }
+    return dispatch(inputBaseClass, enclosingClass, resultClass);
+  }
+
+  public static class AdHocDispatcher<I,R> {
+
+    private final Map<Class<?>,Function<? super I, ? extends R>> handlers;
+    private Supplier<? extends R> nullHandler;
+
+    public AdHocDispatcher(Class<I> inputBaseClass, Class<?> lookIn) {
+      Set<Class<?>> subclasses = findSubclasses(inputBaseClass, lookIn);
+      handlers = new HashMap<>(subclasses.size());
+      subclasses.forEach(c -> handlers.put(c, null));
+    }
+
+    public <S extends I> AdHocDispatcher<I,R> when(Class<S> subclass, Function<? super S, ? extends R> handler) {
+      Objects.requireNonNull(subclass, "subclass can't be null");
+      Objects.requireNonNull(handler, "handler can't be null");
+      @SuppressWarnings("unchecked") // We'll always fetch the right handler, so this will be safe
+      Function<? super I, ? extends R> handlerCast = (Function<? super I, ? extends R>) handler;
+      Function<?,?> old = handlers.put(subclass, handlerCast);
+      if (old != null) {
+        throw new IllegalStateException("duplicate handler for " + subclass.getSimpleName());
+      }
+      return this;
+    }
+
+    public AdHocDispatcher<I,R> whenNull(Supplier<? extends R> nullHandler) {
+      Objects.requireNonNull(nullHandler, "handler can't be null");
+      this.nullHandler = nullHandler;
+      return this;
+    }
+
+    public R on(I input) {
+      validateAllSubclassesHandled();
+      if (input == null) {
+        return Objects.requireNonNull(nullHandler, "no null handler set").get();
+      } else {
+        return handlers.get(input.getClass()).apply(input);
+      }
+    }
+
+    private void validateAllSubclassesHandled() {
+      Set<String> unhandledClasses = handlers.entrySet().stream()
+        .filter(e -> e.getValue() == null)
+        .map(Map.Entry::getKey)
+        .map(Class::getSimpleName)
+        .collect(Collectors.toSet());
+      if (!unhandledClasses.isEmpty()) {
+        throw new IllegalStateException(String.format("unhandled subclass%s: %s", unhandledClasses.size() == 1 ? "" : "es", unhandledClasses));
+      }
+    }
   }
 
 }

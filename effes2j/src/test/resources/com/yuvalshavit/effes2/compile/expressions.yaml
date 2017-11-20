@@ -149,3 +149,21 @@ expect: |
   labl isA_false    # []
   bool true         # [true]
   labl isA_done     # [trueOrFalse]
+---
+input: dog.eat(food)
+types:
+  Dog:
+    methods:
+      eat:
+        declaredArgs: 1
+        hasRv: true
+localVars:
+  dog:
+    reg: 1
+    type: Dog
+  food:
+    reg: 2
+expect: |
+  pvar 2
+  pvar 1
+  call Dog eat

@@ -147,25 +147,26 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   }
 
   private VarRef getVar(EffesParser.QualifiedIdentNameContext ctx) {
-    EffesParser.QualifiedIdentNameStartContext start = ctx.qualifiedIdentNameStart();
-    if (start instanceof EffesParser.QualifiedIdentTypeContext) {
-      throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
-    } else if (start instanceof EffesParser.QualifiedIdentThisContext) {
-      if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
-        throw new CompilationException(ctx.start, ctx.stop, "unsupported");
-      }
-      return getInstanceField(ctx);
-    } else if (start == null) {
-      // just a var name; it's either a local var or an instance var on "this"
-      String varName = ctx.IDENT_NAME().getText();
-      VarRef result = cc.scope.lookUp(varName);
-      if (result == null) {
-        result = getInstanceField(ctx);
-      }
-      return result;
-    } else {
-      throw new UnsupportedOperationException("unrecognized AST class: " + ctx.getClass().getSimpleName());
-    }
+    return Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, EffesParser.class, VarRef.class)
+      .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
+        throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
+      })
+      .when(EffesParser.QualifiedIdentThisContext.class, c -> {
+        if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
+          throw new CompilationException(ctx.start, ctx.stop, "unsupported");
+        }
+        return getInstanceField(ctx);
+      })
+      .whenNull(() -> {
+        // just a var name; it's either a local var or an instance var on "this"
+        String varName = ctx.IDENT_NAME().getText();
+        VarRef result = cc.scope.lookUp(varName);
+        if (result == null) {
+          result = getInstanceField(ctx);
+        }
+        return result;
+      })
+      .on(ctx.qualifiedIdentNameStart());
   }
 
   private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx) {
