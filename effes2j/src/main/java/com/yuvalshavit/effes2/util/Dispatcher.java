@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -155,7 +156,6 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     return new AdHocDispatcher<>(inputBaseClass, lookIn);
   }
 
-
   public static <I,R> AdHocDispatcher<I,R> dispatch(Class<I> inputBaseClass, Class<R> resultClass) {
     Class<?> enclosingClass = inputBaseClass.getEnclosingClass();
     if (enclosingClass == null) {
@@ -164,12 +164,46 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     return dispatch(inputBaseClass, enclosingClass, resultClass);
   }
 
+  public static <I> AdHocDispatcherVoid<I> dispatchConsumer(Class<I> inputBaseClass, Class<?> lookIn) {
+    return new AdHocDispatcherVoid<>(inputBaseClass, lookIn);
+  }
+
+  public static <I> AdHocDispatcherVoid<I> dispatchConsumer(Class<I> inputBaseClass) {
+    Class<?> enclosingClass = inputBaseClass.getEnclosingClass();
+    if (enclosingClass == null) {
+      throw new IllegalArgumentException(String.format("%s has no enclosing class. Call the overload with lookIn", inputBaseClass.getSimpleName()));
+    }
+    return dispatchConsumer(inputBaseClass, enclosingClass);
+  }
+
+  public static class AdHocDispatcherVoid<I> {
+    private final AdHocDispatcher<I,?> delegate;
+
+    private AdHocDispatcherVoid(Class<I> inputBaseClass, Class<?> lookIn) {
+      delegate = new AdHocDispatcher<>(inputBaseClass, lookIn);
+    }
+
+    public <S extends I> AdHocDispatcherVoid<I> when(Class<S> subclass, Consumer<? super S> handler) {
+      delegate.when(subclass, i -> { handler.accept(i); return null; });
+      return this;
+    }
+
+    public AdHocDispatcherVoid<I> whenNull(Runnable nullHandler) {
+      delegate.whenNull(() -> { nullHandler.run(); return null; });
+      return this;
+    }
+
+    public void on(I input) {
+      delegate.on(input);
+    }
+  }
+
   public static class AdHocDispatcher<I,R> {
 
     private final Map<Class<?>,Function<? super I, ? extends R>> handlers;
     private Supplier<? extends R> nullHandler;
 
-    public AdHocDispatcher(Class<I> inputBaseClass, Class<?> lookIn) {
+    private AdHocDispatcher(Class<I> inputBaseClass, Class<?> lookIn) {
       Set<Class<?>> subclasses = findSubclasses(inputBaseClass, lookIn);
       handlers = new HashMap<>(subclasses.size());
       subclasses.forEach(c -> handlers.put(c, null));

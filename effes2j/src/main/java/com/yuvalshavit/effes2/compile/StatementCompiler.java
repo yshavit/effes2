@@ -2,6 +2,7 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
@@ -25,7 +26,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignMultilineContext ctx) {
-    throw new UnsupportedOperationException(); // TODO
+    VarRef toVar = getVarForAssign(ctx.qualifiedIdentName());
+    compileExpressionMultiline(ctx.expressionMultiline(), toVar);
   }
 
   @Dispatched
@@ -72,14 +74,40 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignContext ctx) {
-    VarRef var = getVar(ctx.qualifiedIdentName());
+    VarRef var = getVarForAssign(ctx.qualifiedIdentName());
     expressionCompiler.apply(ctx.expression());
     var.store(cc.out);
   }
 
   @Dispatched
   public void apply(EffesParser.StatIfContext ctx) {
-    throw new UnsupportedOperationException(); // TODO
+    Dispatcher.dispatchConsumer(EffesParser.StatementIfConditionAndBodyContext.class)
+      .when(EffesParser.IfElseSimpleContext.class, c -> {
+        String ifNotLabel = cc.labelAssigner.allocate("ifNot");
+        // Easy approach for now: always drop the ifChainEndLabel, even if we could have done without it. Not worrying about the extra GOTO
+        String ifChainEndLabel = cc.labelAssigner.allocate("ifChainEnd");
+        // Each expression+block is in its own scope. That way, for instance:
+        //   if foo is One(val):
+        //     youCanUse(val)
+        //   else
+        //     valIsNotAvailableHere()
+        cc.scope.inNewScope(() -> {
+            expressionCompiler.apply(ctx.expression());
+            cc.out.gotoIfNot(ifNotLabel);
+            compileBlock(c.block());
+          });
+        compileElseStatement(c.elseStat(), ifNotLabel, ifChainEndLabel);
+      })
+      .when(EffesParser.IfMatchMultiContext.class, c-> {
+        cc.scope.inNewScope(() -> {
+          expressionCompiler.apply(ctx.expression());
+          String endLabel = cc.labelAssigner.allocate("matchersEnd");
+          compileBlockMatchers(c.blockMatchers(), endLabel, endLabel);
+          cc.labelAssigner.place(endLabel);
+
+        });
+      })
+      .on(ctx.statementIfConditionAndBody());
   }
 
   @Dispatched
@@ -100,7 +128,23 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatWhileContext ctx) {
-    throw new UnsupportedOperationException(); // TODO
+    String loopTopLabel = cc.labelAssigner.allocate("whileLoopTop");
+    String loopEndLabel = cc.labelAssigner.allocate("whileLoopEnd");
+    cc.scope.inNewScope(() -> {
+      expressionCompiler.apply(ctx.expression()); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
+      cc.labelAssigner.place(loopTopLabel);
+      Dispatcher.dispatchConsumer(EffesParser.StatementWhileConditionAndBodyContext.class)
+        .when(EffesParser.WhileBodySimpleContext.class, c -> {
+          cc.out.gotoIfNot(loopEndLabel);
+          compileBlock(c.block());
+          cc.out.gotoAbs(loopTopLabel);
+        })
+        .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {
+          compileBlockMatchers(c.blockMatchers(), loopTopLabel, loopEndLabel);
+        })
+        .on(ctx.statementWhileConditionAndBody());
+    });
+    cc.labelAssigner.place(loopEndLabel);
   }
 
   @Dispatched
@@ -110,7 +154,10 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatMatchContext ctx) {
-    throw new UnsupportedOperationException(); // TODO
+    String endLabel = cc.labelAssigner.allocate("statMatcherEnd");
+    expressionCompiler.apply(ctx.expression());
+    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), null, endLabel, false, cc));
+    cc.labelAssigner.place(endLabel);
   }
 
   private void compileBlock(EffesParser.BlockContext ctx) {
@@ -133,7 +180,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (blockStop.expression() != null) {
           expressionCompiler.apply(blockStop.expression());
         } else if (blockStop.expressionMultiline() != null) {
-          compileExpressionMultiline(blockStop.expressionMultiline());
+          VarRef.LocalVar rv = cc.scope.allocateAnoymous(null);
+          compileExpressionMultiline(blockStop.expressionMultiline(), rv);
+          rv.push(cc.out);
         }
         cc.out.rtrn();
       } else {
@@ -142,11 +191,71 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     }
   }
 
-  private void compileExpressionMultiline(EffesParser.ExpressionMultilineContext ctx) {
+  private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel) {
+    // When this bit starts, the assumption is that the top of the stack contains just one element (that we care about): the value to be matched.
+    //
+    // At any given blockMatcher, we have two possibilities:
+    // 1) This could be the last blockMatcher: If it matches, fall through, else go to the "done" label.
+    // 2) Otherwise: If it matches, fall through and then go to the "done" label. If it doesn't match, go to the "nextMatcher" label.
+    // As a simplification, we'll treat these two cases the same. In the first case, the "nextMatcher" label will just be the "done" label.
+    String nextMatcherLabel = null;
+    for (Iterator<EffesParser.BlockMatcherContext> iterator = ctx.blockMatcher().iterator(); iterator.hasNext(); ) {
+      EffesParser.BlockMatcherContext blockMatcherContext = iterator.next();
+      // First, set up the labels. We'll drop our label, and then compute the next one.
+      if (nextMatcherLabel != null) {
+        cc.labelAssigner.place(nextMatcherLabel);
+      }
+      if (iterator.hasNext()) {
+        nextMatcherLabel = cc.labelAssigner.allocate("matcher");
+      } else {
+        nextMatcherLabel = gotoAfterNoMatchesLabel;
+      }
+      // Okay, labels are done. Reminder: stack here is just [valueToLookAt]. So in a new scope, evaluate the matcher and jump accordingly.
+      final String nextMatcherLabelClosure = nextMatcherLabel;
+      cc.scope.inNewScope(() -> {
+        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, iterator.hasNext(), cc);
+        compileBlock(blockMatcherContext.block());
+        cc.out.gotoAbs(gotoAfterMatchLabel);
+      });
+    }
+  }
+
+  private void compileElseStatement(EffesParser.ElseStatContext ctx, String ifNotLabel, String ifChainEndLabel) {
+    if (ctx == null) {
+      return;
+    }
+    Dispatcher.dispatchConsumer(EffesParser.ElseStatContext.class)
+      .when(EffesParser.IfElifContext.class, c -> {
+        String nextIfNotLabel = cc.labelAssigner.allocate("elseIfNot");
+        cc.labelAssigner.place(ifNotLabel);
+        // See apply(StatIfContext) above for why we set up the scope this way
+        cc.scope.inNewScope(() -> {
+          expressionCompiler.apply(c.expression());
+          cc.out.gotoIfNot(nextIfNotLabel);
+          compileBlock(c.block());
+        });
+        compileElseStatement(c.elseStat(), nextIfNotLabel, ifChainEndLabel);
+      })
+      .when(EffesParser.IfElseContext.class, c -> {
+        String elseComplete = cc.labelAssigner.allocate("elseComplete");
+        cc.out.gotoAbs(elseComplete); // previous block falls through to here, then jumps to end
+        cc.labelAssigner.place(ifNotLabel);
+        compileBlock(c.block());
+        cc.labelAssigner.place(elseComplete);
+        cc.labelAssigner.place(ifChainEndLabel);
+      })
+      .whenNull(() -> {
+        cc.labelAssigner.place(ifNotLabel);
+        cc.labelAssigner.place(ifChainEndLabel);
+      })
+      .on(ctx);
+  }
+
+  private void compileExpressionMultiline(EffesParser.ExpressionMultilineContext ctx, VarRef toVar) {
     throw new UnsupportedOperationException(); // TODO
   }
 
-  private VarRef getVar(EffesParser.QualifiedIdentNameContext ctx) {
+  private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx) {
     return Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, EffesParser.class, VarRef.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
@@ -155,7 +264,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
           throw new CompilationException(ctx.start, ctx.stop, "unsupported");
         }
-        return getInstanceField(ctx);
+        VarRef field = getInstanceField(ctx);
+        if (field == null) {
+          throw new CompilationException(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol(), "unknown field " + ctx.IDENT_NAME().getText());
+        }
+        return field;
       })
       .whenNull(() -> {
         // just a var name; it's either a local var or an instance var on "this"
@@ -163,6 +276,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         VarRef result = cc.scope.lookUp(varName);
         if (result == null) {
           result = getInstanceField(ctx);
+          if (result == null) {
+            result = cc.scope.allocateLocal(varName, false);
+          }
         }
         return result;
       })
@@ -173,8 +289,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     String fieldName = ctx.IDENT_NAME().getText();
     VarRef instanceVar = cc.getInstanceContextVar(ctx.getStart(), ctx.getStart());
     String varType = instanceVar.getType();
-    if (cc.typeInfo.hasField(varType, fieldName)) {
-      throw new CompilationException(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol(), "unknown field " + fieldName + " on type " + varType);
+    if (!cc.typeInfo.hasField(varType, fieldName)) {
+      return null;
     }
     return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, null);
   }

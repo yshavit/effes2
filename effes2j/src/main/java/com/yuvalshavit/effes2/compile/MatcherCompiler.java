@@ -21,7 +21,7 @@ public class MatcherCompiler {
 
   public static void compile(
     EffesParser.MatcherContext matcherContext,
-    String labelIfMatched,
+    String optionalLabelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
     CompilerContext compilerContext)
@@ -34,8 +34,8 @@ public class MatcherCompiler {
     for (int i = 0; i < compiler.depth; ++i) {
       compilerContext.out.pop();
     }
-    if (labelIfMatched != null) {
-      compilerContext.out.gotoAbs(labelIfMatched);
+    if (optionalLabelIfMatched != null) {
+      compilerContext.out.gotoAbs(optionalLabelIfMatched);
     }
   }
 
