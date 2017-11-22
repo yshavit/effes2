@@ -134,7 +134,7 @@ expression:
 // Expressions that span more than one line. Each one of these should include its own NLs
 // as needed.
 expressionMultiline:
-  IF expression IS COLON expressionMatchers                 # ExprIfIs
+  IF expression IS COLON expressionMatchers
 ;
 
 qualifiedIdentName:

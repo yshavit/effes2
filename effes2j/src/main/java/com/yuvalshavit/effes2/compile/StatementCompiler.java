@@ -252,7 +252,32 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   }
 
   private void compileExpressionMultiline(EffesParser.ExpressionMultilineContext ctx, VarRef toVar) {
-    throw new UnsupportedOperationException(); // TODO
+    // coming in, stack is []
+    // going out, stack will be [], and toVar will be written to
+
+    // put [expr] on the stack, and then just set up a bunch of matchers
+    String nextMatcherLabel = null;
+    String matchersDoneLabel = cc.labelAssigner.allocate("exprMatcherDone");
+    expressionCompiler.apply(ctx.expression());
+    for (Iterator<EffesParser.ExpressionMatcherContext> iter = ctx.expressionMatchers().expressionMatcher().iterator(); iter.hasNext(); ) {
+      EffesParser.ExpressionMatcherContext exprMatcher = iter.next();
+      if (nextMatcherLabel != null) {
+        cc.labelAssigner.place(nextMatcherLabel);
+      }
+      nextMatcherLabel = cc.labelAssigner.allocate("exprMatcher");
+      cc.scope.inNewScope(() -> {
+        MatcherCompiler.compile(exprMatcher.matcher(), null, matchersDoneLabel, iter.hasNext(), cc);
+        expressionCompiler.apply(exprMatcher.expression());
+        cc.labelAssigner.place(matchersDoneLabel);
+      });
+    }
+    assert nextMatcherLabel != null : ctx.getText();
+    // nextMatcherLabel is the goto after failure for the last expression. There's no reasonable behavior in that case, so just fail.
+    // The [expr] would have been popped off the stack now, because keepIfNoMatch is false for the last exprMatcher
+    cc.labelAssigner.place(nextMatcherLabel);
+    cc.out.fail("no alternatives matched");
+    // And finally, drop the "done" label so the previous expressions have somewhere to go to.
+    cc.labelAssigner.place(matchersDoneLabel);
   }
 
   private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx) {
