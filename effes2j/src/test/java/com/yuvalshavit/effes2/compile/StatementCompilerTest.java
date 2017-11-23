@@ -1,7 +1,17 @@
 package com.yuvalshavit.effes2.compile;
 
-import org.testng.annotations.Test;
+import java.util.Map;
 
-public class StatementCompilerTest {
+import com.yuvalshavit.effes2.parse.EffesParser;
 
+public class StatementCompilerTest extends CompilerTestBase<EffesParser.StatementContext> {
+
+  public StatementCompilerTest() {
+    super(EffesParser::statement, "statements.yaml");
+  }
+
+  @Override
+  protected void compile(CompilerContext compilerContext, EffesParser.StatementContext rule, Map<String,?> options) {
+    new StatementCompiler(compilerContext).apply(rule);
+  }
 }

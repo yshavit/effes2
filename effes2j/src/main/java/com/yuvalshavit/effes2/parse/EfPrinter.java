@@ -432,7 +432,7 @@ public class EfPrinter {
     }
 
     @Override
-    protected void seeExprIfIs(EffesParser.ExprIfIsContext ctx) {
+    public void seeExpressionMultiline(EffesParser.ExpressionMultilineContext ctx) {
       write("if ");
       dispatch(ctx.expression());
       write(" is:");

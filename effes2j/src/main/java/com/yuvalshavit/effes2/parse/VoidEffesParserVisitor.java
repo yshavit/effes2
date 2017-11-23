@@ -163,8 +163,8 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeExprParenthesis(EffesParser.ExprParenthesisContext ctx);
 
   @Override
-  final public Void visitExprIfIs(EffesParser.ExprIfIsContext ctx) { seeExprIfIs(ctx); return null; }
-  protected abstract void seeExprIfIs(EffesParser.ExprIfIsContext ctx);
+  final public Void visitExpressionMultiline(EffesParser.ExpressionMultilineContext ctx) { seeExpressionMultiline(ctx); return null; }
+  protected abstract void seeExpressionMultiline(EffesParser.ExpressionMultilineContext ctx);
 
   @Override
   final public Void visitQualifiedIdentName(EffesParser.QualifiedIdentNameContext ctx) { seeQualifiedIdentName(ctx); return null; }
