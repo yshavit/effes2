@@ -123,7 +123,7 @@ public class Scope {
   /**
    * Allocates an anonymous local variable.
    */
-  public VarRef.LocalVar allocateAnoymous(String typeName) {
+  public VarRef.LocalVar allocateAnonymous(String typeName) {
     int varIdx = frame.firstAvailableAnonymousVar++;
     String varName = "$" + varIdx; // not a legal var name in Effes, so we don't need to check availability
     return allocateLocal(varName, false, typeName);

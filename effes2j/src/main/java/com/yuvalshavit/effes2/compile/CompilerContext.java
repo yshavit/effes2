@@ -25,10 +25,15 @@ class CompilerContext {
     this.instanceVar = instanceVar;
   }
 
-  VarRef getInstanceContextVar(Token start, Token stop) {
-    if (instanceVar == null) {
+  VarRef.LocalVar getInstanceContextVar(Token start, Token stop) {
+    VarRef.LocalVar instanceVarLocal = tryGetInstanceContextVar();
+    if (instanceVarLocal == null) {
       throw new CompilationException(start, stop, "can't use \"this\" in static context");
     }
+    return instanceVarLocal;
+  }
+
+  VarRef.LocalVar tryGetInstanceContextVar() {
     return instanceVar;
   }
 }

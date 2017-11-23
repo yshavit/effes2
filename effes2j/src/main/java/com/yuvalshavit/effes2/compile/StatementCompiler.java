@@ -37,8 +37,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     EffesParser.BlockContext body = ctx.block();
     cc.scope.inNewScope(() -> {
       VarRef iterVar = cc.scope.allocateLocal(iterVarname, false);
-      VarRef.LocalVar iterLen = cc.scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
-      VarRef.LocalVar iterIdx = cc.scope.allocateAnoymous(EffesNativeType.STRING.getEvmType());
+      VarRef.LocalVar iterLen = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
+      VarRef.LocalVar iterIdx = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
@@ -180,7 +180,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (blockStop.expression() != null) {
           expressionCompiler.apply(blockStop.expression());
         } else if (blockStop.expressionMultiline() != null) {
-          VarRef.LocalVar rv = cc.scope.allocateAnoymous(null);
+          VarRef.LocalVar rv = cc.scope.allocateAnonymous(null);
           compileExpressionMultiline(blockStop.expressionMultiline(), rv);
           rv.push(cc.out);
         }
@@ -268,7 +268,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       cc.scope.inNewScope(() -> {
         MatcherCompiler.compile(exprMatcher.matcher(), null, matchersDoneLabel, iter.hasNext(), cc);
         expressionCompiler.apply(exprMatcher.expression());
-        cc.labelAssigner.place(matchersDoneLabel);
+        toVar.store(cc.out);
+        cc.out.gotoAbs(matchersDoneLabel);
       });
     }
     assert nextMatcherLabel != null : ctx.getText();
@@ -289,7 +290,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
           throw new CompilationException(ctx.start, ctx.stop, "unsupported");
         }
-        VarRef field = getInstanceField(ctx);
+        VarRef field = getInstanceField(ctx, cc.getInstanceContextVar(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol()));;
         if (field == null) {
           throw new CompilationException(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol(), "unknown field " + ctx.IDENT_NAME().getText());
         }
@@ -298,9 +299,12 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .whenNull(() -> {
         // just a var name; it's either a local var or an instance var on "this"
         String varName = ctx.IDENT_NAME().getText();
-        VarRef result = cc.scope.lookUp(varName);
+        VarRef result = cc.scope.tryLookUp(varName);
         if (result == null) {
-          result = getInstanceField(ctx);
+          VarRef.LocalVar instanceVar = cc.tryGetInstanceContextVar();
+          if (instanceVar != null) {
+            result = getInstanceField(ctx, instanceVar);
+          }
           if (result == null) {
             result = cc.scope.allocateLocal(varName, false);
           }
@@ -310,9 +314,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .on(ctx.qualifiedIdentNameStart());
   }
 
-  private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx) {
+  private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx, VarRef.LocalVar instanceVar) {
     String fieldName = ctx.IDENT_NAME().getText();
-    VarRef instanceVar = cc.getInstanceContextVar(ctx.getStart(), ctx.getStart());
     String varType = instanceVar.getType();
     if (!cc.typeInfo.hasField(varType, fieldName)) {
       return null;
