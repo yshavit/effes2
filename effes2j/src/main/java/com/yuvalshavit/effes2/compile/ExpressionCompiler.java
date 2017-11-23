@@ -184,7 +184,13 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       .whenNull(() -> {
         final String result;
         if (targetNameMidCtx.size() == 0) {
-          result = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop()).getType();
+          VarRef.LocalVar instanceVar = cc.tryGetInstanceContextVar();
+          if (instanceVar == null) {
+            result = "";
+          } else {
+            result = instanceVar.getType();
+            instanceVar.push(cc.out);
+          }
         } else if (targetNameMidCtx.size() == 1) {
           String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
           VarRef targetVar = cc.scope.lookUp(varName);
@@ -219,7 +225,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    cc.out.call(targetType, methodName);
+    cc.out.call(':' + targetType, methodName); // TODO module
     return methodInfo.hasReturnValue();
   }
 

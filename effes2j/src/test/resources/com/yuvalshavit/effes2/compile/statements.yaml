@@ -32,3 +32,78 @@ localVars:
 expect: |
   int 123
   svar 3
+---
+name: static method, no args, with rv
+input: 'foo()'
+types:
+  '':
+    methods:
+      foo:
+        declaredArgs: 0
+        hasRv: true
+expect: |
+  call : foo
+  pop
+---
+name: instance method, with args, no arv
+input: 'foo(a)'
+instanceContextType: SomeType
+types:
+  SomeType:
+    methods:
+      foo:
+        declaredArgs: 1
+        hasRv: false
+localVars:
+  a:
+    reg: 3
+expect: |
+  pvar 3
+  pvar 0
+  call :SomeType foo
+---
+name: while colon
+input: |
+  while condition():
+    doSomething()
+types:
+  '':
+    methods:
+      condition:
+        declaredArgs: 0
+        hasRv: true
+      doSomething:
+        declaredArgs: 0
+        hasRv: false
+expect: |
+  call : condition
+  labl whileLoopTop
+  gofi whileLoopEnd
+  call : doSomething
+  goto whileLoopTop
+  labl whileLoopEnd
+---
+name: while is
+input: |
+  while thing is:
+    String:
+      doStringThing()
+    Int:
+      doIntThing()
+    Foo:
+      break
+    Bar:
+      return
+localVars:
+  thing:
+    reg: 1
+types:
+  '':
+    methods:
+      doStringThing:
+        declaredArgs: 0
+        hasRv: false
+      doIntThing:
+        declaredArgs: 0
+        hasRv: false
+expect: TODO

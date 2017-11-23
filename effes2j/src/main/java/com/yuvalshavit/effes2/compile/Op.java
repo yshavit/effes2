@@ -2,7 +2,6 @@ package com.yuvalshavit.effes2.compile;
 
 import static java.util.Objects.requireNonNull;
 
-import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Collections;

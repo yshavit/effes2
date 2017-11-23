@@ -22,6 +22,9 @@ public final class TUtils {
   }
 
   static String trimExpectedOps(String ops) {
+    if (ops == null) {
+      return "";
+    }
     return ops
       .replaceAll(" *#.*\n", "\n")
       .replaceAll("^\n*", ""); // remove blank lines
