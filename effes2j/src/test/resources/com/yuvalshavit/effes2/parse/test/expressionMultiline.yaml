@@ -4,7 +4,7 @@ input: |
     Bar: one
     *: two
 expected:
-  ExprIfIs:
+  ExpressionMultiline:
   - ExprVariableOrMethodInvocation:
     - QualifiedIdentName:
       - foo (IDENT_NAME)
@@ -29,7 +29,7 @@ input: |
       Cons(Arrow, @toks): True
       *: False
 expected:
-  ExprIfIs:
+  ExpressionMultiline:
   - ExprVariableOrMethodInvocation:
     - QualifiedIdentName:
       - toks (IDENT_NAME)
