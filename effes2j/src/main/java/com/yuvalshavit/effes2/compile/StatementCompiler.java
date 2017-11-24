@@ -5,7 +5,9 @@ import java.util.Deque;
 import java.util.Iterator;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
+import com.yuvalshavit.effes2.parse.ParseUtils;
 import com.yuvalshavit.effes2.util.Dispatcher;
+import com.yuvalshavit.effes2.util.EvmStrings;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
@@ -279,7 +281,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     // nextMatcherLabel is the goto after failure for the last expression. There's no reasonable behavior in that case, so just fail.
     // The [expr] would have been popped off the stack now, because keepIfNoMatch is false for the last exprMatcher
     cc.labelAssigner.place(nextMatcherLabel);
-    cc.out.fail("no alternatives matched");
+    cc.out.fail(EvmStrings.escape("no alternatives matched"));
     // And finally, drop the "done" label so the previous expressions have somewhere to go to.
     cc.labelAssigner.place(matchersDoneLabel);
   }

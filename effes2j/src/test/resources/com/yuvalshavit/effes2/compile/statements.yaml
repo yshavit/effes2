@@ -33,6 +33,15 @@ expect: |
   int 123
   svar 3
 ---
+name: 'assign multiline'
+input: |
+  abc = if a is:
+    One: "one"
+    Two: "two"
+localVars:
+  a:
+    reg: 2
+---
 name: static method, no args, with rv
 input: 'foo()'
 types:
@@ -223,3 +232,115 @@ expect: |
   pop                           # []
   goto whileLoopTop             # [] (back to outer loop)
   labl whileLoopEnd             # [] (end outer loop)
+---
+input: 'abc ::: One(val)'
+localVars:
+  abc: { reg: 1 }
+types:
+  One:
+    fields: [value]
+---
+input: |
+  for a in foo():
+    workWith(a)
+types:
+  '':
+    methods:
+      workWith:
+        declaredArgs: 0
+        hasRv: false
+      foo:
+        declaredArgs: 0
+        hasRv: true
+---
+input: abc = ?
+expect: ''  # just establishes the var
+---
+name: 'if-else'
+input: |
+  if a:
+    doA()
+  else:
+    doB()
+localVars:
+  a: { reg: 1 }
+types:
+  '':
+    methods:
+      doA: { declaredArgs: 0, hasRv: false }
+      doB: { declaredArgs: 0, hasRv: false }
+---
+name: 'if-else if'
+input: |
+  if a:
+    doA()
+  else if b:
+    doB()
+localVars:
+  a: { reg: 1 }
+  b: { reg: 1 }
+types:
+  '':
+    methods:
+      doA: { declaredArgs: 0, hasRv: false }
+      doB: { declaredArgs: 0, hasRv: false }
+---
+name: 'if-else if-else chain'
+input: |
+  if a:
+    doA()
+  else if b:
+    doB()
+  else if c:
+    doC()
+  else:
+    doD() # hehehe "doodie"
+localVars:
+  a: { reg: 1 }
+  b: { reg: 1 }
+  c: { reg: 1 }
+types:
+  '':
+    methods:
+      doA: { declaredArgs: 0, hasRv: false }
+      doB: { declaredArgs: 0, hasRv: false }
+      doC: { declaredArgs: 0, hasRv: false }
+      doD: { declaredArgs: 0, hasRv: false }
+---
+name: assign to field with unqualified name
+input: value = "one"
+instanceContextType: SomeType
+types:
+  SomeType:
+    fields: [value]
+---
+input: this.value = "one"
+instanceContextType: SomeType
+localVars:
+  value:
+    reg: 666
+types:
+  SomeType:
+    fields: [value]
+---
+name: return with value
+input: |
+  while a:
+    return "single value"
+localVars:
+  a:
+    reg: 1
+---
+name: return with value multiline
+input: |
+  while a:
+    return if b is:
+      One: "one"
+      Two: "two"
+localVars:
+  a:
+    reg: 2
+  b:
+    reg: 3
+---
+name: TODO StatementCompilerTest should have a switch for whether rv is expected

@@ -109,10 +109,6 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   public void apply(EffesParser.ExprIsAContext input) {
     apply(input.expression());
     boolean ifMatchedValue = input.NOT() == null;
-
-    // TODO note! Scope should be assigned outside of this, at the statement level. That way, you can have:
-    //     if foo is One(bar):
-    //        doSomethingWith(bar)
     String isAFalse = cc.labelAssigner.allocate("isA_false");
     String isADone = cc.labelAssigner.allocate("isA_done");
     MatcherCompiler.compile(input.matcher(), null, isAFalse, false, cc);

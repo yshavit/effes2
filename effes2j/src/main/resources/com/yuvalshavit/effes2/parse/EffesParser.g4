@@ -75,7 +75,7 @@ blockStop:
 ;
 
 elseStat:
-  ELIF expression COLON block elseStat?                     # IfElif
+  ELSE IF  expression COLON block elseStat?                 # IfElif
 | ELSE COLON block                                          # IfElse
 ;
 

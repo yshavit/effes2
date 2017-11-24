@@ -27,7 +27,7 @@ parseFile(toks) ->:
   while toks is not Empty:
     if parseType(toks) is _Parsed(elem, @toks):
       types = Cons(elem, types)
-    elif parseMethod(toks) is _Parsed(elem, @toks):
+    else if parseMethod(toks) is _Parsed(elem, @toks):
       methods = Cons(elem, methods)
     else:
       return NoParse
@@ -79,7 +79,7 @@ parseStatement(toks):
   if toks is Cons(KwReturn, @toks):
     s = KwReturn
   # assignment
-  elif toks is Cons(Identifier(@name), Cons(Equals, @toks)):
+  else if toks is Cons(Identifier(@name), Cons(Equals, @toks)):
     if parseExpression(toks) is _Parsed(@expr, @toks):
       s = EfStatAssign(name, expr)
     else:

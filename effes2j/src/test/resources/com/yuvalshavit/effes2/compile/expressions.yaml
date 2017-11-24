@@ -167,3 +167,19 @@ expect: |
   pvar 2
   pvar 1
   call Dog eat
+---
+input: Nothing
+types:
+  Nothing: { fields: [] }
+expect: |
+  call :Nothing Nothing
+---
+input: One(myVal)
+localVars:
+  myVal:
+    reg: 3
+types:
+  Nothing: { fields: [value] }
+expect: |
+  pvar 3
+  call :One One

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -31,7 +32,9 @@ public class ResourceReader {
     return Stream.of(files)
       .filter(f -> f.endsWith(".yaml"))
       .sorted()
-      .flatMap(f -> StreamSupport.stream(new Yaml().loadAll(read(testClass, f)).spliterator(), false)
+      .flatMap(f -> StreamSupport
+        .stream(new Yaml().loadAll(read(testClass, f)).spliterator(), false)
+        .filter(Objects::nonNull)
         .map(o -> new TestCaseRead<>(f.replaceAll("\\.yaml$", ""), o)))
       .map(read -> read.convert(readAs))
       .map(o -> new Object[] {o.fileName, o.payload})
