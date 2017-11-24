@@ -1,5 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -69,7 +70,19 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprInstantiationContext input) {
-    throw new UnsupportedOperationException(); // TODO
+    String typeName = input.IDENT_TYPE().getSymbol().getText();
+    int expectedArgs = cc.typeInfo.fieldsCount(typeName);
+    List<EffesParser.ExpressionContext> args = input.argsInvocation() == null
+      ? null
+      : input.argsInvocation().expression();
+    if (args == null) {
+      args = Collections.emptyList();
+    }
+    if (expectedArgs != args.size()) {
+      throw new CompilationException(input, String.format("expected %d argument%s, found %d", expectedArgs, expectedArgs == 1 ? "" : "s", args.size()));
+    }
+    Lists.reverse(args).forEach(this::apply);
+    cc.out.call(":" + typeName, typeName); // TODO modules
   }
 
   @Dispatched

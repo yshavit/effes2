@@ -174,12 +174,15 @@ types:
 expect: |
   call :Nothing Nothing
 ---
-input: One(myVal)
+input: Pair(a, b)
 localVars:
-  myVal:
+  a:
     reg: 3
+  b:
+    reg: 4
 types:
-  Nothing: { fields: [value] }
+  Pair: { fields: [first, second] }
 expect: |
+  pvar 4
   pvar 3
-  call :One One
+  call :Pair Pair

@@ -133,6 +133,11 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     }
 
     @Override
+    public int fieldsCount(String type) {
+      return fieldsFor(type).size();
+    }
+
+    @Override
     public boolean hasField(String type, String fieldName) {
       return fieldsFor(type).indexOf(fieldName) >= 0;
     }
