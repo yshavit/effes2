@@ -412,6 +412,10 @@ instanceContextType: SomeType
 types:
   SomeType:
     fields: [value]
+expect: |
+  str one
+  pvar 0
+  sfld SomeType value
 ---
 input: this.value = "one"
 instanceContextType: SomeType
@@ -421,6 +425,10 @@ localVars:
 types:
   SomeType:
     fields: [value]
+expect: |
+  str one
+  pvar 0
+  sfld SomeType value
 ---
 name: return with value
 input: |
@@ -429,6 +437,13 @@ input: |
 localVars:
   a:
     reg: 1
+expect: |
+  labl whileLoopTop  # []
+  pvar 1             # [a]
+  gofi whileLoopEnd  # []
+  str "single value" # [str]
+  rtrn               # returned
+  labl whileLoopEnd  # []
 ---
 name: return with value multiline
 input: |
@@ -441,5 +456,34 @@ localVars:
     reg: 2
   b:
     reg: 3
+expect: |
+  labl whileLoopTop               # []
+  pvar 2                          # [a]
+  gofi whileLoopEnd               # []
+  pvar 3                          # [b]
+  typp One                        # [b, bIsOne]
+  goif match_1_One                # [b]
+  goto exprMatcher                # [b]
+  labl match_1_One                # [b]
+  pop                             # []
+  str one                         # ["one"]
+  svar 4                          # []                  {$4=rv}
+  goto exprMatcherDone            # []
+  labl exprMatcher                # [b]  (b is not One)
+  typp Two                        # [b, bIsTwo]
+  goif match_1_Two                # [b]
+  pop                             # []
+  goto exprMatcher:1              # []
+  labl match_1_Two                # [b]
+  pop                             # []
+  str two                         # ["two"]
+  svar 4                          # []                  {$4=rv}
+  goto exprMatcherDone            # []
+  labl exprMatcher:1              # []
+  fail "no alternatives matched"  # EXIT
+  labl exprMatcherDone            # []
+  pvar 4                          # [rv]
+  rtrn                            # returned
+  labl whileLoopEnd               # []
 ---
 name: TODO StatementCompilerTest should have a switch for whether rv is expected
