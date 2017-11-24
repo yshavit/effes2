@@ -185,7 +185,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           compileExpressionMultiline(c.expressionMultiline(), rv);
           rv.push(cc.out);
         }
-        cc.out.rtrn();
+        cc.out.rtrn(); // TODO check if the method being compiled has an rv
       })
       .whenNull(() -> {})
       .on(blockStop);

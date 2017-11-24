@@ -149,6 +149,77 @@ expect: |
   goto whileLoopTop     # []
   labl whileLoopEnd     # []
 ---
-name: TODO nested loops
----
-name: TODO make sure "if" test includes break/continue/return
+name: complex flow
+input: |
+  while outerCondition() is:
+    Go:
+      while innerCondition():
+        if innerMostCondition() is:
+          ContinueType:
+            continue
+          ReturnType:
+            return
+          BreakType:
+            break
+          *:
+            trySomething()
+    Stay:
+      trySomething()
+types:
+  '':
+    methods:
+      outerCondition: { declaredArgs: 0, hasRv: true }
+      innerCondition: { declaredArgs: 0, hasRv: true }
+      innerMostCondition: { declaredArgs: 0, hasRv: true }
+      trySomething: { declaredArgs: 0, hasRv: true }
+expect: |
+  labl whileLoopTop             # []
+  call : outerCondition         # [oCond]
+  typp Go                       # [oCond, isGo]
+  goif match_1_Go               # [oCond]
+  goto matcher                  # [oCond]
+  labl match_1_Go               # [oCond]
+  pop                           # []
+  labl whileLoopTop:1           # []
+  call : innerCondition         # [iCond]
+  gofi whileLoopEnd:1           # []
+  call : innerMostCondition     # [imCond]
+  typp ContinueType             # [imCond, isCont]
+  goif match_1_ContinueType     # [imCond]
+  goto matcher:1                # [imCond]
+  labl match_1_ContinueType     # [imCond]
+  pop                           # []
+  goto whileLoopTop:1           # []
+  labl matcher:1                # [imCond]
+  typp ReturnType               # [imCond, isRet]
+  goif match_1_ReturnType       # [imCond]
+  goto matcher:2                # [imCond]
+  labl match_1_ReturnType       # [imCond]
+  pop                           # []
+  rtrn                          # []
+  labl matcher:2                # [imCond]
+  typp BreakType                # [imCond, isBreak]
+  goif match_1_BreakType        # [imCond]
+  goto matcher:3                # [imCond]
+  labl match_1_BreakType        # [imCond]
+  pop                           # []
+  goto whileLoopEnd:1           # []
+  labl matcher:3                # [imCond]
+  pop                           # []
+  call : trySomething           # [rv]
+  pop                           # []
+  goto matchersEnd              # []
+  labl matchersEnd              # []
+  goto whileLoopTop:1           # []  (go back to inner loop)
+  labl whileLoopEnd:1           # []  (inner loop end)
+  goto whileLoopTop             # []  (back to outer loop)
+  labl matcher                  # [oCond]  (way back from the outer condition!)
+  typp Stay                     # [oCond, isStay]
+  goif match_1_Stay             # [oCond]
+  goto whileLoopEnd             # [] (exit outer loop)
+  labl match_1_Stay             # [oCond]
+  pop                           # []
+  call : trySomething           # [rv]
+  pop                           # []
+  goto whileLoopTop             # [] (back to outer loop)
+  labl whileLoopEnd             # [] (end outer loop)
