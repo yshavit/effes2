@@ -166,7 +166,7 @@ localVars:
 expect: |
   pvar 2
   pvar 1
-  call Dog eat
+  call :Dog eat
 ---
 input: Nothing
 types:
