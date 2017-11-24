@@ -485,5 +485,3 @@ expect: |
   pvar 4                          # [rv]
   rtrn                            # returned
   labl whileLoopEnd               # []
----
-name: TODO StatementCompilerTest should have a switch for whether rv is expected
