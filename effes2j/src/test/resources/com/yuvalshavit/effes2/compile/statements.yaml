@@ -76,8 +76,8 @@ types:
         declaredArgs: 0
         hasRv: false
 expect: |
-  call : condition
   labl whileLoopTop
+  call : condition
   gofi whileLoopEnd
   call : doSomething
   goto whileLoopTop
@@ -94,6 +94,8 @@ input: |
       break
     Bar:
       return
+    Baz:
+      continue
 localVars:
   thing:
     reg: 1
@@ -106,4 +108,47 @@ types:
       doIntThing:
         declaredArgs: 0
         hasRv: false
-expect: TODO
+expect: |
+  labl whileLoopTop     # []
+  pvar 1                # [thing]
+  typp String           # [thing, thingIsString]
+  goif match_1_String   # [thing]
+  goto matcher          # [thing]
+  labl match_1_String   # [thing]   (if is String)
+  pop                   # []
+  call : doStringThing  # []
+  goto whileLoopTop     # []
+  labl matcher          # [thing]
+  typp Int              # [thing, isInt]
+  goif match_1_Int      # [thing]
+  goto matcher:1        # [thing]
+  labl match_1_Int      # [thing]  (if is Int)
+  pop                   # []
+  call : doIntThing     # []
+  goto whileLoopTop     # []
+  labl matcher:1        # [thing]
+  typp Foo              # [thing, isFoo]
+  goif match_1_Foo      # [thing]
+  goto matcher:2        # [thing]
+  labl match_1_Foo      # [thing]  (if is Foo)
+  pop                   # []
+  goto whileLoopEnd     # []
+  labl matcher:2        # [thing]
+  typp Bar              # [thing, isBar]
+  goif match_1_Bar      # [thing]
+  goto matcher:3        # [thing]
+  labl match_1_Bar      # [thing]  (if is Bar)
+  pop                   # []
+  rtrn                  # []
+  labl matcher:3        # [thing]
+  typp Baz              # [thing, isBaz]
+  goif match_1_Baz      # [thing]
+  goto whileLoopEnd     # [thing]  (final case failure falls through to end)
+  labl match_1_Baz      # [thing]  (if is Baz)
+  pop                   # []
+  goto whileLoopTop     # []
+  labl whileLoopEnd     # []
+---
+name: TODO nested loops
+---
+name: TODO make sure "if" test includes break/continue/return

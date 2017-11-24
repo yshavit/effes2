@@ -31,9 +31,7 @@ public class MatcherCompiler {
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
     compiler.scratchVars.commit(compilerContext.out);
-    for (int i = 0; i < compiler.depth; ++i) {
-      compilerContext.out.pop();
-    }
+    compiler.popWorkspace(false);
     if (optionalLabelIfMatched != null) {
       compilerContext.out.gotoAbs(optionalLabelIfMatched);
     }
@@ -176,11 +174,15 @@ public class MatcherCompiler {
   }
 
   private void handleFailure() {
-    int pops = keepIfNoMatch ? (depth - 1) : depth;
+    popWorkspace(keepIfNoMatch);
+    cc.out.gotoAbs(labelNoMatch);
+  }
+
+  private void popWorkspace(boolean keepLast) {
+    int pops = keepLast ? (depth - 1) : depth;
     for (int i = 0; i < pops; ++i) {
       cc.out.pop();
     }
-    cc.out.gotoAbs(labelNoMatch);
   }
 
 }

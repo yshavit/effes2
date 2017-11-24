@@ -69,10 +69,9 @@ block:
 ;
 
 blockStop:
-  BREAK NL
-| CONTINUE NL
-| RETURN expression? NL
-| RETURN expressionMultiline
+  BREAK NL                                                  # BlockStopBreak
+| CONTINUE NL                                               # BlockStopContinue
+| RETURN (expression? NL | expressionMultiline)             # BlockStopReturn
 ;
 
 elseStat:

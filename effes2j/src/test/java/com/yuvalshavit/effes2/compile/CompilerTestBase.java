@@ -1,6 +1,7 @@
 package com.yuvalshavit.effes2.compile;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -44,6 +45,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
   @Test(dataProvider = "test")
   public void compile(String fileName, TestCase testCase) throws Exception {
+    assertNotNull(testCase.input, "no test input!");
     ParseChecker.check(fileName, testCase.input, rule, ast -> {
       StringBuilder sb = new StringBuilder();
       CompilerContext compilerContext = compilerContext(testCase, sb);

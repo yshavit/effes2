@@ -51,8 +51,16 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeBlock(EffesParser.BlockContext ctx);
 
   @Override
-  final public Void visitBlockStop(EffesParser.BlockStopContext ctx) { seeBlockStop(ctx); return null; }
-  protected abstract void seeBlockStop(EffesParser.BlockStopContext ctx);
+  public Void visitBlockStopBreak(EffesParser.BlockStopBreakContext ctx) { seeBlockStopBreak(ctx); return null; }
+  protected abstract void seeBlockStopBreak(EffesParser.BlockStopBreakContext ctx);
+
+  @Override
+  public Void visitBlockStopContinue(EffesParser.BlockStopContinueContext ctx) { seeBlockStopContinue(ctx); return null; }
+  protected abstract void seeBlockStopContinue(EffesParser.BlockStopContinueContext ctx);
+
+  @Override
+  public Void visitBlockStopReturn(EffesParser.BlockStopReturnContext ctx) { seeBlockStopReturn(ctx); return null; }
+  protected abstract void seeBlockStopReturn(EffesParser.BlockStopReturnContext ctx);
 
   @Override
   final public Void visitIfElif(EffesParser.IfElifContext ctx) { seeIfElif(ctx); return null; }

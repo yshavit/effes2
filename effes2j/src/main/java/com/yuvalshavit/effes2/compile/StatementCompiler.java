@@ -12,15 +12,13 @@ import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 public class StatementCompiler extends CompileDispatcher<EffesParser.StatementContext> {
 
   private final CompilerContext cc;
-  private final Deque<String> breakLabels;
-  private final Deque<String> continueLabels;
+  private final Deque<BreakLabels> breakLabels;
   private final ExpressionCompiler expressionCompiler;
 
   public StatementCompiler(CompilerContext cc) {
     super(EffesParser.StatementContext.class);
     this.cc = cc;
     breakLabels = new ArrayDeque<>();
-    continueLabels = new ArrayDeque<>();
     expressionCompiler = new ExpressionCompiler(cc);
   }
 
@@ -50,8 +48,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       // Now the loop. At the top of each iteration, the stack's top contains the iterateOver value.
       String loopTopLabel = cc.labelAssigner.allocate("loopTop");
       String loopDoneLabel = cc.labelAssigner.allocate("loopDone");
-      breakLabels.push(loopDoneLabel);
-      continueLabels.push(loopTopLabel);
+      breakLabels.push(new BreakLabels(loopDoneLabel, loopTopLabel));
       cc.labelAssigner.place(loopTopLabel);
       // if arr.len >= idx goto done
       iterLen.push(cc.out);
@@ -63,12 +60,10 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       iterIdx.push(cc.out);
       cc.out.arrayGet();
       iterVar.store(cc.out);
-      compileBlock(body);
       cc.out.gotoAbs(loopTopLabel);
       // end the loop
       cc.labelAssigner.place(loopDoneLabel);
       breakLabels.pop();
-      continueLabels.pop();
     });
   }
 
@@ -104,7 +99,6 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           String endLabel = cc.labelAssigner.allocate("matchersEnd");
           compileBlockMatchers(c.blockMatchers(), endLabel, endLabel);
           cc.labelAssigner.place(endLabel);
-
         });
       })
       .on(ctx.statementIfConditionAndBody());
@@ -130,14 +124,16 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   public void apply(EffesParser.StatWhileContext ctx) {
     String loopTopLabel = cc.labelAssigner.allocate("whileLoopTop");
     String loopEndLabel = cc.labelAssigner.allocate("whileLoopEnd");
+    breakLabels.push(new BreakLabels(loopEndLabel, loopTopLabel));
     cc.scope.inNewScope(() -> {
-      expressionCompiler.apply(ctx.expression()); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
       cc.labelAssigner.place(loopTopLabel);
+      expressionCompiler.apply(ctx.expression()); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
       Dispatcher.dispatchConsumer(EffesParser.StatementWhileConditionAndBodyContext.class)
         .when(EffesParser.WhileBodySimpleContext.class, c -> {
           cc.out.gotoIfNot(loopEndLabel);
-          compileBlock(c.block());
-          cc.out.gotoAbs(loopTopLabel);
+          if (!compileBlock(c.block())) {
+            cc.out.gotoAbs(loopTopLabel);
+          }
         })
         .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {
           compileBlockMatchers(c.blockMatchers(), loopTopLabel, loopEndLabel);
@@ -160,39 +156,45 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     cc.labelAssigner.place(endLabel);
   }
 
-  private void compileBlock(EffesParser.BlockContext ctx) {
+  /**
+   * compiles a block, and returns whether it ended in a blockStop
+   */
+  private boolean compileBlock(EffesParser.BlockContext ctx) {
     ctx.statement().forEach(this::apply);
     EffesParser.BlockStopContext blockStop = ctx.blockStop();
-    if (blockStop != null) {
-      if (blockStop.BREAK() != null) {
-        String label = breakLabels.peek();
+    Dispatcher.dispatchConsumer(EffesParser.BlockStopContext.class)
+      .when(EffesParser.BlockStopBreakContext.class, c -> {
+        BreakLabels label = breakLabels.peek();
         if (label == null) {
           throw new CompilationException(ctx, "no break target available");
         }
-        cc.out.gotoAbs(label);
-      } else if (blockStop.CONTINUE() != null) {
-        String label = continueLabels.peek();
+        cc.out.gotoAbs(label.labelForBreak);
+      })
+      .when(EffesParser.BlockStopContinueContext.class, c -> {
+        BreakLabels label = breakLabels.peek();
         if (label == null) {
           throw new CompilationException(ctx, "no continue target available");
         }
-        cc.out.gotoAbs(label);
-      } else if (blockStop.RETURN() != null) {
-        if (blockStop.expression() != null) {
-          expressionCompiler.apply(blockStop.expression());
-        } else if (blockStop.expressionMultiline() != null) {
+        cc.out.gotoAbs(label.labelForContinue);
+      })
+      .when(EffesParser.BlockStopReturnContext.class, c -> {
+        if (c.expression() != null) {
+          expressionCompiler.apply(c.expression());
+        } else if (c.expressionMultiline() != null) {
           VarRef.LocalVar rv = cc.scope.allocateAnonymous(null);
-          compileExpressionMultiline(blockStop.expressionMultiline(), rv);
+          compileExpressionMultiline(c.expressionMultiline(), rv);
           rv.push(cc.out);
         }
         cc.out.rtrn();
-      } else {
-        throw new CompilationException(ctx, "unsupported block stop: " + blockStop.getClass().getSimpleName());
-      }
-    }
+      })
+      .whenNull(() -> {})
+      .on(blockStop);
+    return blockStop != null;
   }
 
   private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel) {
     // When this bit starts, the assumption is that the top of the stack contains just one element (that we care about): the value to be matched.
+    // When this bit ends, that element will be cleared.
     //
     // At any given blockMatcher, we have two possibilities:
     // 1) This could be the last blockMatcher: If it matches, fall through, else go to the "done" label.
@@ -213,9 +215,10 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       // Okay, labels are done. Reminder: stack here is just [valueToLookAt]. So in a new scope, evaluate the matcher and jump accordingly.
       final String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, iterator.hasNext(), cc);
-        compileBlock(blockMatcherContext.block());
-        cc.out.gotoAbs(gotoAfterMatchLabel);
+        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, true, cc);
+        if (!compileBlock(blockMatcherContext.block())) {
+          cc.out.gotoAbs(gotoAfterMatchLabel);
+        }
       });
     }
   }
@@ -290,7 +293,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
           throw new CompilationException(ctx.start, ctx.stop, "unsupported");
         }
-        VarRef field = getInstanceField(ctx, cc.getInstanceContextVar(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol()));;
+        VarRef field = getInstanceField(ctx, cc.getInstanceContextVar(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol()));
         if (field == null) {
           throw new CompilationException(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol(), "unknown field " + ctx.IDENT_NAME().getText());
         }
@@ -323,4 +326,18 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, null);
   }
 
+  private static class BreakLabels {
+    private final String labelForBreak;
+    private final String labelForContinue;
+
+    public BreakLabels(String labelForBreak, String labelForContinue) {
+      this.labelForBreak = labelForBreak;
+      this.labelForContinue = labelForContinue;
+    }
+
+    @Override
+    public String toString() {
+      return String.format("break=%s, continue=%s", labelForBreak, labelForContinue);
+    }
+  }
 }

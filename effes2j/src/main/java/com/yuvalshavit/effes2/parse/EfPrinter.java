@@ -214,34 +214,36 @@ public class EfPrinter {
       nl(1);
       List<EffesParser.StatementContext> normalStatements = ctx.statement();
       if (normalStatements == null) {
-        seeBlockStop(ctx.blockStop());
+        visit(ctx.blockStop());
+        dispatch(ctx.blockStop());
       } else {
         normalStatements.forEach(this::dispatch);
-        handleIfNotNull(ctx.blockStop(), this::seeBlockStop);
+        handleIfNotNull(ctx.blockStop(), this::dispatch);
       }
       nl(-1);
     }
 
     @Override
-    protected void seeBlockStop(EffesParser.BlockStopContext ctx) {
-      if (ctx.BREAK() != null) {
-        write("break").nl();
-      } else if (ctx.CONTINUE() != null) {
-        write("continue").nl();
-      } else if (ctx.RETURN() != null) {
-        write("return");
-        if (ctx.expression() == null && ctx.expressionMultiline() == null) {
+    protected void seeBlockStopBreak(EffesParser.BlockStopBreakContext ctx) {
+      write("break").nl();
+    }
+
+    @Override
+    protected void seeBlockStopContinue(EffesParser.BlockStopContinueContext ctx) {
+      write("continue").nl();
+    }
+
+    @Override
+    protected void seeBlockStopReturn(EffesParser.BlockStopReturnContext ctx) {
+      if (ctx.expression() == null && ctx.expressionMultiline() == null) {
+        nl();
+      } else {
+        write(' ');
+        if (handleIfNotNull(ctx.expression(), this::dispatch)) {
           nl();
         } else {
-          write(' ');
-          if (handleIfNotNull(ctx.expression(), this::dispatch)) {
-            nl();
-          } else {
-            handleIfNotNull(ctx.expressionMultiline(), this::dispatch);
-          }
+          handleIfNotNull(ctx.expressionMultiline(), this::dispatch);
         }
-      } else {
-        assert false : "unrecognized: " + ctx;
       }
     }
 
