@@ -5,7 +5,6 @@ import java.util.Deque;
 import java.util.Iterator;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
-import com.yuvalshavit.effes2.parse.ParseUtils;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
@@ -57,16 +56,22 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       iterIdx.push(cc.out);
       cc.out.ge();
       cc.out.gotoIfNot(loopDoneLabel);
-      // otherwise: var, body, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
+      // otherwise: var, body, increment, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
       cc.out.copy();
       iterIdx.push(cc.out);
       cc.out.arrayGet();
       iterVar.store(cc.out);
+      compileBlock(body);
+      iterIdx.push(cc.out);
+      cc.out.pushInt("1");
+      cc.out.iAdd();
+      iterIdx.store(cc.out);
       cc.out.gotoAbs(loopTopLabel);
       // end the loop
       cc.labelAssigner.place(loopDoneLabel);
       breakLabels.pop();
     });
+    cc.out.pop(); // the array being indexed
   }
 
   @Dispatched

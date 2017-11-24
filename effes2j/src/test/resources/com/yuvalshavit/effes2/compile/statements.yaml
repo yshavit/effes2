@@ -239,6 +239,18 @@ localVars:
 types:
   One:
     fields: [value]
+expect: |
+  pvar 1                # [abc]
+  typp One              # [abc, isOne]
+  goif match_1_One      # [abc]
+  pop                   # []
+  goto statMatcherEnd   # []
+  labl match_1_One      # [abc]  (if is One)
+  Pfld One value        # [abc, abc.val]
+  Svar 2                # [abc, abc.val]  {$2=val}
+  pop                   # [abc]
+  pop                   # []
+  labl statMatcherEnd   # []
 ---
 input: |
   for a in foo():
@@ -247,11 +259,38 @@ types:
   '':
     methods:
       workWith:
-        declaredArgs: 0
+        declaredArgs: 1
         hasRv: false
       foo:
         declaredArgs: 0
         hasRv: true
+expect: |
+  call : foo          # [fooRv]
+  copy                # [fooRv, fooRv]
+  call_Array:len      # [fooRv, fooRv.len]
+  svar 1              # [fooRv]                 {$1=len}
+  int 0               # [fooRv, 0]
+  svar 2              # [fooRv]                 {$1=len, $2=idx}
+  labl loopTop        # [fooRv]
+  pvar 1              # [fooRv, len]
+  pvar 2              # [fooRv, len, idx]
+  call_Integer:ge     # [fooRv, lenGtIdx]
+  gofi loopDone       # [fooRv]
+  copy                # [fooRv, fooRv]
+  pvar 2              # [fooRv, fooRv, idx]
+  call_Array:get      # [fooRv, elem]
+  svar 0              # [fooRv]                 {$1=len, $2=idx, $0=elem}
+  pvar 0              # [fooRv, elem]           (start of loop body)
+  call : workWith     # [fooRv]
+  pvar 2              # [fooRv, idx]
+  int 1               # [fooRv, idx, 1]
+  call_Integer:add    # [fooRv, idx+1]
+  svar 2              # [fooRv]                 {$1=len, $2=idx+1, $0=elem}
+  goto loopTop        # [fooRv]
+  labl loopDone       # [fooRv]
+  pop                 # []
+
+
 ---
 input: abc = ?
 expect: ''  # just establishes the var
