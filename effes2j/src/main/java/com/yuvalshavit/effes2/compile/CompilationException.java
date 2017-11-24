@@ -6,6 +6,7 @@ import org.antlr.v4.runtime.Token;
 import com.yuvalshavit.effes2.parse.EffesParser;
 
 public class CompilationException extends RuntimeException {
+  private static final long serialVersionUID = -7591615499145910642L;
 
   public CompilationException(Token start, Token stop, Exception e) {
     super(message(start, stop, e.getMessage()), e);

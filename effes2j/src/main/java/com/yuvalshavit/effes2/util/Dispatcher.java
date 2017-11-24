@@ -60,6 +60,7 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     return func.apply(this, element);
   }
 
+  @SuppressWarnings("rawtypes")
   private static Map getOrCreate(Class<Dispatcher<?,?>> dispatcher, Class<?> argClass, Class<?> resultClass) {
     SubclassesAreIn lookInAnnotation = dispatcher.getAnnotation(SubclassesAreIn.class);
     Class<?>[] lookIn = lookInAnnotation == null

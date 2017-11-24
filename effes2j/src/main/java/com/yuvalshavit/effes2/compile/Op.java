@@ -36,7 +36,7 @@ public class Op {
   public static <R> EffesOps<R> factory(Consumer<? super Op> handler, Function<? super Op, ? extends R> andThen) {
     requireNonNull(handler);
     requireNonNull(andThen);
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings({"unchecked", "rawtypes"})
     EffesOps<R> instance = (EffesOps<R>) Proxy.newProxyInstance(Op.class.getClassLoader(), new Class[] {EffesOps.class}, ((proxy, method, args) -> {
       if (method.getDeclaringClass() == Object.class && method.getName().equals("toString")) {
         return handler.toString();
