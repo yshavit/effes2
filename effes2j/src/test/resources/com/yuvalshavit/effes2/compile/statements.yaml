@@ -332,6 +332,14 @@ types:
     methods:
       doA: { declaredArgs: 0, hasRv: false }
       doB: { declaredArgs: 0, hasRv: false }
+expect: |
+  pvar 1              # [a]
+  gofi ifNot          # []
+  call : doA          # []
+  goto ifChainEnd     # []
+  labl ifNot          # []
+  call : doB          # []
+  labl ifChainEnd     # []
 ---
 name: 'if-else if'
 input: |
@@ -341,12 +349,22 @@ input: |
     doB()
 localVars:
   a: { reg: 1 }
-  b: { reg: 1 }
+  b: { reg: 2 }
 types:
   '':
     methods:
       doA: { declaredArgs: 0, hasRv: false }
       doB: { declaredArgs: 0, hasRv: false }
+expect: |
+  pvar 1            # [a]
+  gofi ifNot        # []
+  call : doA        # []
+  goto ifChainEnd   # []
+  labl ifNot        # []
+  pvar 2            # [b]
+  gofi elseIfNot    # []
+  call : doB        # []
+  labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
 input: |
@@ -360,8 +378,8 @@ input: |
     doD() # hehehe "doodie"
 localVars:
   a: { reg: 1 }
-  b: { reg: 1 }
-  c: { reg: 1 }
+  b: { reg: 2 }
+  c: { reg: 3 }
 types:
   '':
     methods:
@@ -369,6 +387,24 @@ types:
       doB: { declaredArgs: 0, hasRv: false }
       doC: { declaredArgs: 0, hasRv: false }
       doD: { declaredArgs: 0, hasRv: false }
+expect: |
+  pvar 1            # [a]
+  gofi ifNot        # []
+  call : doA        # []
+  goto ifChainEnd   # []
+  labl ifNot        # []
+  pvar 2            # [b]
+  gofi elseIfNot    # []
+  call : doB        # []
+  goto ifChainEnd   # []
+  labl elseIfNot    # []
+  pvar 3            # [c]
+  gofi elseIfNot:1  # []
+  call : doC        # []
+  goto ifChainEnd   # []
+  labl elseIfNot:1  # []
+  call : doD        # []
+  labl ifChainEnd   # []
 ---
 name: assign to field with unqualified name
 input: value = "one"

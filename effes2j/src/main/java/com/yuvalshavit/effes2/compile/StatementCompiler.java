@@ -99,6 +99,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
             compileBlock(c.block());
           });
         compileElseStatement(c.elseStat(), ifNotLabel, ifChainEndLabel);
+        cc.labelAssigner.place(ifChainEndLabel);
       })
       .when(EffesParser.IfMatchMultiContext.class, c-> {
         cc.scope.inNewScope(() -> {
@@ -234,6 +235,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     if (ctx == null) {
       return;
     }
+    cc.out.gotoAbs(ifChainEndLabel); // previous block falls through to here, then jumps to end
     Dispatcher.dispatchConsumer(EffesParser.ElseStatContext.class)
       .when(EffesParser.IfElifContext.class, c -> {
         String nextIfNotLabel = cc.labelAssigner.allocate("elseIfNot");
@@ -247,16 +249,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         compileElseStatement(c.elseStat(), nextIfNotLabel, ifChainEndLabel);
       })
       .when(EffesParser.IfElseContext.class, c -> {
-        String elseComplete = cc.labelAssigner.allocate("elseComplete");
-        cc.out.gotoAbs(elseComplete); // previous block falls through to here, then jumps to end
         cc.labelAssigner.place(ifNotLabel);
         compileBlock(c.block());
-        cc.labelAssigner.place(elseComplete);
-        cc.labelAssigner.place(ifChainEndLabel);
       })
       .whenNull(() -> {
-        cc.labelAssigner.place(ifNotLabel);
-        cc.labelAssigner.place(ifChainEndLabel);
+//        cc.labelAssigner.place(ifNotLabel);
       })
       .on(ctx);
   }
