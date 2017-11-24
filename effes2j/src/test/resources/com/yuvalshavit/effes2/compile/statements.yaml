@@ -41,6 +41,30 @@ input: |
 localVars:
   a:
     reg: 2
+expect: |
+  pvar 2                          # [a]
+  typp One                        # [a, aIsOne]
+  goif match_1_One                # [a]
+  goto exprMatcher                # []
+  labl match_1_One                # [a]
+  pop                             # []
+  str one                         # ["one"]
+  svar 3                          # []           {$3="one"}
+  goto exprMatcherDone            # []
+  labl exprMatcher                # [a]
+  typp Two                        # [a, aIsTwo]
+  goif match_1_Two                # [a]
+  pop                             # []
+  goto exprMatcher:1              # []
+  labl match_1_Two                # [a]
+  pop                             # []
+  str two                         # ["two"]
+  svar 3                          # []           {$3="two"}
+  goto exprMatcherDone            # []
+  labl exprMatcher:1              # []
+  fail "no alternatives matched"  # EXIT
+  labl exprMatcherDone            # []
+
 ---
 name: static method, no args, with rv
 input: 'foo()'

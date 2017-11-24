@@ -275,8 +275,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         cc.labelAssigner.place(nextMatcherLabel);
       }
       nextMatcherLabel = cc.labelAssigner.allocate("exprMatcher");
+      String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(exprMatcher.matcher(), null, matchersDoneLabel, iter.hasNext(), cc);
+        MatcherCompiler.compile(exprMatcher.matcher(), null, nextMatcherLabelClosure, iter.hasNext(), cc);
         expressionCompiler.apply(exprMatcher.expression());
         toVar.store(cc.out);
         cc.out.gotoAbs(matchersDoneLabel);
