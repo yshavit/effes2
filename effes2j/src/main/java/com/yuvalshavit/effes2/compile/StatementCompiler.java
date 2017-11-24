@@ -252,9 +252,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         cc.labelAssigner.place(ifNotLabel);
         compileBlock(c.block());
       })
-      .whenNull(() -> {
-//        cc.labelAssigner.place(ifNotLabel);
-      })
+      .whenNull(() -> { })
       .on(ctx);
   }
 
