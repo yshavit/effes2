@@ -12,13 +12,11 @@ import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class StatementCompiler extends CompileDispatcher<EffesParser.StatementContext> {
 
-  private final CompilerContext cc;
   private final Deque<BreakLabels> breakLabels;
   private final ExpressionCompiler expressionCompiler;
 
   public StatementCompiler(CompilerContext cc) {
-    super(EffesParser.StatementContext.class);
-    this.cc = cc;
+    super(EffesParser.StatementContext.class, cc);
     breakLabels = new ArrayDeque<>();
     expressionCompiler = new ExpressionCompiler(cc);
   }
