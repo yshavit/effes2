@@ -11,24 +11,8 @@ declaration:
 ;
 
 file:
-  importLine*
-  declaration*
+  declaration+
   EOF
-;
-
-importLine:
-  IMPORT IDENT_TYPE
-  COLON importDeclarations NL
-;
-
-importDeclaration:
-  IDENT_TYPE
-| IDENT_NAME
-;
-
-importDeclarations:
-  importDeclaration (COMMA importDeclaration)*              # ExplicitImports
-| ASTERISK                                                  # AllImports
 ;
 
 //------------------------------------------------------------------------------------------
