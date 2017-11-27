@@ -27,7 +27,7 @@ public class MatcherCompiler {
     CompilerContext compilerContext)
   {
     MatcherCompiler compiler = new MatcherCompiler(labelNoMatch, keepIfNoMatch, compilerContext);
-    MatcherImpl matcherImpl = compiler.new MatcherImpl(compiler.cc);
+    MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
     compiler.scratchVars.commit(compilerContext.out);
@@ -48,8 +48,8 @@ public class MatcherCompiler {
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class MatcherImpl extends CompileDispatcher<EffesParser.MatcherContext> {
 
-    MatcherImpl(CompilerContext cc) {
-      super(EffesParser.MatcherContext.class, cc);
+    MatcherImpl() {
+      super(EffesParser.MatcherContext.class);
     }
 
     @Dispatched
@@ -59,7 +59,7 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      handle(input.AT(), input.IDENT_NAME(), null, null, () -> new MatcherPatternImpl(cc).apply(input.matcherPattern()));
+      handle(input.AT(), input.IDENT_NAME(), null, null, () -> new MatcherPatternImpl().apply(input.matcherPattern()));
     }
 
     @Dispatched
@@ -75,8 +75,8 @@ public class MatcherCompiler {
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class MatcherPatternImpl extends CompileDispatcher<EffesParser.MatcherPatternContext> {
-    MatcherPatternImpl(CompilerContext cc) {
-      super(EffesParser.MatcherPatternContext.class, cc);
+    MatcherPatternImpl() {
+      super(EffesParser.MatcherPatternContext.class);
     }
 
     @Dispatched
@@ -104,7 +104,7 @@ public class MatcherCompiler {
             EffesParser.MatcherContext childContext = matcher.get(childIdx);
             String fieldName = cc.typeInfo.fieldName(typeName, childIdx);
             cc.out.PushField(typeName, fieldName);
-            new MatcherImpl(cc).apply(childContext);
+            new MatcherImpl().apply(childContext);
             cc.out.pop();
           }
           --depth;

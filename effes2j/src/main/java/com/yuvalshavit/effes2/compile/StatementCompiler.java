@@ -14,9 +14,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   private final Deque<BreakLabels> breakLabels;
   private final ExpressionCompiler expressionCompiler;
+  private final CompilerContext cc;
 
   public StatementCompiler(CompilerContext cc) {
-    super(EffesParser.StatementContext.class, cc);
+    super(EffesParser.StatementContext.class);
+    this.cc = cc;
     breakLabels = new ArrayDeque<>();
     expressionCompiler = new ExpressionCompiler(cc);
   }

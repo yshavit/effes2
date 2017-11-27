@@ -14,9 +14,11 @@ import com.yuvalshavit.effes2.util.EvmStrings;
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class ExpressionCompiler extends CompileDispatcher<EffesParser.ExpressionContext> {
   public static final String THIS = "<this>";
+  private final CompilerContext cc;
 
   public ExpressionCompiler(CompilerContext cc) {
-    super(EffesParser.ExpressionContext.class, cc);
+    super(EffesParser.ExpressionContext.class);
+    this.cc = cc;
   }
 
   @Dispatched
