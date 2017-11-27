@@ -1,0 +1,7 @@
+types:
+  TargetType:
+    fields: [value]
+    methods:
+      sayHello:
+        declaredArgs: 0
+        hasRv: false

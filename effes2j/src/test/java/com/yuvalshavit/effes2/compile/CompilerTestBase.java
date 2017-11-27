@@ -48,10 +48,18 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     assertNotNull(testCase.input, "no test input!");
     ParseChecker.check(fileName, testCase.input, rule, ast -> {
       StringBuilder sb = new StringBuilder();
-      CompilerContext compilerContext = compilerContext(testCase, sb);
+      CompilerContext compilerContext = compilerContext(testCase, sb, preload());
       compile(compilerContext, ast, testCase.options);
       assertEquals(sb.toString(), TUtils.trimExpectedOps(testCase.expect));
     });
+  }
+
+  protected Preload preload() {
+    return null;
+  }
+
+  public static class Preload {
+    public Map<String,SerTypeInfo> types = Collections.emptyMap();
   }
 
   public static class TestCase {
@@ -84,7 +92,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     public Boolean hasRv;
   }
 
-  private static CompilerContext compilerContext(TestCase testCase, StringBuilder out) {
+  private static CompilerContext compilerContext(TestCase testCase, StringBuilder out, Preload preload) {
     Scope scope = new Scope();
     scope.push();
     testCase.localVars.forEach((name, var) -> {
@@ -95,11 +103,19 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
     EffesOps<Void> outOps = TUtils.opsToString(out);
     LabelAssigner labelAssigner = new LabelAssigner(outOps);
-    TypeInfo typeInfo = createTypeInfo(testCase.types);
+    Map<String,SerTypeInfo> testTypes = testCase.types;
+    if (preload != null) {
+      testTypes = new HashMap<>(testTypes); // defensive, mutable copy
+      testTypes.keySet().stream().filter(preload.types::containsKey).findAny().ifPresent(dupe -> {
+        throw new RuntimeException("duplicate type: " + dupe);
+      });
+      testTypes.putAll(preload.types);
+    }
+    TypeInfo typeInfo = createTypeInfo(testTypes);
     VarRef.LocalVar instanceVar = testCase.instanceContextType == null
       ? null
       : new VarRef.LocalVar(0, testCase.instanceContextType);
-    return new CompilerContext(scope, labelAssigner, outOps, typeInfo, instanceVar);
+    return new CompilerContext(scope, labelAssigner, outOps, CompilerContext.createEfctDeclarations(out), typeInfo, instanceVar);
   }
 
   private static TypeInfo createTypeInfo(Map<String,SerTypeInfo> types) {

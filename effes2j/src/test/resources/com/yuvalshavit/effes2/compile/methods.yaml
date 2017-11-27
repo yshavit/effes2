@@ -1,0 +1,93 @@
+name: static, no args, no rv
+input: |
+  myStatic():
+    a = "one"
+expect: |
+  FUNC : myStatic 0 0 0
+  str one
+  svar 0
+  rtrn
+  ␤
+---
+name: static, two args, no rv
+input: |
+  myStatic(a, b):
+    a = "one"
+    b = "two"
+    c = "three"
+expect: |
+  FUNC : myStatic 2 0 0
+  str one
+  svar 0
+  str two
+  svar 1
+  str three
+  svar 2
+  rtrn
+  ␤
+---
+name: static, one arg, with rv
+input: |
+  myStatic(a):
+    return a
+expect: |
+  FUNC : myStatic 1 0 0
+  pvar 0
+  rtrn
+  ␤
+---
+name: instance, no args, no rv
+input: |
+  myStatic():
+    sayHello()
+    a = "alpha"
+    value = "value"
+instanceContextType: TargetType
+expect: |
+  FUNC :TargetType myStatic 0 0 0
+  pvar 0
+  call :TargetType sayHello
+  str alpha
+  svar 1
+  str value
+  pvar 0
+  sfld :TargetType value
+  rtrn
+  ␤
+---
+name: instance, two args, no rv
+input: |
+  myStatic(a, b):
+    a = "one"
+    b = "two"
+    c = "three"
+    sayHello()
+    value = "value"
+instanceContextType: TargetType
+expect: |
+  FUNC :TargetType myStatic 2 0 0
+  str one
+  svar 1
+  str two
+  svar 2
+  str three
+  svar 3
+  pvar 0
+  call :TargetType sayHello
+  str value
+  pvar 0
+  sfld :TargetType value
+  rtrn
+  ␤
+---
+name: instance, one arg, with rv
+input: |
+  myStatic(a):
+    return a
+instanceContextType: TargetType
+expect: |
+  FUNC :TargetType myStatic 1 0 0
+  pvar 1
+  rtrn
+  ␤
+---

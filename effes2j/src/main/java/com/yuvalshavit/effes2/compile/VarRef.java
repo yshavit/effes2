@@ -72,7 +72,7 @@ public abstract class VarRef {
     @Override
     public void store(EffesOps<?> ops) {
       instance.push(ops);
-      ops.storeField(instance.getType(), fieldName);
+      ops.storeField(":" + instance.getType(), fieldName); // TODO module
     }
 
     @Override

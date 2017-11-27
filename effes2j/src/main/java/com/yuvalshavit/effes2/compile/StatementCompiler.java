@@ -165,7 +165,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   /**
    * compiles a block, and returns whether it ended in a blockStop
    */
-  private boolean compileBlock(EffesParser.BlockContext ctx) {
+  public boolean compileBlock(EffesParser.BlockContext ctx) {
     ctx.statement().forEach(this::apply);
     EffesParser.BlockStopContext blockStop = ctx.blockStop();
     Dispatcher.dispatchConsumer(EffesParser.BlockStopContext.class)
