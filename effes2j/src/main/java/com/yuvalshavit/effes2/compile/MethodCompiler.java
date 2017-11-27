@@ -12,7 +12,7 @@ public class MethodCompiler {
 
   private MethodCompiler() {}
 
-  public static void compile(EffesParser.MethodDeclarationContext ctx, CompilerContext cc) {
+  public static void compile(EffesParser.MethodDeclarationContext ctx, CompilerContextGenerator ccGen, String instanceType) {
     List<TerminalNode> argNodes = ctx.argsDeclaration().IDENT_NAME();
     if (argNodes == null) {
       argNodes = Collections.emptyList();
@@ -21,19 +21,21 @@ public class MethodCompiler {
       assert n != null;
       return n.getSymbol().getText();
     });
-    String scope = cc.tryGetInstanceContextVar() == null
+    String scopeName = instanceType == null
       ? ":"
-      : (":" + cc.tryGetInstanceContextVar().getType());
-    cc.rawOut.methodDeclaration(scope, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
-    cc.scope.inNewScope(() -> {
-      if (cc.tryGetInstanceContextVar() != null) {
-        cc.scope.allocateLocal("<this>", false, cc.tryGetInstanceContextVar().getType());
-      }
-      argNames.forEach(name -> cc.scope.allocateLocal(name, false));
-      if (!new StatementCompiler(cc).compileBlock(ctx.block())) {
-        cc.out.rtrn(); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
+      : (":" + instanceType);
+    ccGen.declarations.methodDeclaration(scopeName, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
+    Scope scope = new Scope();
+    scope.inNewScope(() -> {
+      VarRef.LocalVar thisVar = instanceType == null
+        ? null
+        : scope.allocateLocal("<this>", false, instanceType);
+      argNames.forEach(name -> scope.allocateLocal(name, false));
+      CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, thisVar);
+      if (!new StatementCompiler(context).compileBlock(ctx.block())) {
+        ccGen.ops.rtrn(); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
       }
     });
-    cc.rawOut.endMethodDeclaration();
+    ccGen.declarations.endMethodDeclaration();
   }
 }

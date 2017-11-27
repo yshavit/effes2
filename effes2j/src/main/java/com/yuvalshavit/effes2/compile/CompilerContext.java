@@ -10,7 +10,6 @@ class CompilerContext {
   final Scope scope;
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
-  final EfctDeclarations rawOut;
   final TypeInfo typeInfo;
   private final VarRef.LocalVar instanceVar;
 
@@ -18,14 +17,12 @@ class CompilerContext {
     Scope scope,
     LabelAssigner labelAssigner,
     EffesOps<Void> out,
-    EfctDeclarations rawOut,
     TypeInfo typeInfo,
     VarRef.LocalVar instanceVar)
   {
     this.scope = scope;
     this.labelAssigner = labelAssigner;
     this.out = out;
-    this.rawOut = rawOut;
     this.typeInfo = typeInfo;
     this.instanceVar = instanceVar;
   }
@@ -42,7 +39,7 @@ class CompilerContext {
     return instanceVar;
   }
 
-  public static EfctDeclarations createEfctDeclarations(Appendable appendable) {
+  public static EfctDeclarations efctDeclarationsFor(Appendable appendable) {
     return new AppendableBackedEfctDeclarations(appendable);
   }
 

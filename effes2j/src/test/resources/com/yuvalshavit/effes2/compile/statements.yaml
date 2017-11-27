@@ -415,7 +415,7 @@ types:
 expect: |
   str one
   pvar 0
-  sfld SomeType value
+  sfld :SomeType value
 ---
 input: this.value = "one"
 instanceContextType: SomeType
@@ -428,7 +428,7 @@ types:
 expect: |
   str one
   pvar 0
-  sfld SomeType value
+  sfld :SomeType value
 ---
 name: return with value
 input: |

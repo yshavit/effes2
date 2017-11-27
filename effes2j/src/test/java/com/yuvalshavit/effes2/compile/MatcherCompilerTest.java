@@ -15,7 +15,7 @@ public class MatcherCompilerTest extends CompilerTestBase<EffesParser.MatcherCon
   }
 
   @Override
-  protected void compile(CompilerContext compilerContext, EffesParser.MatcherContext rule, Map<String,?> options) {
+  protected void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, EffesParser.MatcherContext rule, Map<String,?> options) {
     boolean keepIfNotMatched = (Boolean) options.get("keepIfNotMatched");
     MatcherCompiler.compile(rule, LABEL_IF_MATCHED, LABEL_IF_NOT_MATCHED, keepIfNotMatched, compilerContext);
   }

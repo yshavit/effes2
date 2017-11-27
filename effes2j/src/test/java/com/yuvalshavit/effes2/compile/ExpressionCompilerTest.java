@@ -11,7 +11,7 @@ public class ExpressionCompilerTest extends CompilerTestBase<EffesParser.Express
   }
 
   @Override
-  protected void compile(CompilerContext compilerContext, EffesParser.ExpressionContext rule, Map<String,?> options) {
+  protected void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, EffesParser.ExpressionContext rule, Map<String,?> options) {
     new ExpressionCompiler(compilerContext).apply(rule);
   }
 }

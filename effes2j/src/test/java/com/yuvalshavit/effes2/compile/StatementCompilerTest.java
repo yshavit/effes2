@@ -11,7 +11,7 @@ public class StatementCompilerTest extends CompilerTestBase<EffesParser.Statemen
   }
 
   @Override
-  protected void compile(CompilerContext compilerContext, EffesParser.StatementContext rule, Map<String,?> options) {
+  protected void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, EffesParser.StatementContext rule, Map<String,?> options) {
     new StatementCompiler(compilerContext).apply(rule);
   }
 }

@@ -26,7 +26,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   private final String yamlFile;
   private final Function<EffesParser,T> rule;
 
-  protected abstract void compile(CompilerContext compilerContext, T rule, Map<String,?> options);
+  protected abstract void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, T rule, Map<String,?> options);
 
   public CompilerTestBase(Function<EffesParser,T> rule, String yamlFile) {
     this.rule = rule;
@@ -48,8 +48,9 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     assertNotNull(testCase.input, "no test input!");
     ParseChecker.check(fileName, testCase.input, rule, ast -> {
       StringBuilder sb = new StringBuilder();
-      CompilerContext compilerContext = compilerContext(testCase, sb, preload());
-      compile(compilerContext, ast, testCase.options);
+      CompilerContextGenerator ccGen = compilerContextGenerator(testCase, sb, preload());
+      CompilerContext compilerContext = compilerContext(testCase, ccGen);
+      compile(ccGen, compilerContext, ast, testCase.options);
       assertEquals(sb.toString(), TUtils.trimExpectedOps(testCase.expect));
     });
   }
@@ -92,17 +93,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     public Boolean hasRv;
   }
 
-  private static CompilerContext compilerContext(TestCase testCase, StringBuilder out, Preload preload) {
-    Scope scope = new Scope();
-    scope.push();
-    testCase.localVars.forEach((name, var) -> {
-      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, var.type);
-      scope.allocateLocal(name, false, varRef);
-    });
-    scope.push();
-
-    EffesOps<Void> outOps = TUtils.opsToString(out);
-    LabelAssigner labelAssigner = new LabelAssigner(outOps);
+  private static CompilerContextGenerator compilerContextGenerator(TestCase testCase, StringBuilder out, Preload preload) {
     Map<String,SerTypeInfo> testTypes = testCase.types;
     if (preload != null) {
       testTypes = new HashMap<>(testTypes); // defensive, mutable copy
@@ -112,10 +103,25 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
       testTypes.putAll(preload.types);
     }
     TypeInfo typeInfo = createTypeInfo(testTypes);
+    EffesOps<Void> outOps = TUtils.opsToString(out);
+    CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
+    return new CompilerContextGenerator(outOps, efctDecls, typeInfo);
+  }
+
+  private static CompilerContext compilerContext(TestCase testCase, CompilerContextGenerator ccGen) {
+    Scope scope = new Scope();
+    scope.push();
+    testCase.localVars.forEach((name, var) -> {
+      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, var.type);
+      scope.allocateLocal(name, false, varRef);
+    });
+    scope.push();
+
+    LabelAssigner labelAssigner = new LabelAssigner(ccGen.ops);
     VarRef.LocalVar instanceVar = testCase.instanceContextType == null
       ? null
       : new VarRef.LocalVar(0, testCase.instanceContextType);
-    return new CompilerContext(scope, labelAssigner, outOps, CompilerContext.createEfctDeclarations(out), typeInfo, instanceVar);
+    return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, instanceVar);
   }
 
   private static TypeInfo createTypeInfo(Map<String,SerTypeInfo> types) {
