@@ -220,7 +220,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
     MethodInfo methodInfo = cc.typeInfo.getMethod(targetType, methodName);
     if (methodInfo == null) {
-      throw new CompilationException(targetCtx, "type " + targetType + " doesn't have a method named " + methodName);
+      String description = targetType.isEmpty()
+        ? ("module " + cc.moduleName)
+        : ("type " + targetType);
+      throw new CompilationException(targetCtx, description + " doesn't have a method named " + methodName);
     } else if (methodInfo.getDeclaredArgsCount() != argsInvocation.expression().size()) {
       throw new CompilationException(
         targetCtx,

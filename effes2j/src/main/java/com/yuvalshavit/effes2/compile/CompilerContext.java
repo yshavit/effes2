@@ -13,7 +13,7 @@ class CompilerContext {
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
-  private final String moduleName;
+  final String moduleName;
   private final VarRef.LocalVar instanceVar;
 
   public CompilerContext(
@@ -69,6 +69,7 @@ class CompilerContext {
 
   public static class AppendableBackedEfctDeclarations implements EfctDeclarations {
     private final Appendable appendable;
+    private DeclarationType declarationType;
 
     public AppendableBackedEfctDeclarations(Appendable appendable) {
       this.appendable = appendable;
@@ -77,6 +78,7 @@ class CompilerContext {
     @Override
     public void methodDeclaration(String scope, String functionName, int nArgs, boolean hasRv) {
       try {
+        start(DeclarationType.METHOD);
         appendable
           .append("FUNC ")
           .append(scope).append(' ')
@@ -101,6 +103,7 @@ class CompilerContext {
     @Override
     public void typeDeclaration(String typeName, List<String> argNames) {
       try {
+        start(DeclarationType.TYPE);
         appendable.append("TYPE 0 ").append(typeName);
         if (!argNames.isEmpty()) {
           appendable.append(' ');
@@ -115,5 +118,20 @@ class CompilerContext {
     protected void handleException(IOException e) {
       throw new RuntimeException(e);
     }
+
+    private void start(DeclarationType type) throws IOException {
+      // FUNC blocks already have a trailing newline, so no need to add them.
+      // But if we're transitioning from a string of TYPE declarations to something else, then put in a newline. It's not needed, just looks nicer.
+      if (declarationType == DeclarationType.TYPE && type != DeclarationType.TYPE) {
+        appendable.append('\n');
+      }
+      declarationType = type;
+    }
+
+    private enum DeclarationType {
+      TYPE,
+      METHOD,
+    }
+
   }
 }
