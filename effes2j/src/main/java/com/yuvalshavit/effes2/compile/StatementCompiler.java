@@ -161,6 +161,15 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   }
 
   @Dispatched
+  public void apply(EffesParser.StatTypeAssertionContext ctx) {
+    // for now, not even any bytecode; just assert it
+    String varName = ctx.IDENT_NAME().getSymbol().getText();
+    String type = ctx.IDENT_TYPE().getSymbol().getText();
+    VarRef.LocalVar varRef = cc.scope.lookUp(varName);
+    cc.scope.allocateLocal(varName, true, new VarRef.LocalVar(varRef.reg(), type));
+  }
+
+  @Dispatched
   public void apply(EffesParser.StatMatchContext ctx) {
     String endLabel = cc.labelAssigner.allocate("statMatcherEnd");
     EffesParser.ExpressionContext targetExpression = ctx.expression();
@@ -174,7 +183,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
    */
   public boolean compileBlock(EffesParser.BlockContext ctx) {
     ctx.statement().forEach(element -> {
-      cc.scope.inNewScope(() -> apply(element));
+      if (element instanceof EffesParser.StatTypeAssertionContext) {
+        apply((EffesParser.StatTypeAssertionContext) element);
+      } else {
+        cc.scope.inNewScope(() -> apply(element));
+      }
     });
     EffesParser.BlockStopContext blockStop = ctx.blockStop();
     Dispatcher.dispatchConsumer(EffesParser.BlockStopContext.class)

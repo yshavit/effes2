@@ -243,6 +243,11 @@ public class EfPrinter {
     }
 
     @Override
+    protected void seeStatTypeAssertion(EffesParser.StatTypeAssertionContext ctx) {
+      write("::: ").write(ctx.IDENT_NAME().getSymbol().getText()).write(" is ").write(ctx.IDENT_TYPE().getSymbol().getText()).nl();
+    }
+
+    @Override
     protected void seeStatMatch(EffesParser.StatMatchContext ctx) {
       dispatch(ctx.expression());
       write(" ::: ");

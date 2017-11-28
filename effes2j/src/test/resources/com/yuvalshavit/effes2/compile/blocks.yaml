@@ -10,9 +10,6 @@ input: |
     isCat = a is Cat
     a.bark()
 localVars:
-  condition:
-    reg: 1
-    type: null
   a:
     reg: 1
     type: Dog # we'll have an expression override it to Cat
@@ -38,7 +35,28 @@ expect: |
   labl isA_false
   bool false
   labl isA_done
-  svar 3
+  svar 2
   pvar 1
   call :Dog bark
 ---
+name: type assertion
+input: |
+  ␤
+    ::: a is Dog
+    a.bark()
+localVars:
+  a:
+    reg: 1
+    type: null
+types:
+  Dog:
+    fields: []
+    methods:
+      bark: { declaredArgs: 0, hasRv: false}
+  Cat:
+    fields: []
+    methods:
+      meow: { declaredArgs: 0, hasRv: false}
+expect: |
+  pvar 1
+  call :Dog bark

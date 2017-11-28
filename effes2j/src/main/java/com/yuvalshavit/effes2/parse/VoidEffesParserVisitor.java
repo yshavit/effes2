@@ -59,6 +59,10 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeStatNoop(EffesParser.StatNoopContext ctx);
 
   @Override
+  public Void visitStatTypeAssertion(EffesParser.StatTypeAssertionContext ctx) { seeStatTypeAssertion(ctx); return null; }
+  protected abstract void seeStatTypeAssertion(EffesParser.StatTypeAssertionContext ctx);
+
+  @Override
   public Void visitStatMatch(EffesParser.StatMatchContext ctx) { seeStatMatch(ctx); return null; }
   protected abstract void seeStatMatch(EffesParser.StatMatchContext ctx);
 
