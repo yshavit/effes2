@@ -42,12 +42,14 @@ public class MatcherCompiler {
     }
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       EffesParser.MatcherPatternContext pattern = ((EffesParser.MatcherWithPatternContext) matcherContext).matcherPattern();
-      if (pattern instanceof EffesParser.PatternTypeContext) {
-        String type = ((EffesParser.PatternTypeContext) pattern).IDENT_TYPE().getSymbol().getText();
-        VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
-        VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
-        compilerContext.scope.allocateLocal(targetVar, true, overlay);
-      }
+      String type = Dispatcher.dispatch(EffesParser.MatcherPatternContext.class, String.class)
+        .when(EffesParser.PatternTypeContext.class, c -> c.IDENT_TYPE().getSymbol().getText())
+        .when(EffesParser.PatternRegexContext.class, c -> EffesNativeType.MATCH.getEvmType())
+        .when(EffesParser.PatternStringLiteralContext.class, c -> EffesNativeType.STRING.getEvmType())
+        .on(pattern);
+      VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
+      VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
+      compilerContext.scope.allocateLocal(targetVar, true, overlay);
     }
   }
 
