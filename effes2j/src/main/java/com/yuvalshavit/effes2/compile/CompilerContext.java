@@ -1,6 +1,8 @@
 package com.yuvalshavit.effes2.compile;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.Token;
 
@@ -46,6 +48,7 @@ class CompilerContext {
   public interface EfctDeclarations {
     void methodDeclaration(String scope, String functionName, int nArgs, boolean hasRv);
     void endMethodDeclaration();
+    void typeDeclaration(String typeName, List<String> argNames);
   }
 
   public static class AppendableBackedEfctDeclarations implements EfctDeclarations {
@@ -74,6 +77,19 @@ class CompilerContext {
     public void endMethodDeclaration() {
       try {
         appendable.append('\n');
+      } catch (IOException e) {
+        handleException(e);
+      }
+    }
+
+    @Override
+    public void typeDeclaration(String typeName, List<String> argNames) {
+      try {
+        appendable.append("TYPE 0 ").append(typeName);
+        if (!argNames.isEmpty()) {
+          appendable.append(' ');
+          appendable.append(argNames.stream().collect(Collectors.joining(" ")));
+        }
       } catch (IOException e) {
         handleException(e);
       }
