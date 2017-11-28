@@ -139,32 +139,7 @@ public class EfPrinter {
 
     @Override
     protected void seeFile(EffesParser.FileContext ctx) {
-      handleMany(ctx.importLine(), this::seeImportLine);
       handleMany(ctx.declaration(), this::seeDeclaration);
-    }
-
-    @Override
-    protected void seeImportLine(EffesParser.ImportLineContext ctx) {
-      write("import %s: ", ctx.IDENT_TYPE());
-      dispatch(ctx.importDeclarations());
-      nl();
-    }
-
-    @Override
-    protected void seeImportDeclaration(EffesParser.ImportDeclarationContext ctx) {
-      // doesn't matter if it's a type or name
-      TerminalNode nameTok = (TerminalNode) ctx.getChild(0);
-      write(nameTok);
-    }
-
-    @Override
-    protected void seeExplicitImports(EffesParser.ExplicitImportsContext ctx) {
-      handleManyWithCommas(ctx.importDeclaration(), this::seeImportDeclaration);
-    }
-
-    @Override
-    protected void seeAllImports(EffesParser.AllImportsContext ctx) {
-      write('*');
     }
 
     @Override

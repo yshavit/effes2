@@ -15,22 +15,6 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seeFile(EffesParser.FileContext ctx);
 
   @Override
-  final public Void visitImportLine(EffesParser.ImportLineContext ctx) { seeImportLine(ctx); return null; }
-  protected abstract void seeImportLine(EffesParser.ImportLineContext ctx);
-
-  @Override
-  final public Void visitImportDeclaration(EffesParser.ImportDeclarationContext ctx) { seeImportDeclaration(ctx); return null; }
-  protected abstract void seeImportDeclaration(EffesParser.ImportDeclarationContext ctx);
-
-  @Override
-  final public Void visitExplicitImports(EffesParser.ExplicitImportsContext ctx) { seeExplicitImports(ctx); return null; }
-  protected abstract void seeExplicitImports(EffesParser.ExplicitImportsContext ctx);
-
-  @Override
-  final public Void visitAllImports(EffesParser.AllImportsContext ctx) { seeAllImports(ctx); return null; }
-  protected abstract void seeAllImports(EffesParser.AllImportsContext ctx);
-
-  @Override
   final public Void visitArgsDeclaration(EffesParser.ArgsDeclarationContext ctx) { seeArgsDeclaration(ctx); return null; }
   protected abstract void seeArgsDeclaration(EffesParser.ArgsDeclarationContext ctx);
 
