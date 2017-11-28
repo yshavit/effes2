@@ -119,11 +119,12 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprIsAContext input) {
-    apply(input.expression());
+    EffesParser.ExpressionContext expression = input.expression();
+    apply(expression);
     boolean ifMatchedValue = input.NOT() == null;
     String isAFalse = cc.labelAssigner.allocate("isA_false");
     String isADone = cc.labelAssigner.allocate("isA_done");
-    MatcherCompiler.compile(input.matcher(), null, isAFalse, false, cc);
+    MatcherCompiler.compile(input.matcher(), null, isAFalse, false, cc, tryGetLocalVar(expression));
     cc.out.bool(Boolean.toString(ifMatchedValue)); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
     cc.out.gotoAbs(isADone);
     cc.labelAssigner.place(isAFalse);
@@ -240,4 +241,23 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     return methodInfo.hasReturnValue();
   }
 
+  static String tryGetLocalVar(EffesParser.ExpressionContext targetExpression) {
+    final String targetVar;
+    if (targetExpression instanceof EffesParser.ExprVariableOrMethodInvocationContext) {
+      EffesParser.ExprVariableOrMethodInvocationContext varOrMethod = (EffesParser.ExprVariableOrMethodInvocationContext) targetExpression;
+      if (varOrMethod.argsInvocation() == null) {
+        EffesParser.QualifiedIdentNameContext name = varOrMethod.qualifiedIdentName();
+        if (name.qualifiedIdentNameStart() == null && name.qualifiedIdentNameMiddle().isEmpty()) {
+          targetVar = name.IDENT_NAME().getSymbol().getText();
+        } else {
+          targetVar = null;
+        }
+      } else {
+        targetVar = null;
+      }
+    } else {
+      targetVar = null;
+    }
+    return targetVar;
+  }
 }

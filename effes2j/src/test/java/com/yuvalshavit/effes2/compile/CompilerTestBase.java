@@ -172,8 +172,8 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
     @Override
     public MethodInfo getMethod(String type, String methodName) {
-      Map<String,MethodInfo> methods = Objects.requireNonNull(methodInfo.get(type), "no type named " + type);
-      return Objects.requireNonNull(methods.get(methodName), "no method named " + methodName);
+      Map<String,MethodInfo> methods = Objects.requireNonNull(methodInfo.get(type), String.format("no type named %s", type));
+      return Objects.requireNonNull(methods.get(methodName), String.format("no method named %s on %s", methodName, type));
     }
 
     @Override

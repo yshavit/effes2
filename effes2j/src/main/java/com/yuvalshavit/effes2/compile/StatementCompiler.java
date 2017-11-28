@@ -93,8 +93,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         //     youCanUse(val)
         //   else
         //     valIsNotAvailableHere()
+        EffesParser.ExpressionContext condition = ctx.expression();
         cc.scope.inNewScope(() -> {
-            expressionCompiler.apply(ctx.expression());
+          expressionCompiler.apply(condition);
             cc.out.gotoIfNot(ifNotLabel);
             compileBlock(c.block());
           });
@@ -103,9 +104,10 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       })
       .when(EffesParser.IfMatchMultiContext.class, c-> {
         cc.scope.inNewScope(() -> {
-          expressionCompiler.apply(ctx.expression());
+          EffesParser.ExpressionContext condition = ctx.expression();
+          expressionCompiler.apply(condition);
           String endLabel = cc.labelAssigner.allocate("matchersEnd");
-          compileBlockMatchers(c.blockMatchers(), endLabel, endLabel);
+          compileBlockMatchers(c.blockMatchers(), endLabel, endLabel, ExpressionCompiler.tryGetLocalVar(condition));
           cc.labelAssigner.place(endLabel);
         });
       })
@@ -135,7 +137,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     breakLabels.push(new BreakLabels(loopEndLabel, loopTopLabel));
     cc.scope.inNewScope(() -> {
       cc.labelAssigner.place(loopTopLabel);
-      expressionCompiler.apply(ctx.expression()); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
+      EffesParser.ExpressionContext condition = ctx.expression();
+      String conditionVar = ExpressionCompiler.tryGetLocalVar(condition);
+      expressionCompiler.apply(condition); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
       Dispatcher.dispatchConsumer(EffesParser.StatementWhileConditionAndBodyContext.class)
         .when(EffesParser.WhileBodySimpleContext.class, c -> {
           cc.out.gotoIfNot(loopEndLabel);
@@ -144,7 +148,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           }
         })
         .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {
-          compileBlockMatchers(c.blockMatchers(), loopTopLabel, loopEndLabel);
+          compileBlockMatchers(c.blockMatchers(), loopTopLabel, loopEndLabel, conditionVar);
         })
         .on(ctx.statementWhileConditionAndBody());
     });
@@ -159,8 +163,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   @Dispatched
   public void apply(EffesParser.StatMatchContext ctx) {
     String endLabel = cc.labelAssigner.allocate("statMatcherEnd");
-    expressionCompiler.apply(ctx.expression());
-    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), null, endLabel, false, cc));
+    EffesParser.ExpressionContext targetExpression = ctx.expression();
+    expressionCompiler.apply(targetExpression);
+    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), null, endLabel, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
     cc.labelAssigner.place(endLabel);
   }
 
@@ -168,7 +173,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
    * compiles a block, and returns whether it ended in a blockStop
    */
   public boolean compileBlock(EffesParser.BlockContext ctx) {
-    ctx.statement().forEach(this::apply);
+    ctx.statement().forEach(element -> {
+      cc.scope.inNewScope(() -> apply(element));
+    });
     EffesParser.BlockStopContext blockStop = ctx.blockStop();
     Dispatcher.dispatchConsumer(EffesParser.BlockStopContext.class)
       .when(EffesParser.BlockStopBreakContext.class, c -> {
@@ -200,7 +207,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     return blockStop != null;
   }
 
-  private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel) {
+  private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel, String targetVar) {
     // When this bit starts, the assumption is that the top of the stack contains just one element (that we care about): the value to be matched.
     // When this bit ends, that element will be cleared.
     //
@@ -223,7 +230,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       // Okay, labels are done. Reminder: stack here is just [valueToLookAt]. So in a new scope, evaluate the matcher and jump accordingly.
       final String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, true, cc);
+        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, true, cc, targetVar);
         if (!compileBlock(blockMatcherContext.block())) {
           cc.out.gotoAbs(gotoAfterMatchLabel);
         }
@@ -263,7 +270,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     // put [expr] on the stack, and then just set up a bunch of matchers
     String nextMatcherLabel = null;
     String matchersDoneLabel = cc.labelAssigner.allocate("exprMatcherDone");
-    expressionCompiler.apply(ctx.expression());
+    EffesParser.ExpressionContext targetExpression = ctx.expression();
+    String targetVar = ExpressionCompiler.tryGetLocalVar(targetExpression);
+    expressionCompiler.apply(targetExpression);
     for (Iterator<EffesParser.ExpressionMatcherContext> iter = ctx.expressionMatchers().expressionMatcher().iterator(); iter.hasNext(); ) {
       EffesParser.ExpressionMatcherContext exprMatcher = iter.next();
       if (nextMatcherLabel != null) {
@@ -272,7 +281,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       nextMatcherLabel = cc.labelAssigner.allocate("exprMatcher");
       String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(exprMatcher.matcher(), null, nextMatcherLabelClosure, iter.hasNext(), cc);
+        MatcherCompiler.compile(exprMatcher.matcher(), null, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
         expressionCompiler.apply(exprMatcher.expression());
         toVar.store(cc.out);
         cc.out.gotoAbs(matchersDoneLabel);

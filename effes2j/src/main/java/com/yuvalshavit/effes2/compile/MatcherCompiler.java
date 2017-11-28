@@ -19,12 +19,17 @@ public class MatcherCompiler {
   private final ScratchVars scratchVars;
   private int depth;
 
+  /**
+   * @param targetVar the var being matched; if provided, and the top-level matcher is a typed pattern matcher, we'll provide an overlay of this var with type
+   * info
+   */
   public static void compile(
     EffesParser.MatcherContext matcherContext,
     String optionalLabelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
-    CompilerContext compilerContext)
+    CompilerContext compilerContext,
+    String targetVar)
   {
     MatcherCompiler compiler = new MatcherCompiler(labelNoMatch, keepIfNoMatch, compilerContext);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
@@ -34,6 +39,15 @@ public class MatcherCompiler {
     compiler.popWorkspace(false);
     if (optionalLabelIfMatched != null) {
       compilerContext.out.gotoAbs(optionalLabelIfMatched);
+    }
+    if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
+      EffesParser.MatcherPatternContext pattern = ((EffesParser.MatcherWithPatternContext) matcherContext).matcherPattern();
+      if (pattern instanceof EffesParser.PatternTypeContext) {
+        String type = ((EffesParser.PatternTypeContext) pattern).IDENT_TYPE().getSymbol().getText();
+        VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
+        VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
+        compilerContext.scope.allocateLocal(targetVar, true, overlay);
+      }
     }
   }
 

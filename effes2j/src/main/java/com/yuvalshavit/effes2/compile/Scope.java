@@ -21,15 +21,15 @@ public class Scope {
     return tryLookUp(symbolName, true);
   }
 
-  public VarRef lookUpInParentScope(String symbolName) {
-    VarRef varRef = tryLookUp(symbolName, false);
+  public VarRef.LocalVar lookUpInParentScope(String symbolName) {
+    VarRef.LocalVar varRef = tryLookUp(symbolName, false);
     if (varRef == null) {
       throw new NoSuchElementException("no variable named " + symbolName);
     }
     return varRef;
   }
 
-  private VarRef tryLookUp(String symbolName, boolean includeTopFrame) {
+  private VarRef.LocalVar tryLookUp(String symbolName, boolean includeTopFrame) {
     Frame lookIn = frame;
     if (!includeTopFrame) {
       lookIn = lookIn.parent;
@@ -38,7 +38,7 @@ public class Scope {
       }
     }
     for (; lookIn != null; lookIn = lookIn.parent) {
-      VarRef varRef = lookIn.symbols.get(symbolName);
+      VarRef.LocalVar varRef = lookIn.symbols.get(symbolName);
       if (varRef != null) {
         return varRef;
       }
@@ -130,7 +130,7 @@ public class Scope {
   }
 
   private static class Frame {
-    private final Map<String,VarRef> symbols = new HashMap<>();
+    private final Map<String,VarRef.LocalVar> symbols = new HashMap<>();
     private final Frame parent;
     private int firstAvailableReg;
     private int firstAvailableAnonymousVar;
