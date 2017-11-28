@@ -31,7 +31,7 @@ public class MethodCompiler {
         ? null
         : scope.allocateLocal("<this>", false, instanceType);
       argNames.forEach(name -> scope.allocateLocal(name, false));
-      CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, thisVar);
+      CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, ccGen.module, thisVar);
       if (!new StatementCompiler(context).compileBlock(ctx.block())) {
         ccGen.ops.rtrn(); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
       }

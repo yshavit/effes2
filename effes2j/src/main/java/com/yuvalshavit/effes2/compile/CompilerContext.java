@@ -13,6 +13,7 @@ class CompilerContext {
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
+  private final String moduleName;
   private final VarRef.LocalVar instanceVar;
 
   public CompilerContext(
@@ -20,12 +21,14 @@ class CompilerContext {
     LabelAssigner labelAssigner,
     EffesOps<Void> out,
     TypeInfo typeInfo,
+    String moduleName,
     VarRef.LocalVar instanceVar)
   {
     this.scope = scope;
     this.labelAssigner = labelAssigner;
     this.out = out;
     this.typeInfo = typeInfo;
+    this.moduleName = moduleName;
     this.instanceVar = instanceVar;
   }
 
@@ -43,6 +46,19 @@ class CompilerContext {
 
   public static EfctDeclarations efctDeclarationsFor(Appendable appendable) {
     return new AppendableBackedEfctDeclarations(appendable);
+  }
+
+  public String qualifyType(String typeName) {
+    String typeModule = typeModuleName(typeName);
+    return typeModule + ':' + typeName;
+  }
+
+  public String typeModuleName(String typeName) {
+    String typeModule = typeInfo.getModule(typeName);
+    if (typeModule.equals(moduleName)) {
+      typeModule = "";
+    }
+    return typeModule;
   }
 
   public interface EfctDeclarations {

@@ -81,7 +81,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(input, String.format("expected %d argument%s, found %d", expectedArgs, expectedArgs == 1 ? "" : "s", args.size()));
     }
     Lists.reverse(args).forEach(this::apply);
-    cc.out.call(":" + typeName, typeName); // TODO modules
+    cc.out.call(cc.qualifyType(typeName), typeName);
   }
 
   @Dispatched
@@ -233,7 +233,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    cc.out.call(':' + targetType, methodName); // TODO module
+    cc.out.call(cc.qualifyType(targetType), methodName);
     return methodInfo.hasReturnValue();
   }
 

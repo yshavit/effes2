@@ -23,6 +23,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
+  private static final String MODULE_NAME = "TestModule";
   private final String yamlFile;
   private final Function<EffesParser,T> rule;
 
@@ -105,7 +106,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     TypeInfo typeInfo = createTypeInfo(testTypes);
     EffesOps<Void> outOps = TUtils.opsToString(out);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
-    return new CompilerContextGenerator(outOps, efctDecls, typeInfo);
+    return new CompilerContextGenerator(MODULE_NAME, outOps, efctDecls, typeInfo);
   }
 
   private static CompilerContext compilerContext(TestCase testCase, CompilerContextGenerator ccGen) {
@@ -121,7 +122,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     VarRef.LocalVar instanceVar = testCase.instanceContextType == null
       ? null
       : new VarRef.LocalVar(0, testCase.instanceContextType);
-    return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, instanceVar);
+    return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, MODULE_NAME, instanceVar);
   }
 
   private static TypeInfo createTypeInfo(Map<String,SerTypeInfo> types) {
@@ -173,6 +174,11 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     public MethodInfo getMethod(String type, String methodName) {
       Map<String,MethodInfo> methods = Objects.requireNonNull(methodInfo.get(type), "no type named " + type);
       return Objects.requireNonNull(methods.get(methodName), "no method named " + methodName);
+    }
+
+    @Override
+    public String getModule(String typeName) {
+      return MODULE_NAME;
     }
 
     private List<String> fieldsFor(String type) {

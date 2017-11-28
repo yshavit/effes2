@@ -2,6 +2,7 @@ package com.yuvalshavit.effes2.compile;
 
 import java.io.IOException;
 import java.io.Writer;
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -17,13 +18,13 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class Compiler {
 
-  private Compiler() {}
+  private Compiler() { }
 
   public static void compile(List<CompileUnit> compileUnits, Function<String,Writer> writers, Consumer<String> errors) {
     // first, parse
     Map<String,EffesParser.FileContext> parsed = parse(compileUnits, errors);
     TypeInfo typeInfo = scanForTypes(errors, parsed);
-    parsed.forEach((module,fileContext) -> {
+    parsed.forEach((module, fileContext) -> {
       try (Writer writer = writers.apply(module)) {
         EffesOps<Void> ops = Op.factory(op -> {
           try {
@@ -34,7 +35,7 @@ public class Compiler {
           }
         });
         CompilerContext.EfctDeclarations declarations = CompilerContext.efctDeclarationsFor(writer);
-        CompilerContextGenerator ccg = new CompilerContextGenerator(ops, declarations, typeInfo);
+        CompilerContextGenerator ccg = new CompilerContextGenerator(module, ops, declarations, typeInfo);
         DeclarationCompiler compiler = new DeclarationCompiler(ccg);
         fileContext.declaration().forEach(compiler::apply);
       } catch (IOException e) {
@@ -62,10 +63,15 @@ public class Compiler {
 
   public static TypeInfo scanForTypes(Consumer<String> errors, Map<String,EffesParser.FileContext> parsed) {
     Map<String,SingleTypeInfo> typeInfos = new HashMap<>();
-    parsed.values().stream()
-      .map(EffesParser.FileContext::declaration)
-      .flatMap(decls -> decls.stream().map(EffesParser.DeclarationContext::typeDeclaration).filter(Objects::nonNull))
-      .forEach(typeDeclaration -> {
+    parsed.entrySet().stream()
+      .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().declaration()))
+      .flatMap(entry -> entry
+        .getValue().stream()
+        .map(EffesParser.DeclarationContext::typeDeclaration).filter(Objects::nonNull)
+        .map(typeDeclaration -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeDeclaration)))
+      .forEach(entry -> {
+        String moduleName = entry.getKey();
+        EffesParser.TypeDeclarationContext typeDeclaration = entry.getValue();
         String typeName = typeDeclaration.IDENT_TYPE().getSymbol().getText();
         if (typeInfos.containsKey(typeName)) {
           errors.accept("Duplicate type name: " + typeName);
@@ -90,7 +96,7 @@ public class Compiler {
             methods.put(methodName, methodInfo);
           }
         }
-        SingleTypeInfo typeInfo = new SingleTypeInfo(DeclarationCompiler.getArgNames(typeDeclaration), methods);
+        SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration), methods);
         typeInfos.put(typeName, typeInfo);
       });
     return new TypeInfoImpl(typeInfos);
@@ -109,10 +115,12 @@ public class Compiler {
   }
 
   private static class SingleTypeInfo {
+    final String module;
     final List<String> fields;
     final Map<String,MethodInfo> methods;
 
-    public SingleTypeInfo(List<String> fields, Map<String,MethodInfo> methods) {
+    public SingleTypeInfo(String module, List<String> fields, Map<String,MethodInfo> methods) {
+      this.module = module;
       this.fields = fields;
       this.methods = methods;
     }
@@ -148,6 +156,11 @@ public class Compiler {
     public MethodInfo getMethod(String targetType, String methodName) {
       SingleTypeInfo info = typeInfos.get(targetType);
       return info == null ? null : info.methods.get(methodName);
+    }
+
+    @Override
+    public String getModule(String typeName) {
+      return typeInfos.get(typeName).module; // TODO better errors here, too
     }
   }
 }

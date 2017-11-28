@@ -326,7 +326,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     if (!cc.typeInfo.hasField(varType, fieldName)) {
       return null;
     }
-    return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, null);
+    return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, cc.typeModuleName(varType), varType);
   }
 
   private static class BreakLabels {

@@ -56,10 +56,12 @@ public abstract class VarRef {
   public static class InstanceAndFieldVar extends VarRef {
     private final VarRef instance;
     private final String fieldName;
+    private final String fieldTypeModule;
 
-    public InstanceAndFieldVar(VarRef instance, String fieldName, String fieldType) {
+    public InstanceAndFieldVar(VarRef instance, String fieldName, String fieldTypeModule, String fieldType) {
       super(fieldType);
       this.instance = instance;
+      this.fieldTypeModule = fieldTypeModule;
       this.fieldName = fieldName;
     }
 
@@ -72,7 +74,7 @@ public abstract class VarRef {
     @Override
     public void store(EffesOps<?> ops) {
       instance.push(ops);
-      ops.storeField(":" + instance.getType(), fieldName); // TODO module
+      ops.storeField(fieldTypeModule + ':' + instance.getType(), fieldName);
     }
 
     @Override
