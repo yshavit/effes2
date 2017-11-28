@@ -28,6 +28,6 @@ public final class TUtils {
     return ops
       .replaceAll(" *#.*\n", "\n")
       .replaceAll("^\n*", "") // remove blank lines
-      .replaceAll("\n␤\n", "\n\n"); // turn ␤ into a blank line
+      .replaceAll("␤\n", "\n"); // turn ␤ into a blank line
   }
 }

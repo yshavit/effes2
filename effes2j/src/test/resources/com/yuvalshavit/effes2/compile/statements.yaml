@@ -519,54 +519,6 @@ expect: |
   call :Dog bark
   labl ifChainEnd
 ---
-name: if-is doesn't spill over
-# This is really a block test, not a statement test. But whatever, this is fine for now.
-# The basic idea is this: when we do "if a is Cat: ..." then we want a's type to be Cat within the block. The way this happens is to overlay a's type from
-# the MatcherCompiler, which is in turn invoked by ExpressionCompiler. But we want to make sure that if you do that, that type overlay doesn't bleed to other
-# statements.
-# It's actually a bit tricky/sketchy to even have it bleed to subsequent clauses in the expression. "if a is Dog and a.bark()" makes sense, but
-# "if (a is Dog || a is Cat) && a.bark()" doesn't (since it'll throw an exception for Cat). For now, our implementation just stupidly overlays the type, meaning
-# that we'd accept that bogus expression. Good enough for the bootstrap.
-input: |
-  if condition:  # just a cheap way to get a block :)
-    isCat = a is Cat
-    a.bark()
-localVars:
-  condition:
-    reg: 1
-    type: null
-  a:
-    reg: 1
-    type: Dog # we'll have an expression override it to Cat
-types:
-  Dog:
-    fields: []
-    methods:
-      bark: { declaredArgs: 0, hasRv: false}
-  Cat:
-    fields: []
-    methods:
-      meow: { declaredArgs: 0, hasRv: false}
-expect: |
-  pvar 1
-  gofi ifNot
-  pvar 1
-  typp Cat
-  goif match_1_Cat
-  pop
-  goto isA_false
-  labl match_1_Cat
-  pop
-  bool true
-  goto isA_done
-  labl isA_false
-  bool false
-  labl isA_done
-  svar 3
-  pvar 1
-  call :Dog bark
-  labl ifChainEnd
----
 name: if-matchers brings type info
 input: |
   if a is:

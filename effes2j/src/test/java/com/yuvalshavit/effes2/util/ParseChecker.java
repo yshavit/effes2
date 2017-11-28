@@ -14,6 +14,7 @@ public class ParseChecker {
   private ParseChecker() {}
 
   public static <R extends ParserRuleContext> void check(String description, String input, Function<EffesParser,R> rule, Consumer<R> astChecker) {
+    input = input.replaceAll("␤\n", "\n"); // turn ␤ into a blank line
     StringBuilder errsSb = new StringBuilder();
     R ast = ParseUtils.parse(
       input,
