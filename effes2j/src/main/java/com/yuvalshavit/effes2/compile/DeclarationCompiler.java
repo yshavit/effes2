@@ -5,19 +5,21 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.yuvalshavit.effes2.parse.EffesParser;
-import com.yuvalshavit.effes2.util.Dispatcher;
+import com.yuvalshavit.effes2.util.MiscUtil;
 
-@Dispatcher.SubclassesAreIn(EffesParser.class)
-public class DeclarationCompiler extends CompileDispatcher<EffesParser.DeclarationContext> {
+public class DeclarationCompiler {
 
   private final CompilerContextGenerator ccGen;
 
   public DeclarationCompiler(CompilerContextGenerator ccGen) {
-    super(EffesParser.DeclarationContext.class);
     this.ccGen = ccGen;
   }
 
-  @Dispatched
+  public void apply(EffesParser.DeclarationContext ctx) {
+    MiscUtil.ifNotNull(ctx.typeDeclaration(), this::apply);
+    MiscUtil.ifNotNull(ctx.methodDeclaration(), this::apply);
+  }
+
   public void apply(EffesParser.TypeDeclarationContext ctx) {
     // Type and ctor args are already registered. Just compile.
     String typeName = ctx.IDENT_TYPE().getSymbol().getText();
@@ -26,6 +28,10 @@ public class DeclarationCompiler extends CompileDispatcher<EffesParser.Declarati
     if (methods != null) {
       methods.forEach(c -> MethodCompiler.compile(c, ccGen, typeName));
     }
+  }
+
+  public void apply(EffesParser.MethodDeclarationContext ctx) {
+    MethodCompiler.compile(ctx, ccGen, null); // static method
   }
 
   public static List<String> getArgNames(EffesParser.TypeDeclarationContext ctx) {
@@ -37,8 +43,4 @@ public class DeclarationCompiler extends CompileDispatcher<EffesParser.Declarati
         });
   }
 
-  @Dispatched
-  public void apply(EffesParser.MethodDeclarationContext ctx) {
-    MethodCompiler.compile(ctx, ccGen, null); // static method
-  }
 }

@@ -106,6 +106,7 @@ class CompilerContext {
           appendable.append(' ');
           appendable.append(argNames.stream().collect(Collectors.joining(" ")));
         }
+        appendable.append('\n');
       } catch (IOException e) {
         handleException(e);
       }

@@ -3,6 +3,7 @@ package com.yuvalshavit.effes2.compile;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.AbstractMap;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,13 +15,14 @@ import java.util.function.Supplier;
 
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.parse.ParseUtils;
+import com.yuvalshavit.effes2.util.MiscUtil;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class Compiler {
 
   private Compiler() { }
 
-  public static void compile(List<CompileUnit> compileUnits, Function<String,Writer> writers, Consumer<String> errors) {
+  public static void compile(Collection<? extends CompileUnit> compileUnits, Function<String,Writer> writers, Consumer<String> errors) {
     // first, parse
     Map<String,EffesParser.FileContext> parsed = parse(compileUnits, errors);
     TypeInfo typeInfo = scanForTypes(errors, parsed);
@@ -31,7 +33,7 @@ public class Compiler {
             writer.append(op.toString());
             writer.append('\n');
           } catch (IOException e) {
-            throw new RuntimeException(e);
+            errors.accept(MiscUtil.toStringWithStackTrace(e));
           }
         });
         CompilerContext.EfctDeclarations declarations = CompilerContext.efctDeclarationsFor(writer);
@@ -39,12 +41,12 @@ public class Compiler {
         DeclarationCompiler compiler = new DeclarationCompiler(ccg);
         fileContext.declaration().forEach(compiler::apply);
       } catch (IOException e) {
-        throw new RuntimeException(e);
+        errors.accept(MiscUtil.toStringWithStackTrace(e));
       }
     });
   }
 
-  public static Map<String,EffesParser.FileContext> parse(List<CompileUnit> compileUnits, Consumer<String> errors) {
+  public static Map<String,EffesParser.FileContext> parse(Collection<? extends CompileUnit> compileUnits, Consumer<String> errors) {
     Map<String,EffesParser.FileContext> parsed = new HashMap<>(compileUnits.size());
     compileUnits.forEach(unit -> {
       if (parsed.containsKey(unit.moduleName)) {
@@ -103,9 +105,9 @@ public class Compiler {
   }
 
   public static class CompileUnit {
-    private final String moduleName;
-    private final String sourceDescription;
-    private final Supplier<String> reader;
+    public final String moduleName;
+    public final String sourceDescription;
+    public final Supplier<String> reader;
 
     public CompileUnit(String moduleName, String sourceDescription, Supplier<String> reader) {
       this.moduleName = moduleName;

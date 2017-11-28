@@ -88,7 +88,11 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
       }
       Class<?> methodArgClass = argTypes[0];
       if (methodArgClass == argClass || !argClass.isAssignableFrom(methodArgClass)) {
-        throw new RuntimeException("argument to dispatched method must be a strict subclass of " + argClass + ": " + method);
+        throw new RuntimeException(String.format(
+          "argument to dispatched method in %s must be a strict subclass of %s: %s",
+          method.getDeclaringClass().getName(),
+          argClass,
+          method));
       }
       if (!returnTypeIsAcceptable(resultClass, method)) {
         throw new RuntimeException("return value must be a subclass of " + resultClass + ": " + method);
