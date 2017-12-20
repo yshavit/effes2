@@ -1,3 +1,4 @@
 .evm_debugger.log
 effesvm-debug-state.txt
 *.ef.generated
+efct
