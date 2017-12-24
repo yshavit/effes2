@@ -41,15 +41,25 @@ public class MatcherCompiler {
       compilerContext.out.gotoAbs(optionalLabelIfMatched);
     }
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
+      // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.
       EffesParser.MatcherPatternContext pattern = ((EffesParser.MatcherWithPatternContext) matcherContext).matcherPattern();
       String type = Dispatcher.dispatch(EffesParser.MatcherPatternContext.class, String.class)
         .when(EffesParser.PatternTypeContext.class, c -> c.IDENT_TYPE().getSymbol().getText())
         .when(EffesParser.PatternRegexContext.class, c -> EffesNativeType.MATCH.getEvmType())
         .when(EffesParser.PatternStringLiteralContext.class, c -> EffesNativeType.STRING.getEvmType())
         .on(pattern);
-      VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
-      VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
-      compilerContext.scope.allocateLocal(targetVar, true, overlay);
+      VarRef.LocalVar atMatched = compilerContext.scope.tryLookUpInTopFrame(targetVar);
+      if (atMatched == null) {
+        // The scope's top frame includes any "@foo" bound vars. This block is to auto-retype
+        VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
+        VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
+        compilerContext.scope.allocateLocal(targetVar, true, overlay);
+      } else {
+        // This is a case of something like "foo is Recursive(@foo)". If we're not careful, we could try to bind "foo" twice -- once for the "@foo" (which has
+        // already happened) and once for the "foo is" (which is about to happen). Since we already have the atMatched var in this scope, we just need to fix
+        // its type.
+        compilerContext.scope.replaceType(targetVar, type);
+      }
     }
   }
 

@@ -120,6 +120,10 @@ public class Scope {
     return allocateLocal(symbolName, allowShadowing, (String) null);
   }
 
+  public VarRef.LocalVar tryLookUpInTopFrame(String symbolName) {
+    return frame.symbols.get(symbolName);
+  }
+
   /**
    * Allocates an anonymous local variable.
    */
@@ -127,6 +131,11 @@ public class Scope {
     int varIdx = frame.firstAvailableAnonymousVar++;
     String varName = "$" + varIdx; // not a legal var name in Effes, so we don't need to check availability
     return allocateLocal(varName, false, typeName);
+  }
+
+  public void replaceType(String symbolName, String type) {
+    VarRef.LocalVar var = lookUp(symbolName);
+    frame.symbols.put(symbolName, new VarRef.LocalVar(var.reg(), type));
   }
 
   private static class Frame {

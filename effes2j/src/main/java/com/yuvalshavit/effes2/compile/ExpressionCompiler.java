@@ -175,8 +175,21 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     String targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, String.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         // static method
+        if (targetNameMidCtx.size() == 1) {
+          if (c.IDENT_TYPE().getSymbol().getText().equals("Stdio")) {
+            String fieldName = targetNameMidCtx.get(0).IDENT_NAME().getSymbol().getText();
+            switch (fieldName) {
+              case "stdin":
+                return EffesBuiltinType.CHARSTREAM_IN.typeName();
+              case "stdout":
+                return EffesBuiltinType.CHARSTREAM_OUT.typeName();
+              default:
+                throw new CompilationException(targetNameMidCtx.get(0), "Unrecognized Stdio field");
+            }
+          }
+        }
         if (!targetNameMidCtx.isEmpty()) {
-          throw new CompilationException(targetCtx, "can't have qualified static methods"); // TODO special case Stdio :-(
+          throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
         // TODO: validate the method is really static. Maybe return the fact that we expect it to be, and the code below can validate.
         return c.IDENT_TYPE().getText();
@@ -237,7 +250,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    cc.out.call(cc.qualifyType(targetType), methodName);
+    methodInfo.invoke(cc);
     return methodInfo.hasReturnValue();
   }
 

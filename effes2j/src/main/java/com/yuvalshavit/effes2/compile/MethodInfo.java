@@ -2,7 +2,7 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.Objects;
 
-public class MethodInfo {
+public abstract class MethodInfo {
   private final int nDeclaredArgs;
   private final boolean hasReturnValue;
 
@@ -44,4 +44,6 @@ public class MethodInfo {
   public int hashCode() {
     return Objects.hash(nDeclaredArgs, hasReturnValue);
   }
+
+  public abstract void invoke(CompilerContext cc);
 }

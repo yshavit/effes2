@@ -1,0 +1,50 @@
+type Indent
+type Dedent
+type Nl
+
+createTokenizer() ->:
+  return Tokenizer(Queue(0, Empty), Empty)
+
+type Tokenizer(indentations, tokens):
+  readTokens() ->:
+    while System.stdin.readLine() is:
+      line ~/^(\s*)(.*)$/:
+        _handleIndentations(line.group(1))
+        _handlePayload(line.group(2))
+    _closeIndentations()
+    tokens = reverse(tokens)
+
+  _handleIndentations(prefix):
+    ::: prefix is String
+    ::: indentations is Queue
+    indent = prefix.length()
+    prevIndent = indenations.head
+    ::: indent is Integer
+    ::: prevIndent is Integer
+    if indent == prevIndent:
+      tokens = push(tokens, Nl)
+    else if indent > prevIndent:
+      tokens = push(tokens, Indent)
+      indentations = push(indentations, indent)
+    else:
+      _unwindTo(indent)
+
+  _unwindTo(targetIndent):
+    # See https://github.com/yshavit/antlr-denter/blob/master/core/src/main/java/com/yuvalshavit/antlr4/DenterHelper.java#L144
+    while indentations is Queue(prevIndent, @indentations):
+      if targetIndent == prevIndent:
+        break
+      else if targetIndent > prevIndent:
+        indentations = push(indentations, prevIndent)
+        tokens = push(tokens, Indent)
+        break
+      else:
+        tokens = push(tokens, Dedent)
+    indentations.push(targetIndent)
+
+
+  _handlePayload(payload):
+    ::: # TODO
+    
+  _closeIndentations():
+    _handleIndentations("")

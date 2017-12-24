@@ -185,6 +185,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     ctx.statement().forEach(element -> {
       if (element instanceof EffesParser.StatTypeAssertionContext) {
         apply((EffesParser.StatTypeAssertionContext) element);
+      } else if (element instanceof EffesParser.StatAssignContext) {
+        apply(((EffesParser.StatAssignContext) element));
       } else {
         cc.scope.inNewScope(() -> apply(element));
       }

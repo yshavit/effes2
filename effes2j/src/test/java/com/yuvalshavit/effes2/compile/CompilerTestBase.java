@@ -3,7 +3,6 @@ package com.yuvalshavit.effes2.compile;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,17 +34,17 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   }
 
   @Test
-  public void canReadYaml() throws IOException {
+  public void canReadYaml() {
     readParseFiles();
   }
 
   @DataProvider(name = "test")
-  public Object[][] readParseFiles() throws IOException {
+  public Object[][] readParseFiles() {
     return ResourceReader.testCases(getClass(), TestCase.class, yamlFile);
   }
 
   @Test(dataProvider = "test")
-  public void compile(String fileName, TestCase testCase) throws Exception {
+  public void compile(String fileName, TestCase testCase) {
     assertNotNull(testCase.input, "no test input!");
     ParseChecker.check(fileName, testCase.input, rule, ast -> {
       StringBuilder sb = new StringBuilder();
@@ -133,17 +132,20 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
         fields.put(typeName, typeInfoSer.fields);
       }
       if (typeInfoSer.methods != null) {
-        HashMap<String,MethodInfo> methods = new HashMap<>(Maps.transformValues(typeInfoSer.methods, CompilerTestBase::toMethodInfo));
+        Map<String,MethodInfo> methods = Maps.transformEntries(typeInfoSer.methods,
+          (methodName, serMethodInfo) -> serMethodInfo == null ? null : toMethodInfo(serMethodInfo, typeName, methodName));
         methodInfo.put(typeName, methods);
       }
     });
     return new MockTypeInfo(fields, methodInfo);
   }
 
-  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo) {
-    return new MethodInfo(
+  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo, String typeName, String methodName) {
+    return new Compiler.UserlandMethodInfo(
       Objects.requireNonNull(serMethodInfo.declaredArgs, "declaredArgs can't be null"),
-      Objects.requireNonNull(serMethodInfo.hasRv, "hasRv can't be null"));
+      Objects.requireNonNull(serMethodInfo.hasRv, "hasRv can't be null"),
+      typeName,
+      methodName);
   }
 
   private static class MockTypeInfo implements TypeInfo {

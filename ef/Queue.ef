@@ -1,0 +1,23 @@
+type Nothing
+
+type Empty
+type Queue(head, tail)
+
+pop(queue) ->:
+  return if queue is:
+    Empty: Empty
+    Queue(*, tail): tail
+
+head(queue) ->:
+  return if queue is:
+    Empty: Nothing
+    Queue(head, *): head
+
+push(tail, elem) ->:
+  return Queue(elem, tail)
+
+reverse(queue) ->:
+  reversed = Empty
+  while queue is Queue(head, @queue):
+    reversed = Queue(head, reversed)
+  return reversed

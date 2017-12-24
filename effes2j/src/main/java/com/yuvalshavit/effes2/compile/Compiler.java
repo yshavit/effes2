@@ -13,6 +13,7 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.parse.ParseUtils;
 import com.yuvalshavit.effes2.util.MiscUtil;
@@ -94,13 +95,17 @@ public class Compiler {
             int nArgs = methodDeclaration.argsDeclaration().IDENT_NAME() == null
               ? 0
               : methodDeclaration.argsDeclaration().IDENT_NAME().size();
-            MethodInfo methodInfo = new MethodInfo(nArgs, methodDeclaration.ARROW() != null);
+            MethodInfo methodInfo = new UserlandMethodInfo(nArgs, methodDeclaration.ARROW() != null, typeName, methodName);
             methods.put(methodName, methodInfo);
           }
         }
         SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration), methods);
         typeInfos.put(typeName, typeInfo);
       });
+    for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
+      SingleTypeInfo typeInfo = new SingleTypeInfo("Builtin", Collections.emptyList(), builtinType.methods());
+      typeInfos.put(builtinType.typeName(), typeInfo);
+    }
     return new TypeInfoImpl(typeInfos);
   }
 
@@ -125,6 +130,24 @@ public class Compiler {
       this.module = module;
       this.fields = fields;
       this.methods = methods;
+    }
+  }
+
+  @VisibleForTesting
+  static class UserlandMethodInfo extends MethodInfo {
+
+    private final String targetType;
+    private final String methodName;
+
+    public UserlandMethodInfo(int nDeclaredArgs, boolean hasReturnValue, String targetType, String methodName) {
+      super(nDeclaredArgs, hasReturnValue);
+      this.targetType = targetType;
+      this.methodName = methodName;
+    }
+
+    @Override
+    public void invoke(CompilerContext cc) {
+      cc.out.call(cc.qualifyType(targetType), methodName);
     }
   }
 
