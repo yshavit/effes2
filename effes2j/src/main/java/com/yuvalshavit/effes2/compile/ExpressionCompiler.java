@@ -180,9 +180,9 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
             String fieldName = targetNameMidCtx.get(0).IDENT_NAME().getSymbol().getText();
             switch (fieldName) {
               case "stdin":
-                return EffesBuiltinType.CHARSTREAM_IN.typeName();
+                return EffesBuiltinType.CHAR_STREAM_IN.typeName();
               case "stdout":
-                return EffesBuiltinType.CHARSTREAM_OUT.typeName();
+                return EffesBuiltinType.CHAR_STREAM_OUT.typeName();
               default:
                 throw new CompilationException(targetNameMidCtx.get(0), "Unrecognized Stdio field");
             }

@@ -25,7 +25,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignMultilineContext ctx) {
-    VarRef toVar = getVarForAssign(ctx.qualifiedIdentName());
+    VarRef toVar = getVarForAssign(ctx.qualifiedIdentName(), null);
     compileExpressionMultiline(ctx.expressionMultiline(), toVar);
   }
 
@@ -76,7 +76,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignContext ctx) {
-    VarRef var = getVarForAssign(ctx.qualifiedIdentName());
+    final String type;
+    type = (ctx.expression() instanceof EffesParser.ExprInstantiationContext)
+      ? ((EffesParser.ExprInstantiationContext) ctx.expression()).IDENT_TYPE().getSymbol().getText()
+      : null;
+    VarRef var = getVarForAssign(ctx.qualifiedIdentName(), type);
     expressionCompiler.apply(ctx.expression());
     var.store(cc.out);
   }
@@ -185,7 +189,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     ctx.statement().forEach(element -> {
       if (element instanceof EffesParser.StatTypeAssertionContext) {
         apply((EffesParser.StatTypeAssertionContext) element);
-      } else if (element instanceof EffesParser.StatAssignContext) {
+      } else if (isAssignToInstantiation(element)) {
         apply(((EffesParser.StatAssignContext) element));
       } else {
         cc.scope.inNewScope(() -> apply(element));
@@ -220,6 +224,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .whenNull(() -> {})
       .on(blockStop);
     return blockStop != null;
+  }
+
+  private static boolean isAssignToInstantiation(EffesParser.StatementContext ctx) {
+    return (ctx instanceof EffesParser.StatAssignContext)
+      && (((EffesParser.StatAssignContext) ctx).expression() instanceof EffesParser.ExprInstantiationContext);
   }
 
   private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel, String targetVar) {
@@ -311,7 +320,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     cc.labelAssigner.place(matchersDoneLabel);
   }
 
-  private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx) {
+  private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx, String inferredType) {
     return Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, EffesParser.class, VarRef.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
@@ -336,7 +345,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
             result = getInstanceField(ctx, instanceVar);
           }
           if (result == null) {
-            result = cc.scope.allocateLocal(varName, false);
+            result = cc.scope.allocateLocal(varName, false, inferredType);
           }
         }
         return result;

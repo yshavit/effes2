@@ -7,11 +7,11 @@ import com.google.common.collect.ImmutableMap;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public enum EffesBuiltinType {
-  CHARSTREAM_IN("StdinIn", build()
+  CHAR_STREAM_IN("CharStreamIn", build()
     .put("readLine()", new BuiltinMethodInfo(0, true, EffesOps::readLine))
     .build()),
-  CHARSTREAM_OUT("StdoutOut", build()
-    .put("readLine()", new BuiltinMethodInfo(1, false, EffesOps::sout))
+  CHAR_STREAM_OUT("CharStreamOut", build()
+    .put("print()", new BuiltinMethodInfo(1, false, EffesOps::sout))
     .build()),
   ;
 

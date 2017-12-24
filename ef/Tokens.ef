@@ -2,12 +2,15 @@ type Indent
 type Dedent
 type Nl
 
-createTokenizer() ->:
-  return Tokenizer(Queue(0, Empty), Empty)
+readTokens(input) ->:
+  tokenizer = Tokenizer(Queue(0, Empty), Empty)
+  tokenizer.readTokens(input)
+  return tokenizer.tokens
 
 type Tokenizer(indentations, tokens):
-  readTokens() ->:
-    while System.stdin.readLine() is:
+  readTokens(input) ->:
+    ::: input is CharStreamIn
+    while input.readLine() is:
       line ~/^(\s*)(.*)$/:
         _handleIndentations(line.group(1))
         _handlePayload(line.group(2))
