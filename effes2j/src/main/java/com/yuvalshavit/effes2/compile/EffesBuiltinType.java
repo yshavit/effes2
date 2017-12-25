@@ -8,10 +8,10 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public enum EffesBuiltinType {
   CHAR_STREAM_IN("CharStreamIn", build()
-    .put("readLine()", new BuiltinMethodInfo(0, true, EffesOps::readLine))
+    .put("readLine", new BuiltinMethodInfo(0, true, EffesOps::readLine))
     .build()),
   CHAR_STREAM_OUT("CharStreamOut", build()
-    .put("print()", new BuiltinMethodInfo(1, false, EffesOps::sout))
+    .put("print", new BuiltinMethodInfo(1, false, EffesOps::sout))
     .build()),
   ;
 
