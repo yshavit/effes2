@@ -98,10 +98,27 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
     List<EffesParser.QualifiedIdentNameMiddleContext> qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
-    if (qualifiedStart != null || !qualifiedMiddle.isEmpty()) {
-      throw new UnsupportedOperationException();
+    if (qualifiedStart == null) {
+      // we're not in a case like "FooModule.staticField". Instead, we're in just "foo" or "foo.bar". Check that it's the former tpe, and if it is,
+      // check that we know its type
+      if (qualifiedMiddle.size() == 1) {
+        EffesParser.QualifiedIdentNameMiddleContext localVarCtx = qualifiedMiddle.get(0);
+        VarRef localVar = cc.scope.lookUp(localVarCtx.IDENT_NAME().getSymbol().getText());
+        String localVarType = localVar.getType();
+        if (localVarType == null) {
+          throw new CompilationException(localVarCtx, "can't infer type");
+        }
+        String fieldName = qualifiedName.IDENT_NAME().getSymbol().getText();
+        if (!cc.typeInfo.hasField(localVarType, fieldName)) {
+          throw new CompilationException(localVarCtx, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
+        }
+        localVar.push(cc.out);
+        cc.out.pushField(localVarType, fieldName);
+        return;
+      } else if (!qualifiedMiddle.isEmpty()) {
+        throw new UnsupportedOperationException("qualified variables not supported");
+      }
     }
-
     TerminalNode finalName = qualifiedName.IDENT_NAME();
     String symbolName = finalName.getSymbol().getText();
     pvar(symbolName);
