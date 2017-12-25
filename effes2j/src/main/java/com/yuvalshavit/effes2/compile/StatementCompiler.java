@@ -188,9 +188,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   public boolean compileBlock(EffesParser.BlockContext ctx) {
     ctx.statement().forEach(element -> {
       if (element instanceof EffesParser.StatTypeAssertionContext) {
-        apply((EffesParser.StatTypeAssertionContext) element);
+        runAainst(element, () -> apply((EffesParser.StatTypeAssertionContext) element));
       } else if (isAssignToInstantiation(element)) {
-        apply(((EffesParser.StatAssignContext) element));
+        runAainst(element, () -> apply(((EffesParser.StatAssignContext) element)));
       } else {
         cc.scope.inNewScope(() -> apply(element));
       }

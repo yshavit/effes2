@@ -50,6 +50,15 @@ public abstract class Dispatcher<T,R> implements Function<T,R> {
     this.functions = dispatchSafe;
   }
 
+  public void runAainst(T context, Runnable r) {
+    Objects.requireNonNull(r, "null runnable");
+    try {
+      r.run();
+    } catch (RuntimeException e) {
+      throw exceptionNormalizer.apply(context, e);
+    }
+  }
+
   public final R apply(T element) {
     @SuppressWarnings("unchecked")
     Class<? extends T> argClass = (Class<? extends T>) element.getClass();
