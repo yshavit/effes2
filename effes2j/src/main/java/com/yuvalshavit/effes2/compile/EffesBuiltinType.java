@@ -13,6 +13,9 @@ public enum EffesBuiltinType {
   CHAR_STREAM_OUT("CharStreamOut", build()
     .put("print", new BuiltinMethodInfo(1, false, EffesOps::sout))
     .build()),
+  REGEX_MATCH("RegexMatch", build()
+    .put("group", new BuiltinMethodInfo(1, true, EffesOps::matchIndexedGroup))
+    .build()),
   ;
 
   EffesBuiltinType(String typeName, Map<String, MethodInfo> methods) {

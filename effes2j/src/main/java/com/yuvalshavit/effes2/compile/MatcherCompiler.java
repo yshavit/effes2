@@ -85,7 +85,10 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      handle(input.AT(), input.IDENT_NAME(), null, null, () -> new MatcherPatternImpl().apply(input.matcherPattern()));
+      String langType = input.matcherPattern() instanceof EffesParser.PatternRegexContext
+        ? EffesBuiltinType.REGEX_MATCH.typeName()
+        : null;
+      handle(input.AT(), input.IDENT_NAME(), null, langType, null, () -> new MatcherPatternImpl().apply(input.matcherPattern()));
     }
 
     @Dispatched
@@ -157,25 +160,25 @@ public class MatcherCompiler {
     }
   }
 
-  private void handle(TerminalNode varBindAt, TerminalNode varBind, String type, Runnable suchThat, Runnable next) {
+  private void handle(TerminalNode varBindAt, TerminalNode varBind, String evmType, String langType, Runnable suchThat, Runnable next) {
     // stack coming in: [... target]
     if (varBind != null) {
       String varName = varBind.getSymbol().getText();
       final VarRef varRef;
       if (varBindAt == null) {
         // local var, just allocate it. We'll only ever care about the var if the type matches, so assume that type
-        varRef = cc.scope.allocateLocal(varName, true, type);
+        varRef = cc.scope.allocateLocal(varName, true, langType);
       } else {
         assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
         VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
-        varRef = cc.scope.allocateLocal(varName, true, type);
+        varRef = cc.scope.allocateLocal(varName, true, langType);
         scratchVars.add(varRef, eventualBind);
       }
       varRef.storeNoPop(cc.out);
     }
-    if (type != null) {
-      String typeMatchLabel = cc.labelAssigner.allocate(String.format("match_%d_%s", depth, type));
-      cc.out.typp(type);
+    if (evmType != null) {
+      String typeMatchLabel = cc.labelAssigner.allocate(String.format("match_%d_%s", depth, evmType));
+      cc.out.typp(evmType);
       // stack: [... target, isRightType]
       cc.out.gotoIf(typeMatchLabel);
       // stack: [... target]
@@ -197,6 +200,10 @@ public class MatcherCompiler {
     if (next != null) {
       next.run();
     }
+  }
+
+  private void handle(TerminalNode varBindAt, TerminalNode varBind, String type, Runnable suchThat, Runnable next) {
+    handle(varBindAt, varBind, type, type, suchThat, next);
   }
 
   private void handleFailure() {
