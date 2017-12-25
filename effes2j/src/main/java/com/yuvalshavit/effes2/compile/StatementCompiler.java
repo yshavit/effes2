@@ -169,8 +169,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     // for now, not even any bytecode; just assert it
     String varName = ctx.IDENT_NAME().getSymbol().getText();
     String type = ctx.IDENT_TYPE().getSymbol().getText();
-    VarRef.LocalVar varRef = cc.scope.lookUp(varName);
-    cc.scope.allocateLocal(varName, true, new VarRef.LocalVar(varRef.reg(), type));
+    cc.scope.replaceType(varName, type);
   }
 
   @Dispatched
