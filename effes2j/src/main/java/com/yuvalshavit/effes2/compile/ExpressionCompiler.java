@@ -2,6 +2,7 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -178,7 +179,21 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   }
 
   private void pvar(String symbolName) {
-    cc.scope.lookUp(symbolName).push(cc.out);
+    VarRef var = cc.scope.tryLookUp(symbolName);
+    if (var == null) {
+      VarRef.LocalVar thisVar = cc.tryGetInstanceContextVar();
+      if (thisVar == null) {
+        throw Scope.noSuchVariableException(symbolName);
+      }
+      String thisType = thisVar.getType();
+      if (!cc.typeInfo.hasField(thisType, symbolName)) {
+        throw new NoSuchElementException("no local or instance variable named " + symbolName);
+      }
+      thisVar.push(cc.out);
+      cc.out.pushField(thisType, symbolName);
+    } else {
+      var.push(cc.out);
+    }
   }
 
   public boolean compileMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx, EffesParser.ArgsInvocationContext argsInvocation) {

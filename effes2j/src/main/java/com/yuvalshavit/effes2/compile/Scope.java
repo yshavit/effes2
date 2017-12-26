@@ -12,7 +12,7 @@ public class Scope {
   public VarRef.LocalVar lookUp(String symbolName) {
     VarRef.LocalVar varRef = tryLookUp(symbolName);
     if (varRef == null) {
-      throw new NoSuchElementException("no variable named " + symbolName);
+      throw noSuchVariableException(symbolName);
     }
     return varRef;
   }
@@ -24,9 +24,13 @@ public class Scope {
   public VarRef.LocalVar lookUpInParentScope(String symbolName) {
     VarRef.LocalVar varRef = tryLookUp(symbolName, false);
     if (varRef == null) {
-      throw new NoSuchElementException("no variable named " + symbolName);
+      throw noSuchVariableException(symbolName);
     }
     return varRef;
+  }
+
+  public static NoSuchElementException noSuchVariableException(String symbolName) {
+    return new NoSuchElementException("no variable named " + symbolName);
   }
 
   private VarRef.LocalVar tryLookUp(String symbolName, boolean includeTopFrame) {
