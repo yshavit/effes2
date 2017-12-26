@@ -3,17 +3,19 @@ package com.yuvalshavit.effes2.compile;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.Token;
 
-import com.yuvalshavit.effes2.parse.EffesParser;
-
 public class CompilationException extends RuntimeException {
   private static final long serialVersionUID = -7591615499145910642L;
 
+  private final String locationMessage;
+
   public CompilationException(Token start, Token stop, Exception e) {
-    super(message(start, stop, e.getMessage()), e);
+    super(e);
+    locationMessage = locationMessage(start, stop);
   }
 
   public CompilationException(Token start, Token stop, String message) {
-    super(message(start, stop, message));
+    super(message);
+    locationMessage = locationMessage(start, stop);
   }
 
   public CompilationException(ParserRuleContext ctx, String message) {
@@ -26,15 +28,22 @@ public class CompilationException extends RuntimeException {
       : new CompilationException(ctx.start, ctx.stop, e);
   }
 
-  private static String message(Token start, Token stop, String message) {
+  @Override
+  public String getMessage() {
+    return super.getMessage() + ' ' + locationMessage;
+  }
+
+  public String getLocationMessage() {
+    return locationMessage;
+  }
+
+  private static String locationMessage(Token start, Token stop) {
     int stopLen = stop.getStopIndex() - stop.getStartIndex();
     return String.format(
-      "%s between %d:%d and %d:%d",
-      message,
+      "between %d:%d and %d:%d",
       start.getLine(),
       start.getCharPositionInLine() + 1,
       stop.getLine(),
       stop.getCharPositionInLine() + stopLen + 1);
   }
-
 }

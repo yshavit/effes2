@@ -71,7 +71,19 @@ public class CompilerMain {
     };
 
     // Compile and check no errors
-    Compiler.compile(compileUnits, writers, errorHandler);
+    try {
+      Compiler.compile(compileUnits, writers, errorHandler);
+    } catch (CompilationException e) {
+      final Throwable t;
+      if (e.getCause() == null) {
+        t = e;
+      } else {
+        System.err.print(e.getLocationMessage());
+        System.err.print(": ");
+        t = e.getCause();
+      }
+      t.printStackTrace();
+    }
     if (errorHandler.sawAny) {
       System.exit(1);
     }
