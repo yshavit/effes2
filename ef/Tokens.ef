@@ -19,7 +19,6 @@ type Tokenizer(indentations, tokens):
 
   _handleIndentations(prefix):
     ::: prefix is String
-    ::: indentations is Queue
     indent = prefix.length()
     prevIndent = indenations.head
     ::: indent is Integer
