@@ -16,6 +16,9 @@ public enum EffesBuiltinType {
   REGEX_MATCH("RegexMatch", build()
     .put("group", new BuiltinMethodInfo(1, true, EffesOps::matchIndexedGroup))
     .build()),
+  STRING("String", build()
+    .put("length", new BuiltinMethodInfo(0, true, EffesOps::stringLen))
+    .build()),
   ;
 
   EffesBuiltinType(String typeName, Map<String, MethodInfo> methods) {

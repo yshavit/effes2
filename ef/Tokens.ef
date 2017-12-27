@@ -20,14 +20,12 @@ type Tokenizer(indentations, tokens):
   _handleIndentations(prefix):
     ::: prefix is String
     indent = prefix.length()
-    prevIndent = indenations.head
-    ::: indent is Integer
-    ::: prevIndent is Integer
+    prevIndent = Queue.head(indentations)
     if indent == prevIndent:
-      tokens = push(tokens, Nl)
+      tokens = Queue.push(tokens, Nl)
     else if indent > prevIndent:
-      tokens = push(tokens, Indent)
-      indentations = push(indentations, indent)
+      tokens = Queue.push(tokens, Indent)
+      indentations = Queue.push(indentations, indent)
     else:
       _unwindTo(indent)
 
@@ -37,12 +35,12 @@ type Tokenizer(indentations, tokens):
       if targetIndent == prevIndent:
         break
       else if targetIndent > prevIndent:
-        indentations = push(indentations, prevIndent)
-        tokens = push(tokens, Indent)
+        indentations = Queue.push(indentations, prevIndent)
+        tokens = Queue.push(tokens, Indent)
         break
       else:
-        tokens = push(tokens, Dedent)
-    indentations.push(targetIndent)
+        tokens = Queue.push(tokens, Dedent)
+    Queue.push(indentations, targetIndent)
 
 
   _handlePayload(payload):
