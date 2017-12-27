@@ -26,7 +26,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   @Dispatched
   public void apply(EffesParser.StatAssignMultilineContext ctx) {
     VarRef toVar = getVarForAssign(ctx.qualifiedIdentName(), null);
-    compileExpressionMultiline(ctx.expressionMultiline(), toVar);
+    cc.scope.inNewScope(() -> compileExpressionMultiline(ctx.expressionMultiline(), toVar));
   }
 
   @Dispatched
@@ -76,12 +76,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignContext ctx) {
-    final String type;
-    type = (ctx.expression() instanceof EffesParser.ExprInstantiationContext)
+    final String type = (ctx.expression() instanceof EffesParser.ExprInstantiationContext)
       ? ((EffesParser.ExprInstantiationContext) ctx.expression()).IDENT_TYPE().getSymbol().getText()
       : null;
     VarRef var = getVarForAssign(ctx.qualifiedIdentName(), type);
-    expressionCompiler.apply(ctx.expression());
+    cc.scope.inNewScope(() -> expressionCompiler.apply(ctx.expression()));
     var.store(cc.out);
   }
 
@@ -188,8 +187,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     ctx.statement().forEach(element -> {
       if (element instanceof EffesParser.StatTypeAssertionContext) {
         runAainst(element, () -> apply((EffesParser.StatTypeAssertionContext) element));
-      } else if (isAssignToInstantiation(element)) {
-        runAainst(element, () -> apply(((EffesParser.StatAssignContext) element)));
+      } else if (element instanceof EffesParser.StatAssignContext || element instanceof EffesParser.StatAssignMultilineContext) {
+        apply(element);
       } else {
         cc.scope.inNewScope(() -> apply(element));
       }
@@ -223,11 +222,6 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .whenNull(() -> {})
       .on(blockStop);
     return blockStop != null;
-  }
-
-  private static boolean isAssignToInstantiation(EffesParser.StatementContext ctx) {
-    return (ctx instanceof EffesParser.StatAssignContext)
-      && (((EffesParser.StatAssignContext) ctx).expression() instanceof EffesParser.ExprInstantiationContext);
   }
 
   private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel, String targetVar) {
