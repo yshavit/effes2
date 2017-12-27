@@ -30,6 +30,13 @@ public class MethodCompiler {
         ? null
         : scope.allocateLocal("<this>", false, instanceType);
       argNames.forEach(name -> scope.allocateLocal(name, false));
+      if (thisVar != null) {
+        for (int i = 0, nFields = ccGen.typeInfo.fieldsCount(instanceType); i < nFields; ++i) {
+          String fieldName = ccGen.typeInfo.fieldName(instanceType, i);
+          String moduleName = ""; // the method efct body will go in the same .efct file as the module, so ":TypeName" is always fine
+          scope.allocateLocal(fieldName, false, new VarRef.InstanceAndFieldVar(thisVar, fieldName, moduleName, null));
+        }
+      }
       CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, ccGen.module, thisVar);
       if (!new StatementCompiler(context).compileBlock(ctx.block())) {
         ccGen.ops.rtrn(); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
