@@ -12,6 +12,7 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.yuvalshavit.effes2.parse.EffesParser;
@@ -59,6 +60,9 @@ public class Compiler {
         code,
         EffesParser::file,
         (line, lineOffset, msg) -> errors.accept(String.format("error at <%s> %d:%d: %s%n", unit.sourceDescription, line, lineOffset, msg)));
+      if (file.stop.getStopIndex() != code.length() - 1) {
+        throw new CompilationException(file.stop, file.stop, "Expected EOF but found extra input");
+      }
       parsed.put(unit.moduleName, file);
     });
     return parsed;
@@ -87,26 +91,41 @@ public class Compiler {
         } else {
           methods = new HashMap<>(methodDeclarations.size());
           for (EffesParser.MethodDeclarationContext methodDeclaration : methodDeclarations) {
-            String methodName = methodDeclaration.IDENT_NAME().getSymbol().getText();
-            if (methods.containsKey(methodName)) {
-              errors.accept("duplicate method " + methodName + " in " + typeName);
+            UserlandMethodInfo methodInfo = createMethodInfo(typeName, methodDeclaration);
+            if (methods.containsKey(methodInfo.methodName)) {
+              errors.accept("duplicate method " + methodInfo.methodName + " in " + typeName);
               continue;
             }
-            int nArgs = methodDeclaration.argsDeclaration().IDENT_NAME() == null
-              ? 0
-              : methodDeclaration.argsDeclaration().IDENT_NAME().size();
-            MethodInfo methodInfo = new UserlandMethodInfo(nArgs, methodDeclaration.ARROW() != null, typeName, methodName);
-            methods.put(methodName, methodInfo);
+            methods.put(methodInfo.methodName, methodInfo);
           }
         }
         SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration), methods);
         typeInfos.put(typeName, typeInfo);
       });
+    for (Map.Entry<String, EffesParser.FileContext> entry : parsed.entrySet()) {
+      String moduleName = entry.getKey();
+      Map<String, UserlandMethodInfo> methodInfos = entry.getValue()
+        .declaration()
+        .stream()
+        .map(EffesParser.DeclarationContext::methodDeclaration)
+        .filter(Objects::nonNull)
+        .map(methodDecl -> createMethodInfo(moduleName, methodDecl))
+        .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
+      typeInfos.put(moduleName + TypeInfo.MODULE_PREFIX, new SingleTypeInfo(moduleName, Collections.emptyList(), methodInfos));
+    }
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
       SingleTypeInfo typeInfo = new SingleTypeInfo("Builtin", Collections.emptyList(), builtinType.methods());
       typeInfos.put(builtinType.typeName(), typeInfo);
     }
     return new TypeInfoImpl(typeInfos);
+  }
+
+  private static UserlandMethodInfo createMethodInfo(String typeName, EffesParser.MethodDeclarationContext methodDeclaration) {
+    String methodName = methodDeclaration.IDENT_NAME().getSymbol().getText();
+    int nArgs = methodDeclaration.argsDeclaration().IDENT_NAME() == null
+      ? 0
+      : methodDeclaration.argsDeclaration().IDENT_NAME().size();
+    return new UserlandMethodInfo(nArgs, methodDeclaration.ARROW() != null, typeName, methodName);
   }
 
   public static class CompileUnit {
@@ -124,9 +143,9 @@ public class Compiler {
   private static class SingleTypeInfo {
     final String module;
     final List<String> fields;
-    final Map<String,MethodInfo> methods;
+    final Map<String,? extends MethodInfo> methods;
 
-    public SingleTypeInfo(String module, List<String> fields, Map<String,MethodInfo> methods) {
+    public SingleTypeInfo(String module, List<String> fields, Map<String,? extends MethodInfo> methods) {
       this.module = module;
       this.fields = fields;
       this.methods = methods;

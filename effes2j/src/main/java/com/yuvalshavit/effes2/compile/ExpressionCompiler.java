@@ -223,8 +223,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
         if (!targetNameMidCtx.isEmpty()) {
           throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
-        // TODO: validate the method is really static. Maybe return the fact that we expect it to be, and the code below can validate.
-        return c.IDENT_TYPE().getText();
+        return c.IDENT_TYPE().getText() + TypeInfo.MODULE_PREFIX;
       })
       .when(EffesParser.QualifiedIdentThisContext.class, c -> {
         // method explicitly on "this"

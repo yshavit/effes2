@@ -15,7 +15,7 @@ type Tokenizer(indentations, tokens):
         _handleIndentations(line.group(1))
         _handlePayload(line.group(2))
     _closeIndentations()
-    tokens = reverse(tokens)
+    tokens = Queue.reverse(tokens)
 
   _handleIndentations(prefix):
     ::: prefix is String
