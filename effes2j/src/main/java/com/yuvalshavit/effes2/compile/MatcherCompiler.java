@@ -48,12 +48,10 @@ public class MatcherCompiler {
         .when(EffesParser.PatternRegexContext.class, c -> EffesNativeType.MATCH.getEvmType())
         .when(EffesParser.PatternStringLiteralContext.class, c -> EffesNativeType.STRING.getEvmType())
         .on(pattern);
-      VarRef.LocalVar atMatched = compilerContext.scope.tryLookUpInTopFrame(targetVar);
+      VarRef atMatched = compilerContext.scope.tryLookUpInTopFrame(targetVar);
       if (atMatched == null) {
         // The scope's top frame includes any "@foo" bound vars. This block is to auto-retype
-        VarRef.LocalVar targetVarRef = compilerContext.scope.lookUpInParentScope(targetVar);
-        VarRef.LocalVar overlay = new VarRef.LocalVar(targetVarRef.reg(), type);
-        compilerContext.scope.allocateLocal(targetVar, true, overlay);
+        compilerContext.scope.replaceType(targetVar, type);
       } else {
         // This is a case of something like "foo is Recursive(@foo)". If we're not careful, we could try to bind "foo" twice -- once for the "@foo" (which has
         // already happened) and once for the "foo is" (which is about to happen). Since we already have the atMatched var in this scope, we just need to fix

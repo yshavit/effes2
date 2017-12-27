@@ -9,20 +9,20 @@ public class Scope {
 
   private Frame frame = new Frame(null);
 
-  public VarRef.LocalVar lookUp(String symbolName) {
-    VarRef.LocalVar varRef = tryLookUp(symbolName);
+  public VarRef lookUp(String symbolName) {
+    VarRef varRef = tryLookUp(symbolName);
     if (varRef == null) {
       throw noSuchVariableException(symbolName);
     }
     return varRef;
   }
 
-  public VarRef.LocalVar tryLookUp(String symbolName) {
+  public VarRef tryLookUp(String symbolName) {
     return tryLookUp(symbolName, true);
   }
 
-  public VarRef.LocalVar lookUpInParentScope(String symbolName) {
-    VarRef.LocalVar varRef = tryLookUp(symbolName, false);
+  public VarRef lookUpInParentScope(String symbolName) {
+    VarRef varRef = tryLookUp(symbolName, false);
     if (varRef == null) {
       throw noSuchVariableException(symbolName);
     }
@@ -33,7 +33,7 @@ public class Scope {
     return new NoSuchElementException("no variable named " + symbolName);
   }
 
-  private VarRef.LocalVar tryLookUp(String symbolName, boolean includeTopFrame) {
+  private VarRef tryLookUp(String symbolName, boolean includeTopFrame) {
     Frame lookIn = frame;
     if (!includeTopFrame) {
       lookIn = lookIn.parent;
@@ -42,7 +42,7 @@ public class Scope {
       }
     }
     for (; lookIn != null; lookIn = lookIn.parent) {
-      VarRef.LocalVar varRef = lookIn.symbols.get(symbolName);
+      VarRef varRef = lookIn.symbols.get(symbolName);
       if (varRef != null) {
         return varRef;
       }
@@ -100,7 +100,7 @@ public class Scope {
     return sb.toString();
   }
 
-  public void allocateLocal(String symbolName, boolean allowShadowing, VarRef.LocalVar varRef) {
+  public void allocateLocal(String symbolName, boolean allowShadowing, VarRef varRef) {
     if (allowShadowing) {
       if (frame.symbols.containsKey(symbolName)) {
         // even with shadowing, we can't replace a variable in this same scope; can only shadow enclosing scopes
@@ -111,11 +111,14 @@ public class Scope {
       throw new IllegalStateException("symbol name already taken: " + symbolName);
     }
     frame.symbols.put(symbolName, varRef);
-    frame.firstAvailableReg = Math.max(varRef.reg(), frame.firstAvailableReg) + 1;
+    if (varRef instanceof VarRef.LocalVar) {
+      VarRef.LocalVar localVarRef = (VarRef.LocalVar) varRef;
+      frame.firstAvailableReg = Math.max(localVarRef.reg(), frame.firstAvailableReg) + 1;
+    }
   }
 
-  public VarRef.LocalVar allocateLocal(String symbolName, boolean allowShadowing, String type) {
-    VarRef.LocalVar varRef = new VarRef.LocalVar(frame.firstAvailableReg, type);
+  public VarRef allocateLocal(String symbolName, boolean allowShadowing, String type) {
+    VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg, type);
     allocateLocal(symbolName, allowShadowing, varRef);
     return varRef;
   }
@@ -124,26 +127,26 @@ public class Scope {
     return allocateLocal(symbolName, allowShadowing, (String) null);
   }
 
-  public VarRef.LocalVar tryLookUpInTopFrame(String symbolName) {
+  public VarRef tryLookUpInTopFrame(String symbolName) {
     return frame.symbols.get(symbolName);
   }
 
   /**
    * Allocates an anonymous local variable.
    */
-  public VarRef.LocalVar allocateAnonymous(String typeName) {
+  public VarRef allocateAnonymous(String typeName) {
     int varIdx = frame.firstAvailableAnonymousVar++;
     String varName = "$" + varIdx; // not a legal var name in Effes, so we don't need to check availability
     return allocateLocal(varName, false, typeName);
   }
 
   public void replaceType(String symbolName, String type) {
-    VarRef.LocalVar var = lookUp(symbolName);
-    frame.symbols.put(symbolName, new VarRef.LocalVar(var.reg(), type));
+    VarRef var = lookUp(symbolName);
+    frame.symbols.put(symbolName, var.withType(type));
   }
 
   private static class Frame {
-    private final Map<String,VarRef.LocalVar> symbols = new HashMap<>();
+    private final Map<String,VarRef> symbols = new HashMap<>();
     private final Frame parent;
     private int firstAvailableReg;
     private int firstAvailableAnonymousVar;

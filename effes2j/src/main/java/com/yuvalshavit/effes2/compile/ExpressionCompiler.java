@@ -181,7 +181,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   private void pvar(String symbolName) {
     VarRef var = cc.scope.tryLookUp(symbolName);
     if (var == null) {
-      VarRef.LocalVar thisVar = cc.tryGetInstanceContextVar();
+      VarRef thisVar = cc.tryGetInstanceContextVar();
       if (thisVar == null) {
         throw Scope.noSuchVariableException(symbolName);
       }
@@ -237,7 +237,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       .whenNull(() -> {
         final String result;
         if (targetNameMidCtx.size() == 0) {
-          VarRef.LocalVar instanceVar = cc.tryGetInstanceContextVar();
+          VarRef instanceVar = cc.tryGetInstanceContextVar();
           if (instanceVar == null) {
             result = "";
           } else {

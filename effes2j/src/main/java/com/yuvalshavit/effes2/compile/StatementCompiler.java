@@ -36,8 +36,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     EffesParser.BlockContext body = ctx.block();
     cc.scope.inNewScope(() -> {
       VarRef iterVar = cc.scope.allocateLocal(iterVarname, false);
-      VarRef.LocalVar iterLen = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
-      VarRef.LocalVar iterIdx = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
+      VarRef iterLen = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
+      VarRef iterIdx = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
@@ -213,7 +213,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (c.expression() != null) {
           expressionCompiler.apply(c.expression());
         } else if (c.expressionMultiline() != null) {
-          VarRef.LocalVar rv = cc.scope.allocateAnonymous(null);
+          VarRef rv = cc.scope.allocateAnonymous(null);
           compileExpressionMultiline(c.expressionMultiline(), rv);
           rv.push(cc.out);
         }
@@ -333,7 +333,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         String varName = ctx.IDENT_NAME().getText();
         VarRef result = cc.scope.tryLookUp(varName);
         if (result == null) {
-          VarRef.LocalVar instanceVar = cc.tryGetInstanceContextVar();
+          VarRef instanceVar = cc.tryGetInstanceContextVar();
           if (instanceVar != null) {
             result = getInstanceField(ctx, instanceVar);
           }
@@ -346,7 +346,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .on(ctx.qualifiedIdentNameStart());
   }
 
-  private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx, VarRef.LocalVar instanceVar) {
+  private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx, VarRef instanceVar) {
     String fieldName = ctx.IDENT_NAME().getText();
     String varType = instanceVar.getType();
     if (!cc.typeInfo.hasField(varType, fieldName)) {

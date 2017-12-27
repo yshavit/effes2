@@ -14,7 +14,7 @@ class CompilerContext {
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
   final String moduleName;
-  private final VarRef.LocalVar instanceVar;
+  private final VarRef instanceVar;
 
   public CompilerContext(
     Scope scope,
@@ -22,7 +22,7 @@ class CompilerContext {
     EffesOps<Void> out,
     TypeInfo typeInfo,
     String moduleName,
-    VarRef.LocalVar instanceVar)
+    VarRef instanceVar)
   {
     this.scope = scope;
     this.labelAssigner = labelAssigner;
@@ -32,15 +32,15 @@ class CompilerContext {
     this.instanceVar = instanceVar;
   }
 
-  VarRef.LocalVar getInstanceContextVar(Token start, Token stop) {
-    VarRef.LocalVar instanceVarLocal = tryGetInstanceContextVar();
+  VarRef getInstanceContextVar(Token start, Token stop) {
+    VarRef instanceVarLocal = tryGetInstanceContextVar();
     if (instanceVarLocal == null) {
       throw new CompilationException(start, stop, "can't use \"this\" in static context");
     }
     return instanceVarLocal;
   }
 
-  VarRef.LocalVar tryGetInstanceContextVar() {
+  VarRef tryGetInstanceContextVar() {
     return instanceVar;
   }
 

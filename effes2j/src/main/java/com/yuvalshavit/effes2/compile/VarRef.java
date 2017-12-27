@@ -17,6 +17,7 @@ public abstract class VarRef {
   public abstract void push(EffesOps<?> ops);
   public abstract void store(EffesOps<?> ops);
   public abstract void storeNoPop(EffesOps<?> ops);
+  public abstract VarRef withType(String type);
 
   public static class LocalVar extends VarRef {
     private final int reg;
@@ -30,6 +31,11 @@ public abstract class VarRef {
 
     public int reg() {
       return reg;
+    }
+
+    @Override
+    public LocalVar withType(String type) {
+      return new LocalVar(reg, type);
     }
 
     @Override
@@ -63,6 +69,11 @@ public abstract class VarRef {
       this.instance = instance;
       this.fieldTypeModule = fieldTypeModule;
       this.fieldName = fieldName;
+    }
+
+    @Override
+    public VarRef withType(String type) {
+      return new InstanceAndFieldVar(instance, fieldName, fieldTypeModule, type);
     }
 
     @Override
