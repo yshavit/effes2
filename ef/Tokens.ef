@@ -48,3 +48,7 @@ type Tokenizer(indentations, tokens):
     
   _closeIndentations():
     _handleIndentations("")
+
+main(args) ->:
+  tokens = Tokens.readTokens(Stdio.stdin)
+  return 0

@@ -104,14 +104,15 @@ public class Compiler {
       });
     for (Map.Entry<String, EffesParser.FileContext> entry : parsed.entrySet()) {
       String moduleName = entry.getKey();
+      String moduleNameWithColon = moduleName + TypeInfo.MODULE_PREFIX;
       Map<String, UserlandMethodInfo> methodInfos = entry.getValue()
         .declaration()
         .stream()
         .map(EffesParser.DeclarationContext::methodDeclaration)
         .filter(Objects::nonNull)
-        .map(methodDecl -> createMethodInfo(moduleName, methodDecl))
+        .map(methodDecl -> createMethodInfo(moduleNameWithColon, methodDecl))
         .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
-      typeInfos.put(moduleName + TypeInfo.MODULE_PREFIX, new SingleTypeInfo(moduleName, Collections.emptyList(), methodInfos));
+      typeInfos.put(moduleNameWithColon, new SingleTypeInfo(moduleName, Collections.emptyList(), methodInfos));
     }
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
       SingleTypeInfo typeInfo = new SingleTypeInfo("Builtin", Collections.emptyList(), builtinType.methods());

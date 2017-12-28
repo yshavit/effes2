@@ -63,7 +63,9 @@ public class CompilerMain {
     Function<String,Writer> writers = moduleName -> {
       File efct = new File(outputDir, moduleName + ".efct");
       try {
-        return new FileWriter(efct);
+        FileWriter writer = new FileWriter(efct);
+        writer.append("efct 0\n");
+        return writer;
       } catch (IOException e) {
         errorHandler.accept(MiscUtil.toStringWithStackTrace(e));
         return null;

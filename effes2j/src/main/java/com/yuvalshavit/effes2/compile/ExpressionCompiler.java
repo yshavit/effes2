@@ -99,34 +99,54 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
     EffesParser.QualifiedIdentNameMiddleContext qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
+    String fieldName = qualifiedName.IDENT_NAME().getSymbol().getText();
     if (qualifiedStart == null) {
-      // we're not in a case like "FooModule.staticField". Instead, we're in just "foo" or "foo.bar". Check that it's the former tpe, and if it is,
-      // check that we know its type
+      // we're not in a case like "FooModule.staticField". Instead, we're in just "foo" or "foo.bar".
+      // If it's "foo.bar", check whether we know the "foo" type, and whether "bar" is a field on that type.
+      // If it's "foo", then just look up the field.
       if (qualifiedMiddle != null) {
         VarRef localVar = cc.scope.lookUp(qualifiedMiddle.IDENT_NAME().getSymbol().getText());
         String localVarType = localVar.getType();
         if (localVarType == null) {
           throw new CompilationException(qualifiedMiddle, "can't infer type");
         }
-        String fieldName = qualifiedName.IDENT_NAME().getSymbol().getText();
         if (!cc.typeInfo.hasField(localVarType, fieldName)) {
           throw new CompilationException(qualifiedMiddle, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
         }
         localVar.push(cc.out);
         cc.out.pushField(localVarType, fieldName);
-        return;
+      } else {
+        TerminalNode finalName = qualifiedName.IDENT_NAME();
+        String symbolName = finalName.getSymbol().getText();
+        pvar(symbolName);
       }
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentThisContext) {
-
-      throw new UnsupportedOperationException(); // TODO
+      VarRef thisVar = cc.getInstanceContextVar(qualifiedStart.getStart(), qualifiedStart.getStop());
+      String thisVarType = thisVar.getType();
+      if (!cc.typeInfo.hasField(thisVarType, fieldName)) {
+        throw new CompilationException(qualifiedMiddle, "no field \"" + fieldName + "\" on type " + thisVarType);
+      }
+      cc.out.pushField(thisVarType, fieldName);
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentTypeContext) {
-      throw new UnsupportedOperationException(); // TODO
+      EffesParser.QualifiedIdentTypeContext moduleNameCtx = (EffesParser.QualifiedIdentTypeContext) qualifiedStart;
+      String moduleName = moduleNameCtx.IDENT_TYPE().getSymbol().getText();
+      if (!moduleName.equals("Stdio")) {
+        throw new CompilationException(moduleNameCtx, "static fields not supported (except on Stdio)");
+      }
+      switch (fieldName) {
+        case "stdin":
+          cc.out.stdin();
+          break;
+        case "stdout":
+//          cc.out.stdout();
+//          break;
+          throw new UnsupportedOperationException(); // TODO need to refresh maven; can't do it offline, I guess
+        default:
+          throw new CompilationException(qualifiedMiddle, "no such field on Stdio");
+      }
     } else {
       throw new CompilationException(qualifiedStart, "internal error (unexpected subclass " + qualifiedStart.getClass().getName() + ")");
     }
-    TerminalNode finalName = qualifiedName.IDENT_NAME();
-    String symbolName = finalName.getSymbol().getText();
-    pvar(symbolName);
   }
 
   @Dispatched
@@ -211,14 +231,14 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     String targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, String.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         // static method
-        if (!targetNameMidCtx.isEmpty()) {
+        if (targetNameMidCtx != null) {
           throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
         return c.IDENT_TYPE().getText() + TypeInfo.MODULE_PREFIX;
       })
       .when(EffesParser.QualifiedIdentThisContext.class, c -> {
         // method explicitly on "this"
-        if (!targetNameMidCtx.isEmpty()) {
+        if (targetNameMidCtx != null) {
           throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
         }
         VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
