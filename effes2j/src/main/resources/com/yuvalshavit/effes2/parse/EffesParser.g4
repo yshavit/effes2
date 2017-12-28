@@ -123,7 +123,7 @@ expressionMultiline:
 
 qualifiedIdentName:
  (qualifiedIdentNameStart DOT)?
- qualifiedIdentNameMiddle*
+ qualifiedIdentNameMiddle?
  IDENT_NAME
 ;
 

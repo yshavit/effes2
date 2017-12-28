@@ -319,7 +319,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
       })
       .when(EffesParser.QualifiedIdentThisContext.class, c -> {
-        if (!ctx.qualifiedIdentNameMiddle().isEmpty()) {
+        if (ctx.qualifiedIdentNameMiddle() != null) {
           throw new CompilationException(ctx.start, ctx.stop, "unsupported");
         }
         VarRef field = getInstanceField(ctx, cc.getInstanceContextVar(ctx.IDENT_NAME().getSymbol(), ctx.IDENT_NAME().getSymbol()));

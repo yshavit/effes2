@@ -98,27 +98,31 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     }
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
-    List<EffesParser.QualifiedIdentNameMiddleContext> qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
+    EffesParser.QualifiedIdentNameMiddleContext qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
     if (qualifiedStart == null) {
       // we're not in a case like "FooModule.staticField". Instead, we're in just "foo" or "foo.bar". Check that it's the former tpe, and if it is,
       // check that we know its type
-      if (qualifiedMiddle.size() == 1) {
-        EffesParser.QualifiedIdentNameMiddleContext localVarCtx = qualifiedMiddle.get(0);
-        VarRef localVar = cc.scope.lookUp(localVarCtx.IDENT_NAME().getSymbol().getText());
+      if (qualifiedMiddle != null) {
+        VarRef localVar = cc.scope.lookUp(qualifiedMiddle.IDENT_NAME().getSymbol().getText());
         String localVarType = localVar.getType();
         if (localVarType == null) {
-          throw new CompilationException(localVarCtx, "can't infer type");
+          throw new CompilationException(qualifiedMiddle, "can't infer type");
         }
         String fieldName = qualifiedName.IDENT_NAME().getSymbol().getText();
         if (!cc.typeInfo.hasField(localVarType, fieldName)) {
-          throw new CompilationException(localVarCtx, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
+          throw new CompilationException(qualifiedMiddle, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
         }
         localVar.push(cc.out);
         cc.out.pushField(localVarType, fieldName);
         return;
-      } else if (!qualifiedMiddle.isEmpty()) {
-        throw new UnsupportedOperationException("qualified variables not supported");
       }
+    } else if (qualifiedStart instanceof EffesParser.QualifiedIdentThisContext) {
+
+      throw new UnsupportedOperationException(); // TODO
+    } else if (qualifiedStart instanceof EffesParser.QualifiedIdentTypeContext) {
+      throw new UnsupportedOperationException(); // TODO
+    } else {
+      throw new CompilationException(qualifiedStart, "internal error (unexpected subclass " + qualifiedStart.getClass().getName() + ")");
     }
     TerminalNode finalName = qualifiedName.IDENT_NAME();
     String symbolName = finalName.getSymbol().getText();
@@ -202,24 +206,11 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
     // Then the target instance, if any.
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
-    List<EffesParser.QualifiedIdentNameMiddleContext> targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
+    EffesParser.QualifiedIdentNameMiddleContext targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
     final String methodName = targetCtx.IDENT_NAME().getText();
     String targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, String.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         // static method
-        if (targetNameMidCtx.size() == 1) {
-          if (c.IDENT_TYPE().getSymbol().getText().equals("Stdio")) {
-            String fieldName = targetNameMidCtx.get(0).IDENT_NAME().getSymbol().getText();
-            switch (fieldName) {
-              case "stdin":
-                return EffesBuiltinType.CHAR_STREAM_IN.typeName();
-              case "stdout":
-                return EffesBuiltinType.CHAR_STREAM_OUT.typeName();
-              default:
-                throw new CompilationException(targetNameMidCtx.get(0), "Unrecognized Stdio field");
-            }
-          }
-        }
         if (!targetNameMidCtx.isEmpty()) {
           throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
@@ -236,7 +227,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       })
       .whenNull(() -> {
         final String result;
-        if (targetNameMidCtx.size() == 0) {
+        if (targetNameMidCtx == null) {
           VarRef instanceVar = cc.tryGetInstanceContextVar();
           if (instanceVar == null) {
             result = "";
@@ -244,16 +235,14 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
             result = instanceVar.getType();
             instanceVar.push(cc.out);
           }
-        } else if (targetNameMidCtx.size() == 1) {
-          String varName = targetNameMidCtx.get(0).IDENT_NAME().getText();
+        } else {
+          String varName = targetNameMidCtx.IDENT_NAME().getText();
           VarRef targetVar = cc.scope.lookUp(varName);
           if (targetVar == null) {
             throw new CompilationException(targetCtx, "no local var named " + varName);
           }
           result = targetVar.getType();
           targetVar.push(cc.out);
-        } else {
-          throw new CompilationException(targetCtx, "unsupported multi-part qualified method invocation");
         }
         return result;
       })
@@ -291,7 +280,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       EffesParser.ExprVariableOrMethodInvocationContext varOrMethod = (EffesParser.ExprVariableOrMethodInvocationContext) targetExpression;
       if (varOrMethod.argsInvocation() == null) {
         EffesParser.QualifiedIdentNameContext name = varOrMethod.qualifiedIdentName();
-        if (name.qualifiedIdentNameStart() == null && name.qualifiedIdentNameMiddle().isEmpty()) {
+        if (name.qualifiedIdentNameStart() == null && name.qualifiedIdentNameMiddle() == null) {
           targetVar = name.IDENT_NAME().getSymbol().getText();
         } else {
           targetVar = null;
