@@ -167,10 +167,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     String isAFalse = cc.labelAssigner.allocate("isA_false");
     String isADone = cc.labelAssigner.allocate("isA_done");
     MatcherCompiler.compile(input.matcher(), null, isAFalse, false, cc, tryGetLocalVar(expression));
-    cc.out.bool(Boolean.toString(ifMatchedValue)); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
+    bool(ifMatchedValue); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
     cc.out.gotoAbs(isADone);
     cc.labelAssigner.place(isAFalse);
-    cc.out.bool(Boolean.toString(!ifMatchedValue));
+    bool(!ifMatchedValue);
     cc.labelAssigner.place(isADone);
   }
 
@@ -312,5 +312,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       targetVar = null;
     }
     return targetVar;
+  }
+
+  private void bool(boolean value) {
+    String valueString = value ? "True" : "False";
+    cc.out.bool(valueString);
   }
 }
