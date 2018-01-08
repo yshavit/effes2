@@ -92,10 +92,10 @@ expect: |
   Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
-  bool true         # [true]
+  bool True         # [true]
   goto isA_done     # [true]
   labl isA_false    # []
-  bool false        # [false]
+  bool False        # [false]
   labl isA_done     # [trueOrFalse]
 ---
 input: 'foo is One(@bar)'
@@ -120,10 +120,10 @@ expect: |
   pvar 2            # [foo, foo.value]   {$2=foo.value}
   svar 1            # [foo]              {$1=foo.value, $2=foo.value}
   pop               # []
-  bool true         # [true]
+  bool True         # [true]
   goto isA_done     # [true]
   labl isA_false    # []
-  bool false        # [false]
+  bool False        # [false]
   labl isA_done     # [trueOrFalse]
 ---
 input: 'foo is not One(bar)'
@@ -144,10 +144,10 @@ expect: |
   Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
-  bool false        # [false]
+  bool False        # [false]
   goto isA_done     # [false]
   labl isA_false    # []
-  bool true         # [true]
+  bool True         # [true]
   labl isA_done     # [trueOrFalse]
 ---
 input: dog.eat(food)

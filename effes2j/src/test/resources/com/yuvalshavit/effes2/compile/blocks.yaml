@@ -30,10 +30,10 @@ expect: |
   goto isA_false
   labl match_1_Cat
   pop
-  bool true
+  bool True
   goto isA_done
   labl isA_false
-  bool false
+  bool False
   labl isA_done
   svar 2
   pvar 1
