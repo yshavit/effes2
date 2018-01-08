@@ -22,7 +22,7 @@ public class MethodCompiler {
     }).collect(Collectors.toList());
     String scopeName = instanceType == null
       ? ":"
-      : (":" + instanceType);
+      : (instanceType);
     ccGen.declarations.methodDeclaration(scopeName, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
     Scope scope = new Scope();
     scope.inNewScope(() -> {
