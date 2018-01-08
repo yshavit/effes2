@@ -130,7 +130,7 @@ public class MatcherCompiler {
           for (int childIdx = 0; childIdx < matcher.size(); childIdx++) {
             EffesParser.MatcherContext childContext = matcher.get(childIdx);
             String fieldName = cc.typeInfo.fieldName(typeName, childIdx);
-            cc.out.PushField(typeName, fieldName);
+            cc.out.PushField(cc.qualifyType(typeName), fieldName);
             new MatcherImpl().apply(childContext);
             cc.out.pop();
           }

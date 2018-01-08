@@ -79,13 +79,13 @@ public abstract class VarRef {
     @Override
     public void push(EffesOps<?> ops) {
       instance.push(ops);
-      ops.pushField(instance.getType(), fieldName);
+      ops.pushField(CompilerContext.qualified(fieldTypeModule, instance.getType()), fieldName);
     }
 
     @Override
     public void store(EffesOps<?> ops) {
       instance.push(ops);
-      ops.storeField(fieldTypeModule + ':' + instance.getType(), fieldName);
+      ops.storeField(CompilerContext.qualified(fieldTypeModule, instance.getType()), fieldName);
     }
 
     @Override

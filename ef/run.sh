@@ -6,4 +6,4 @@ if [[ -n "$EF_DEBUG" ]]; then
   DEBUG_OPTS='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
 fi
 export EFFES_CLASSPATH=../efct
-java -jar "$effes_jar" "$@"
+java $DEBUG_OPTS -jar "$effes_jar" "$@"

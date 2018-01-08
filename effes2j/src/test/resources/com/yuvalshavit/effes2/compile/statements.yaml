@@ -270,7 +270,7 @@ expect: |
   pop                   # []
   goto statMatcherEnd   # []
   labl match_1_One      # [abc]  (if is One)
-  Pfld One value        # [abc, abc.val]
+  Pfld :One value       # [abc, abc.val]
   Svar 2                # [abc, abc.val]  {$2=val}
   pop                   # [abc]
   pop                   # []

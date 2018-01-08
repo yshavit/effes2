@@ -50,6 +50,10 @@ class CompilerContext {
 
   public String qualifyType(String typeName) {
     String typeModule = typeModuleName(typeName);
+    return qualified(typeModule, typeName);
+  }
+
+  public static String qualified(String typeModule, String typeName) {
     return typeModule + ':' + typeName;
   }
 

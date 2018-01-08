@@ -114,7 +114,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           throw new CompilationException(qualifiedMiddle, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
         }
         localVar.push(cc.out);
-        cc.out.pushField(localVarType, fieldName);
+        cc.out.pushField(cc.qualifyType(localVarType), fieldName);
       } else {
         TerminalNode finalName = qualifiedName.IDENT_NAME();
         String symbolName = finalName.getSymbol().getText();
@@ -126,7 +126,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       if (!cc.typeInfo.hasField(thisVarType, fieldName)) {
         throw new CompilationException(qualifiedMiddle, "no field \"" + fieldName + "\" on type " + thisVarType);
       }
-      cc.out.pushField(thisVarType, fieldName);
+      cc.out.pushField(CompilerContext.qualified("", thisVarType), fieldName);
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentTypeContext) {
       EffesParser.QualifiedIdentTypeContext moduleNameCtx = (EffesParser.QualifiedIdentTypeContext) qualifiedStart;
       String moduleName = moduleNameCtx.IDENT_TYPE().getSymbol().getText();

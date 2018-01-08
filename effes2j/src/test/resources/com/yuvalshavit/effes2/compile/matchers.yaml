@@ -154,9 +154,9 @@ expect: |
   goif match_1_Triple       # [val]
   goto @UNMATCHED           # [val]
   labl match_1_Triple       # [val]
-  Pfld Triple t0            # [val, t0]
+  Pfld :Triple t0           # [val, t0]
   pop                       # [val]
-  Pfld Triple t1            # [val, t1]
+  Pfld :Triple t1           # [val, t1]
   Svar 0                    # [val, t1]                   -- {$0=t1}
   pvar 0                    # [val, t1, t1]               -- {$0=t1}
   int 1                     # [val, t1, t1, 1]            -- {$0=t1}
@@ -166,13 +166,13 @@ expect: |
   goto @UNMATCHED           # [val]                       -- {$0=t1}
   labl match_2_suchThat     # [val, t1]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
-  Pfld Triple t2            # [val, t2]                   -- {$0=t1}
+  Pfld :Triple t2           # [val, t2]                   -- {$0=t1}
   typp Pair                 # [val, t2, t2isPair]         -- {$0=t1}
   goif match_2_Pair         # [val, t2]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
   goto @UNMATCHED           # [val]                       -- {$0=t1}
   labl match_2_Pair         # [val, t2]                   -- {$0=t1}
-  Pfld Pair p0              # [val, t2, pair.p0]          -- {$0=t1}
+  Pfld :Pair p0             # [val, t2, pair.p0]          -- {$0=t1}
   typp String               # [val, t2, p0, p0IsString]   -- {$0=t1}
   goif match_3_String       # [val, t2, p0]               -- {$0=t1}
   pop                       # [val, t2]                   -- {$0=t1}
@@ -188,7 +188,7 @@ expect: |
   goto @UNMATCHED           # [val]                       -- {$0=t1}
   labl match_3_suchThat     # [val, t2, p0]               -- {$0=t1}
   pop                       # [val, t2]                   -- {$0=t1}
-  Pfld Pair p1              # [val, t2, p1]               -- {$0=t1}
+  Pfld :Pair p1              # [val, t2, p1]               -- {$0=t1}
   Svar 1                    # [val, t2, p1]               -- {$0=t1, $1=p1}
   typp String               # [val, t2, p1, p1IsString]   -- {$0=t1, $1=p1}
   goif match_3_String:1     # [val, t2, p1]               -- {$0=t1, $1=p1}

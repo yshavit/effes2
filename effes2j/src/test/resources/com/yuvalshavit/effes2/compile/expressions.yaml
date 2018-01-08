@@ -88,7 +88,7 @@ expect: |
   pop               # []
   goto isA_false    # []
   labl match_1_One  # [foo]
-  Pfld One value    # [foo, foo.value]
+  Pfld :One value   # [foo, foo.value]
   Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
@@ -114,7 +114,7 @@ expect: |
   pop               # []
   goto isA_false    # []
   labl match_1_One  # [foo]
-  Pfld One value    # [foo, foo.value]
+  Pfld :One value   # [foo, foo.value]
   Svar 2            # [foo, foo.value]   {$2=foo.value}
   pop               # [foo]
   pvar 2            # [foo, foo.value]   {$2=foo.value}
@@ -140,7 +140,7 @@ expect: |
   pop               # []
   goto isA_false    # []
   labl match_1_One  # [foo]
-  Pfld One value    # [foo, foo.value]
+  Pfld :One value   # [foo, foo.value]
   Svar 1            # [foo, foo.value]  {$1=foo.value}
   pop               # [foo]
   pop               # []
