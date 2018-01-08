@@ -110,7 +110,7 @@ public class Compiler {
         .stream()
         .map(EffesParser.DeclarationContext::methodDeclaration)
         .filter(Objects::nonNull)
-        .map(methodDecl -> createMethodInfo(moduleNameWithColon, methodDecl))
+        .map(methodDecl -> createMethodInfo(moduleName, methodDecl))
         .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
       typeInfos.put(moduleNameWithColon, new SingleTypeInfo(moduleName, Collections.emptyList(), methodInfos));
     }
