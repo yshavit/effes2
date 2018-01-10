@@ -272,7 +272,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(targetCtx, "couldn't determine type");
     }
 
-    MethodInfo methodInfo = cc.typeInfo.getMethod(targetType, methodName);
+    String resolvingTargetType = targetType.isEmpty() ? (cc.moduleName + ":") : targetType;
+    MethodInfo methodInfo = cc.typeInfo.getMethod(resolvingTargetType, methodName);
     if (methodInfo == null) {
       String description = targetType.isEmpty()
         ? ("module " + cc.moduleName)

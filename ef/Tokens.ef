@@ -50,5 +50,5 @@ type Tokenizer(indentations, tokens):
     _handleIndentations("")
 
 main(args) ->:
-  tokens = Tokens.readTokens(Stdio.stdin)
+  tokens = readTokens(Stdio.stdin)
   return 0

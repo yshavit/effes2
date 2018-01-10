@@ -49,6 +49,10 @@ class CompilerContext {
   }
 
   public String qualifyType(String typeName) {
+    if (typeName.endsWith(":")) {
+      // module name, so already qualified
+      return typeName;
+    }
     String typeModule = typeModuleName(typeName);
     return qualified(typeModule, typeName);
   }

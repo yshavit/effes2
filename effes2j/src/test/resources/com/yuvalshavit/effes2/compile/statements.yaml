@@ -69,13 +69,13 @@ expect: |
 name: static method, no args, with rv
 input: 'foo()'
 types:
-  '':
+  'TestModule:':
     methods:
       foo:
         declaredArgs: 0
         hasRv: true
 expect: |
-  call : foo
+  call TestModule: foo
   pop
 ---
 name: instance method, with args, no arv
@@ -100,7 +100,7 @@ input: |
   while condition():
     doSomething()
 types:
-  '':
+  'TestModule:':
     methods:
       condition:
         declaredArgs: 0
@@ -110,9 +110,9 @@ types:
         hasRv: false
 expect: |
   labl whileLoopTop
-  call : condition
+  call TestModule: condition
   gofi whileLoopEnd
-  call : doSomething
+  call TestModule: doSomething
   goto whileLoopTop
   labl whileLoopEnd
 ---
@@ -133,7 +133,7 @@ localVars:
   thing:
     reg: 1
 types:
-  '':
+  'TestModule:':
     methods:
       doStringThing:
         declaredArgs: 0
@@ -149,7 +149,7 @@ expect: |
   goto matcher          # [thing]
   labl match_1_String   # [thing]   (if is String)
   pop                   # []
-  call : doStringThing  # []
+  call TestModule: doStringThing  # []
   goto whileLoopTop     # []
   labl matcher          # [thing]
   typp Int              # [thing, isInt]
@@ -157,7 +157,7 @@ expect: |
   goto matcher:1        # [thing]
   labl match_1_Int      # [thing]  (if is Int)
   pop                   # []
-  call : doIntThing     # []
+  call TestModule: doIntThing     # []
   goto whileLoopTop     # []
   labl matcher:1        # [thing]
   typp Foo              # [thing, isFoo]
@@ -199,7 +199,7 @@ input: |
     Stay:
       trySomething()
 types:
-  '':
+  'TestModule:':
     methods:
       outerCondition: { declaredArgs: 0, hasRv: true }
       innerCondition: { declaredArgs: 0, hasRv: true }
@@ -207,16 +207,16 @@ types:
       trySomething: { declaredArgs: 0, hasRv: true }
 expect: |
   labl whileLoopTop             # []
-  call : outerCondition         # [oCond]
+  call TestModule: outerCondition         # [oCond]
   typp Go                       # [oCond, isGo]
   goif match_1_Go               # [oCond]
   goto matcher                  # [oCond]
   labl match_1_Go               # [oCond]
   pop                           # []
   labl whileLoopTop:1           # []
-  call : innerCondition         # [iCond]
+  call TestModule: innerCondition         # [iCond]
   gofi whileLoopEnd:1           # []
-  call : innerMostCondition     # [imCond]
+  call TestModule: innerMostCondition     # [imCond]
   typp ContinueType             # [imCond, isCont]
   goif match_1_ContinueType     # [imCond]
   goto matcher:1                # [imCond]
@@ -239,7 +239,7 @@ expect: |
   goto whileLoopEnd:1           # []
   labl matcher:3                # [imCond]
   pop                           # []
-  call : trySomething           # [rv]
+  call TestModule: trySomething           # [rv]
   pop                           # []
   goto matchersEnd              # []
   labl matchersEnd              # []
@@ -252,7 +252,7 @@ expect: |
   goto whileLoopEnd             # [] (exit outer loop)
   labl match_1_Stay             # [oCond]
   pop                           # []
-  call : trySomething           # [rv]
+  call TestModule: trySomething           # [rv]
   pop                           # []
   goto whileLoopTop             # [] (back to outer loop)
   labl whileLoopEnd             # [] (end outer loop)
@@ -280,7 +280,7 @@ input: |
   for a in foo():
     workWith(a)
 types:
-  '':
+  'TestModule:':
     methods:
       workWith:
         declaredArgs: 1
@@ -289,7 +289,7 @@ types:
         declaredArgs: 0
         hasRv: true
 expect: |
-  call : foo          # [fooRv]
+  call TestModule: foo          # [fooRv]
   copy                # [fooRv, fooRv]
   call_Array:len      # [fooRv, fooRv.len]
   svar 1              # [fooRv]                 {$1=len}
@@ -305,7 +305,7 @@ expect: |
   call_Array:get      # [fooRv, elem]
   svar 0              # [fooRv]                 {$1=len, $2=idx, $0=elem}
   pvar 0              # [fooRv, elem]           (start of loop body)
-  call : workWith     # [fooRv]
+  call TestModule: workWith     # [fooRv]
   pvar 2              # [fooRv, idx]
   int 1               # [fooRv, idx, 1]
   call_Integer:add    # [fooRv, idx+1]
@@ -328,17 +328,17 @@ input: |
 localVars:
   a: { reg: 1 }
 types:
-  '':
+  'TestModule:':
     methods:
       doA: { declaredArgs: 0, hasRv: false }
       doB: { declaredArgs: 0, hasRv: false }
 expect: |
   pvar 1              # [a]
   gofi ifNot          # []
-  call : doA          # []
+  call TestModule: doA          # []
   goto ifChainEnd     # []
   labl ifNot          # []
-  call : doB          # []
+  call TestModule: doB          # []
   labl ifChainEnd     # []
 ---
 name: 'if-else if'
@@ -351,19 +351,19 @@ localVars:
   a: { reg: 1 }
   b: { reg: 2 }
 types:
-  '':
+  'TestModule:':
     methods:
       doA: { declaredArgs: 0, hasRv: false }
       doB: { declaredArgs: 0, hasRv: false }
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
-  call : doA        # []
+  call TestModule: doA        # []
   goto ifChainEnd   # []
   labl ifNot        # []
   pvar 2            # [b]
   gofi elseIfNot    # []
-  call : doB        # []
+  call TestModule: doB        # []
   labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
@@ -381,7 +381,7 @@ localVars:
   b: { reg: 2 }
   c: { reg: 3 }
 types:
-  '':
+  'TestModule:':
     methods:
       doA: { declaredArgs: 0, hasRv: false }
       doB: { declaredArgs: 0, hasRv: false }
@@ -390,20 +390,20 @@ types:
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
-  call : doA        # []
+  call TestModule: doA        # []
   goto ifChainEnd   # []
   labl ifNot        # []
   pvar 2            # [b]
   gofi elseIfNot    # []
-  call : doB        # []
+  call TestModule: doB        # []
   goto ifChainEnd   # []
   labl elseIfNot    # []
   pvar 3            # [c]
   gofi elseIfNot:1  # []
-  call : doC        # []
+  call TestModule: doC        # []
   goto ifChainEnd   # []
   labl elseIfNot:1  # []
-  call : doD        # []
+  call TestModule: doD        # []
   labl ifChainEnd   # []
 ---
 name: assign to field with unqualified name
