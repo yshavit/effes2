@@ -83,7 +83,7 @@ localVars:
     reg: 0
 expect: |
   pvar 0            # [foo]
-  typp One          # [foo, isOne]
+  typp :One         # [foo, isOne]
   goif match_1_One  # [foo]
   pop               # []
   goto isA_false    # []
@@ -109,7 +109,7 @@ localVars:
     reg: 1
 expect: |
   pvar 0            # [foo]
-  typp One          # [foo, isOne]
+  typp :One         # [foo, isOne]
   goif match_1_One  # [foo]
   pop               # []
   goto isA_false    # []
@@ -135,7 +135,7 @@ localVars:
     reg: 0
 expect: |
   pvar 0            # [foo]
-  typp One          # [foo, isOne]
+  typp :One         # [foo, isOne]
   goif match_1_One  # [foo]
   pop               # []
   goto isA_false    # []

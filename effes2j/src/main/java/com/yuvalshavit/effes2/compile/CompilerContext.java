@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.Token;
 
+import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 class CompilerContext {
@@ -51,6 +52,8 @@ class CompilerContext {
   public String qualifyType(String typeName) {
     if (typeName.endsWith(":")) {
       // module name, so already qualified
+      return typeName;
+    } else if (EffesNativeType.tryGetFromEvmType(typeName) != null) {
       return typeName;
     }
     String typeModule = typeModuleName(typeName);

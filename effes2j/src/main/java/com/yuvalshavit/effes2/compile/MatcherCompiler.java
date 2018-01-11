@@ -176,7 +176,7 @@ public class MatcherCompiler {
     }
     if (evmType != null) {
       String typeMatchLabel = cc.labelAssigner.allocate(String.format("match_%d_%s", depth, evmType));
-      cc.out.typp(evmType);
+      cc.out.typp(cc.qualifyType(evmType));
       // stack: [... target, isRightType]
       cc.out.gotoIf(typeMatchLabel);
       // stack: [... target]

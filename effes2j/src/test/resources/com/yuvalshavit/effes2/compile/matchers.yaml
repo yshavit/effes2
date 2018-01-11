@@ -73,7 +73,7 @@ name: singleton type pattern
 options: { keepIfNotMatched: false }
 input: Nothing
 expect: |
-  typp Nothing
+  typp :Nothing
   goif match_1_Nothing
   pop
   goto @UNMATCHED
@@ -150,7 +150,7 @@ types:
     fields: [p0, p1]
 expect: |
   #                         # [val]
-  typp Triple               # [val, isTriple]
+  typp :Triple              # [val, isTriple]
   goif match_1_Triple       # [val]
   goto @UNMATCHED           # [val]
   labl match_1_Triple       # [val]
@@ -167,7 +167,7 @@ expect: |
   labl match_2_suchThat     # [val, t1]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
   Pfld :Triple t2           # [val, t2]                   -- {$0=t1}
-  typp Pair                 # [val, t2, t2isPair]         -- {$0=t1}
+  typp :Pair                # [val, t2, t2isPair]         -- {$0=t1}
   goif match_2_Pair         # [val, t2]                   -- {$0=t1}
   pop                       # [val]                       -- {$0=t1}
   goto @UNMATCHED           # [val]                       -- {$0=t1}

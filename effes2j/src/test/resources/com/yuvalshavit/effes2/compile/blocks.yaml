@@ -24,7 +24,7 @@ types:
       meow: { declaredArgs: 0, hasRv: false}
 expect: |
   pvar 1
-  typp Cat
+  typp :Cat
   goif match_1_Cat
   pop
   goto isA_false

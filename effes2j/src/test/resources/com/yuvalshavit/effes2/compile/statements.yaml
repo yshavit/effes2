@@ -43,7 +43,7 @@ localVars:
     reg: 2
 expect: |
   pvar 2                          # [a]
-  typp One                        # [a, aIsOne]
+  typp :One                       # [a, aIsOne]
   goif match_1_One                # [a]
   goto exprMatcher                # []
   labl match_1_One                # [a]
@@ -52,7 +52,7 @@ expect: |
   svar 3                          # []           {$3="one"}
   goto exprMatcherDone            # []
   labl exprMatcher                # [a]
-  typp Two                        # [a, aIsTwo]
+  typp :Two                       # [a, aIsTwo]
   goif match_1_Two                # [a]
   pop                             # []
   goto exprMatcher:1              # []
@@ -152,7 +152,7 @@ expect: |
   call TestModule: doStringThing  # []
   goto whileLoopTop     # []
   labl matcher          # [thing]
-  typp Int              # [thing, isInt]
+  typp :Int             # [thing, isInt]
   goif match_1_Int      # [thing]
   goto matcher:1        # [thing]
   labl match_1_Int      # [thing]  (if is Int)
@@ -160,21 +160,21 @@ expect: |
   call TestModule: doIntThing     # []
   goto whileLoopTop     # []
   labl matcher:1        # [thing]
-  typp Foo              # [thing, isFoo]
+  typp :Foo             # [thing, isFoo]
   goif match_1_Foo      # [thing]
   goto matcher:2        # [thing]
   labl match_1_Foo      # [thing]  (if is Foo)
   pop                   # []
   goto whileLoopEnd     # []
   labl matcher:2        # [thing]
-  typp Bar              # [thing, isBar]
+  typp :Bar             # [thing, isBar]
   goif match_1_Bar      # [thing]
   goto matcher:3        # [thing]
   labl match_1_Bar      # [thing]  (if is Bar)
   pop                   # []
   rtrn                  # []
   labl matcher:3        # [thing]
-  typp Baz              # [thing, isBaz]
+  typp :Baz             # [thing, isBaz]
   goif match_1_Baz      # [thing]
   goto whileLoopEnd     # [thing]  (final case failure falls through to end)
   labl match_1_Baz      # [thing]  (if is Baz)
@@ -208,7 +208,7 @@ types:
 expect: |
   labl whileLoopTop             # []
   call TestModule: outerCondition         # [oCond]
-  typp Go                       # [oCond, isGo]
+  typp :Go                      # [oCond, isGo]
   goif match_1_Go               # [oCond]
   goto matcher                  # [oCond]
   labl match_1_Go               # [oCond]
@@ -217,21 +217,21 @@ expect: |
   call TestModule: innerCondition         # [iCond]
   gofi whileLoopEnd:1           # []
   call TestModule: innerMostCondition     # [imCond]
-  typp ContinueType             # [imCond, isCont]
+  typp :ContinueType            # [imCond, isCont]
   goif match_1_ContinueType     # [imCond]
   goto matcher:1                # [imCond]
   labl match_1_ContinueType     # [imCond]
   pop                           # []
   goto whileLoopTop:1           # []
   labl matcher:1                # [imCond]
-  typp ReturnType               # [imCond, isRet]
+  typp :ReturnType              # [imCond, isRet]
   goif match_1_ReturnType       # [imCond]
   goto matcher:2                # [imCond]
   labl match_1_ReturnType       # [imCond]
   pop                           # []
   rtrn                          # []
   labl matcher:2                # [imCond]
-  typp BreakType                # [imCond, isBreak]
+  typp :BreakType               # [imCond, isBreak]
   goif match_1_BreakType        # [imCond]
   goto matcher:3                # [imCond]
   labl match_1_BreakType        # [imCond]
@@ -247,7 +247,7 @@ expect: |
   labl whileLoopEnd:1           # []  (inner loop end)
   goto whileLoopTop             # []  (back to outer loop)
   labl matcher                  # [oCond]  (way back from the outer condition!)
-  typp Stay                     # [oCond, isStay]
+  typp :Stay                    # [oCond, isStay]
   goif match_1_Stay             # [oCond]
   goto whileLoopEnd             # [] (exit outer loop)
   labl match_1_Stay             # [oCond]
@@ -265,7 +265,7 @@ types:
     fields: [value]
 expect: |
   pvar 1                # [abc]
-  typp One              # [abc, isOne]
+  typp :One             # [abc, isOne]
   goif match_1_One      # [abc]
   pop                   # []
   goto statMatcherEnd   # []
@@ -461,7 +461,7 @@ expect: |
   pvar 2                          # [a]
   gofi whileLoopEnd               # []
   pvar 3                          # [b]
-  typp One                        # [b, bIsOne]
+  typp :One                       # [b, bIsOne]
   goif match_1_One                # [b]
   goto exprMatcher                # [b]
   labl match_1_One                # [b]
@@ -470,7 +470,7 @@ expect: |
   svar 4                          # []                  {$4=rv}
   goto exprMatcherDone            # []
   labl exprMatcher                # [b]  (b is not One)
-  typp Two                        # [b, bIsTwo]
+  typp :Two                       # [b, bIsTwo]
   goif match_1_Two                # [b]
   pop                             # []
   goto exprMatcher:1              # []
@@ -503,7 +503,7 @@ types:
         hasRv: false
 expect: |
   pvar 0
-  typp Dog
+  typp :Dog
   goif match_1_Dog
   pop
   goto isA_false
@@ -537,7 +537,7 @@ types:
         hasRv: false
 expect: |
   pvar 1
-  typp Dog
+  typp :Dog
   goif match_1_Dog
   goto matchersEnd
   labl match_1_Dog
