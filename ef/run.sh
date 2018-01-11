@@ -1,9 +1,10 @@
 #!/bin/bash
 cd "$(dirname "$0")"
 effes_jar=/mnt/c/Users/yuval/repos/effesvm_j/effesvm_j/target/effesvm_j-1.0-SNAPSHOT-jar-with-dependencies.jar
-DEBUG_OPTS=''
-if [[ -n "$EF_DEBUG" ]]; then
-  DEBUG_OPTS='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
+if [[ "$EF_DEBUG" == 1 ]]; then
+  EF_DEBUG='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
+elif [[ -n "$EF_DEBUG" ]]; then
+  echo "Using EF_DEBUG=$EF_DEBUG" 1>&2
 fi
 export EFFES_CLASSPATH=../efct
-java $DEBUG_OPTS -jar "$effes_jar" "$@"
+java $EF_DEBUG -jar "$effes_jar" "$@"

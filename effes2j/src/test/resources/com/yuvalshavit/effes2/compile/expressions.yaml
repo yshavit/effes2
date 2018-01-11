@@ -164,8 +164,8 @@ localVars:
   food:
     reg: 2
 expect: |
-  pvar 2
   pvar 1
+  pvar 2
   call :Dog eat
 ---
 input: Nothing

@@ -221,10 +221,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
   }
 
   public boolean compileMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx, EffesParser.ArgsInvocationContext argsInvocation) {
-    // First the invocation args, in reverse order.
-    Lists.reverse(argsInvocation.expression()).forEach(this::apply);
-
-    // Then the target instance, if any.
+    // First the target instance, if any.
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
     EffesParser.QualifiedIdentNameMiddleContext targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
     final String methodName = targetCtx.IDENT_NAME().getText();
@@ -267,10 +264,12 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
         return result;
       })
       .on(targetNameStartCtx);
-
     if (targetType == null) {
       throw new CompilationException(targetCtx, "couldn't determine type");
     }
+
+    // Then the invocation args, in reverse order.
+    Lists.reverse(argsInvocation.expression()).forEach(this::apply);
 
     String resolvingTargetType = targetType.isEmpty() ? (cc.moduleName + ":") : targetType;
     MethodInfo methodInfo = cc.typeInfo.getMethod(resolvingTargetType, methodName);
