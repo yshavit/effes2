@@ -132,12 +132,12 @@ expect: |
   labl match_1_String       # [val]
   str "\\Qfoo\\bar\\E"      # [val, "foo\\bar"]
   call_String:regex         # [regexResult]
-  type Match                # [regexResult.isMatch]
-  goif match_1_suchThat     # []
-  pop                       # ERR
+  typp Match                # [regexResult, regexResult.isMatch]
+  goif match_1_suchThat     # [regexResult]
+  pop                       # []
   goto @UNMATCHED           # []
-  labl match_1_suchThat     # []
-  pop                       # ERR
+  labl match_1_suchThat     # [regexResult]
+  pop                       # []
   goto @MATCHED             # []
 ---
 name: complex

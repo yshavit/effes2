@@ -23,21 +23,21 @@ types:
     methods:
       meow: { declaredArgs: 0, hasRv: false}
 expect: |
-  pvar 1
-  typp :Cat
-  goif match_1_Cat
-  pop
-  goto isA_false
-  labl match_1_Cat
-  pop
-  bool True
-  goto isA_done
-  labl isA_false
-  bool False
-  labl isA_done
-  svar 2
-  pvar 1
-  call :Dog bark
+  pvar 1            # [a]
+  typp :Cat         # [a, a.isCat]
+  goif match_1_Cat  # [a]
+  pop               # []
+  goto isA_false    # []
+  labl match_1_Cat  # [a]
+  pop               # []
+  bool True         # [True]
+  goto isA_done     # [isCat]
+  labl isA_false    # []
+  bool False        # [False]
+  labl isA_done     # [isCat]
+  svar 2            # [] ; #2=isCat
+  pvar 1            # [a]
+  call :Dog bark    # []
 ---
 name: type assertion
 input: |
