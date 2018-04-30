@@ -153,7 +153,7 @@ public class MatcherCompiler {
       return () -> {
         cc.out.strPush(EvmStrings.escape(regex));
         cc.out.stringRegex();
-        cc.out.type(EffesNativeType.MATCH.getEvmType());
+        cc.out.typp(EffesNativeType.MATCH.getEvmType());
       };
     }
   }
@@ -212,7 +212,7 @@ public class MatcherCompiler {
   private void popWorkspace(boolean keepLast) {
     int pops = keepLast ? (depth - 1) : depth;
     for (int i = 0; i < pops; ++i) {
-      cc.out.pop();
+      cc.out.pop(); //this is popping the match right away even when it matches! Yikes
     }
   }
 

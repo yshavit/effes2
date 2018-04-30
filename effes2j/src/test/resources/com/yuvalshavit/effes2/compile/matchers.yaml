@@ -125,20 +125,20 @@ name: string literal pattern
 options: { keepIfNotMatched: false }
 input: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
 expect: |
-  typp String
-  goif match_1_String
-  pop
-  goto @UNMATCHED
-  labl match_1_String
-  str "\\Qfoo\\bar\\E"
-  call_String:regex
-  type Match
-  goif match_1_suchThat
-  pop
-  goto @UNMATCHED
-  labl match_1_suchThat
-  pop
-  goto @MATCHED
+  typp String               # [val, val.isSting]
+  goif match_1_String       # [val]
+  pop                       # []
+  goto @UNMATCHED           # [] and done
+  labl match_1_String       # [val]
+  str "\\Qfoo\\bar\\E"      # [val, "foo\\bar"]
+  call_String:regex         # [regexResult]
+  type Match                # [regexResult.isMatch]
+  goif match_1_suchThat     # []
+  pop                       # ERR
+  goto @UNMATCHED           # []
+  labl match_1_suchThat     # []
+  pop                       # ERR
+  goto @MATCHED             # []
 ---
 name: complex
 options: { keepIfNotMatched: true }
