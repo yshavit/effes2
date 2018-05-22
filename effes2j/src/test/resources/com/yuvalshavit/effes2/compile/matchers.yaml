@@ -2,6 +2,7 @@ name: wild, keep unmatched
 options: { keepIfNotMatched: true }
 input: '*'
 expect: |
+  Svar 0
   pop
   goto @MATCHED
 ---
@@ -12,8 +13,17 @@ expect: |
   pop
   goto @MATCHED
 ---
-name: just name
+name: just name, keep unmatched
 options: { keepIfNotMatched: true }
+input: 'abc'
+expect: |
+  Svar 0
+  Svar 1
+  pop
+  goto @MATCHED
+---
+name: just name, pop unmatched
+options: { keepIfNotMatched: false }
 input: 'abc'
 expect: |
   Svar 0
@@ -24,30 +34,31 @@ name: guarded name, keep unmatched
 options: { keepIfNotMatched: true }
 input: abc :? abc == 1
 expect: |
-  Svar 0
-  pvar 0
-  int 1
-  call_Integer:eq
-  goif match_1_suchThat
-  goto @UNMATCHED
-  labl match_1_suchThat
-  pop
-  goto @MATCHED
+  Svar 0                    # [val]   $0=val
+  Svar 1                    # [val]   $1{abc}=val
+  pop                       # []
+  pvar 1                    # [val]
+  int 1                     # [val, 1]
+  call_Integer:eq           # [val==1?]
+  gofi match_fail_pop_0     # []
+  goto @MATCHED             # []
+  labl match_fail_pop_0     # []
+  pvar 0                    # [val]
+  goto @UNMATCHED           # [val]
 ---
 name: guarded name, pop unmatched
 options: { keepIfNotMatched: false }
 input: abc :? abc == 1
 expect: |
-  Svar 0
-  pvar 0
-  int 1
-  call_Integer:eq
-  goif match_1_suchThat
-  pop
-  goto @UNMATCHED
-  labl match_1_suchThat
-  pop
-  goto @MATCHED
+  Svar 0                    # [val]   $0{abc}=val
+  pop                       # []
+  pvar 0                    # [val]
+  int 1                     # [val, 1]
+  call_Integer:eq           # [val==1?]
+  gofi match_fail_pop_0     # []
+  goto @MATCHED             # []
+  labl match_fail_pop_0     # []
+  goto @UNMATCHED           # []
 ---
 name: guarded name to parent scope
 options: { keepIfNotMatched: true }
@@ -57,69 +68,67 @@ localVars:
   twoVar: {reg: 2}
 input: '@abc :? abc == 1'
 expect: |
-  Svar 3
-  pvar 3
-  int 1
-  call_Integer:eq
-  goif match_1_suchThat
-  goto @UNMATCHED
-  labl match_1_suchThat
-  pvar 3
-  svar 1
-  pop
-  goto @MATCHED
+  Svar 3                  # [val]   $3=val
+  Svar 4                  # [val]   $4{abc'}=val
+  pop                     # []
+  pvar 4                  # [val']
+  int 1                   # [val', 1]
+  call_Integer:eq         # [val'==1?]
+  gofi match_fail_pop_0   # []
+  pvar 4                  # [val']
+  svar 1                  # []      $abc=val'
+  goto @MATCHED           # []
+  labl match_fail_pop_0   # []
+  pvar 3                  # [val]
+  goto @UNMATCHED         # [val]
 ---
 name: singleton type pattern
 options: { keepIfNotMatched: false }
 input: Nothing
 expect: |
-  typp :Nothing
-  goif match_1_Nothing
-  pop
-  goto @UNMATCHED
-  labl match_1_Nothing
-  pop
-  goto @MATCHED
+  typp :Nothing           # [val, valIsNothing]
+  gofi match_fail_pop_1   # [val]
+  pop                     # []
+  goto @MATCHED           # []
+  labl match_fail_pop_1   # [val]
+  pop                     # []
+  goto @UNMATCHED         # []
 ---
 name: regex type pattern, keep unmatched
 options: { keepIfNotMatched: true }
 input: '~/foo (\w+)/'
 expect: |
   #                       # [val]
-  typp String             # [val, isStr]
-  goif match_1_String     # [val]
-  goto @UNMATCHED         # [val]
-  labl match_1_String     # [val]
+  Svar 0                  # [val]   $0=val
+  typp String             # [val, valIsStr}
+  gofi match_fail_pop_1   # [val]
   str "foo (\\w+)"        # [val, pattern]
-  call_String:regex       # [val, matchOrFalse]
-  typp Match              # [val, matchOrFalse, matchOrFalse.isMatch]
-  goif match_1_suchThat   # [val, matchOrFalse]
-  pop                     # [val]
-  goto @UNMATCHED         # [val]
-  labl match_1_suchThat   # [val, matchOrFalse]
-  pop                     # [val]
+  call_String:regex       # [match?]
+  typp Match              # [match?, matchIsMatch]
+  gofi match_fail_pop_1   # [match?]
   pop                     # []
   goto @MATCHED           # []
+  labl match_fail_pop_1   # [val] or [match?]
+  pop                     # []
+  pvar 0                  # [val]
+  goto @UNMATCHED         # [val]
 ---
 name: regex type pattern, pop unmatched
 options: { keepIfNotMatched: false }
 input: '~/foo (\w+)/'
 expect: |
   #                       # [val]
-  typp String             # [val, isStr]
-  goif match_1_String     # [val]
-  pop                     # [], due to keepIfNotMatched = false
-  goto @UNMATCHED         # []
-  labl match_1_String     # [val]
+  typp String             # [val, valIsStr]
+  gofi match_fail_pop_1   # [val]
   str "foo (\\w+)"        # [val, pattern]
-  call_String:regex       # [val, matchOrFalse]
-  type Match              # [val, isMatch]
-  goif match_1_suchThat   # [val]
-  pop                     # [], due to keepIfNotMatched = false
-  goto @UNMATCHED         # []
-  labl match_1_suchThat   # [val]
+  call_String:regex       # [match?]
+  typp Match              # [match?, isMatch]
+  gofi match_fail_pop_1   # [match?]
   pop                     # []
   goto @MATCHED           # []
+  labl match_fail_pop_1   # [val | match?]
+  pop                     # []
+  goto @UNMATCHED         # []
 ---
 # Note that this is pretty much the same as the regex test,
 # but with the regex string being literal
@@ -127,20 +136,18 @@ name: string literal pattern
 options: { keepIfNotMatched: false }
 input: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
 expect: |
-  typp String               # [val, val.isSting]
-  goif match_1_String       # [val]
-  pop                       # []
-  goto @UNMATCHED           # [] and done
-  labl match_1_String       # [val]
-  str "\\Qfoo\\bar\\E"      # [val, "foo\\bar"]
-  call_String:regex         # [regexResult]
-  typp Match                # [regexResult, regexResult.isMatch]
-  goif match_1_suchThat     # [regexResult]
-  pop                       # []
-  goto @UNMATCHED           # []
-  labl match_1_suchThat     # [regexResult]
+  #                         # [val]
+  typp String               # [val, valIsString]
+  gofi match_fail_pop_1     # [val]
+  str "\\Qfoo\\\\bar\\E"    # [val, pattern]
+  call_String:regex         # [match?]
+  typp Match                # [match?, isMatch]
+  gofi match_fail_pop_1     # [match?]
   pop                       # []
   goto @MATCHED             # []
+  labl match_fail_pop_1     # [val | match?]
+  pop                       # []
+  goto @UNMATCHED           # []
 ---
 name: complex
 options: { keepIfNotMatched: true }
@@ -152,61 +159,46 @@ types:
     fields: [p0, p1]
 expect: |
   #                         # [val]
-  typp :Triple              # [val, isTriple]
-  goif match_1_Triple       # [val]
-  goto @UNMATCHED           # [val]
-  labl match_1_Triple       # [val]
-  Pfld :Triple t0           # [val, t0]
+  Svar 0                    # [val]   $0=val
+  typp :Triple              # [val, valIsTriple]
+  gofi match_fail_pop_1     # [val]
+  Pfld :Triple t0           # [val, val.t0]
   pop                       # [val]
-  Pfld :Triple t1           # [val, t1]
-  Svar 0                    # [val, t1]                   -- {$0=t1}
-  pvar 0                    # [val, t1, t1]               -- {$0=t1}
-  int 1                     # [val, t1, t1, 1]            -- {$0=t1}
-  call_Integer:gt           # [val, t1, t1=1]             -- {$0=t1}
-  goif match_2_suchThat     # [val, t1]                   -- {$0=t1}
-  pop                       # [val]                       -- {$0=t1} TODO unset this?
-  goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_2_suchThat     # [val, t1]                   -- {$0=t1}
-  pop                       # [val]                       -- {$0=t1}
-  Pfld :Triple t2           # [val, t2]                   -- {$0=t1}
-  typp :Pair                # [val, t2, t2isPair]         -- {$0=t1}
-  goif match_2_Pair         # [val, t2]                   -- {$0=t1}
-  pop                       # [val]                       -- {$0=t1}
-  goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_2_Pair         # [val, t2]                   -- {$0=t1}
-  Pfld :Pair p0             # [val, t2, pair.p0]          -- {$0=t1}
-  typp String               # [val, t2, p0, p0IsString]   -- {$0=t1}
-  goif match_3_String       # [val, t2, p0]               -- {$0=t1}
-  pop                       # [val, t2]                   -- {$0=t1}
-  pop                       # [val]                       -- {$0=t1}
-  goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_3_String       # [val, t2, p0]               -- {$0=t1}
-  str "\\Qlit string\\E"    # [val, t2, p0, litStr]       -- {$0=t1}
-  call_String:regex         # [val, t2, p0, matchOrFalse] -- {$0=t1}
-  type Match                # [val, t2, p0, isMatch]      -- {$0=t1}
-  goif match_3_suchThat     # [val, t2, p0]               -- {$0=t1}
-  pop                       # [val, t2]                   -- {$0=t1}
-  pop                       # [val]                       -- {$0=t1}
-  goto @UNMATCHED           # [val]                       -- {$0=t1}
-  labl match_3_suchThat     # [val, t2, p0]               -- {$0=t1}
-  pop                       # [val, t2]                   -- {$0=t1}
-  Pfld :Pair p1              # [val, t2, p1]               -- {$0=t1}
-  Svar 1                    # [val, t2, p1]               -- {$0=t1, $1=p1}
-  typp String               # [val, t2, p1, p1IsString]   -- {$0=t1, $1=p1}
-  goif match_3_String:1     # [val, t2, p1]               -- {$0=t1, $1=p1}
-  pop                       # [val, t2]                   -- {$0=t1, $1=p1}
-  pop                       # [val]                       -- {$0=t1, $1=p1}
-  goto @UNMATCHED           # [val]                       -- {$0=t1, $1=p1}
-  labl match_3_String:1     # [val, t2, p1]               -- {$0=t1, $1=p1}
-  str "\\d+"                # [val, t2, p1, digRegex]     -- {$0=t1, $1=p1}
-  call_String:regex         # [val, t2, p1, matchOrFalse] -- {$0=t1, $1=p1}
-  type Match                # [val, t2, p1, isMatch]      -- {$0=t1, $1=p1}
-  goif match_3_suchThat:1   # [val, t2, p1]               -- {$0=t1, $1=p1}
-  pop                       # [val, t2]                   -- {$0=t1, $1=p1}
-  pop                       # [val]                       -- {$0=t1, $1=p1}
-  goto @UNMATCHED           # [val]                       -- {$0=t1, $1=p1}
-  labl match_3_suchThat:1   # [val, t2, p1]               -- {$0=t1, $1=p1}
-  pop                       # [val, t2]                   -- {$0=t1, $1=p1}
-  pop                       # [val]                       -- {$0=t1, $1=p1}
-  pop                       # []                          -- {$0=t1, $1=p1}
-  goto @MATCHED             # []                          -- {$0=t1, $1=p1}
+  Pfld :Triple t1           # [val, val.t1]
+  Svar 1                    # [val, val.t1]   $1=val.t1
+  pop                       # [val]
+  pvar 1                    # [val, val.t1]
+  int 1                     # [val, val.t1, 1]
+  call_Integer:gt           # [val, val.t1==1]
+  gofi match_fail_pop_1     # [val]
+  Pfld :Triple t2           # [val, val.t2]
+  typp :Pair                # [val, val.t2, t2IsPair]
+  gofi match_fail_pop_2     # [val, val.t2]
+  Pfld :Pair p0             # [val, val.t2, val.t2.p0]
+  typp String               # [val, val.t2, val.t2.p0, p0IsString]
+  gofi match_fail_pop_3     # [val, val.t2, val.t2.p0]
+  str "\\Qlit string\\E"    # [val, val.t2, val.t2.p0, patern]
+  call_String:regex         # [val, val.t2, match?]
+  typp Match                # [val, val.t2, match?, isMatch]
+  gofi match_fail_pop_3     # [val, val.t2, match?]
+  pop                       # [val, val.t2]
+  Pfld :Pair p1             # [val, val.t2, val.t2.p1]
+  typp String               # [val, val.t2, val.t2.p1, p1IsStr]
+  gofi match_fail_pop_3     # [val, val.t2, val.t2.p1]
+  str "\\d+"                # [val, val.t2, val.t2.p1, pattern]
+  call_String:regex         # [val, val.t2, p1Match?]
+  typp Match                # [val, val.t2, p1Match?, isMatch]
+  gofi match_fail_pop_3     # [val, val.t2, p1Match?]
+  Svar 2                    # [val, val.t2, p1Match]    $2=p1Match?
+  pop                       # [val, val.t2]
+  pop                       # [val]
+  pop                       # []
+  goto @MATCHED             # []
+  labl match_fail_pop_3     # [val, val.t2, val.t2.p0 | match? | val.t2.p1 | p1Match?]
+  pop                       # [val, val.t2]
+  labl match_fail_pop_2     # [val, val.t2]
+  pop                       # [val]
+  labl match_fail_pop_1     # [val | val.t1==1]
+  pop                       # []
+  pvar 0                    # [val]
+  goto @UNMATCHED           # [val]

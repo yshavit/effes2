@@ -1,6 +1,8 @@
 package com.yuvalshavit.effes2.compile;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -14,9 +16,8 @@ import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 public class MatcherCompiler {
 
   private final CompilerContext cc;
-  private final String labelNoMatch;
-  private final boolean keepIfNoMatch;
   private final ScratchVars scratchVars;
+  private final List<String> popAndFailTargets;
   private int depth;
 
   /**
@@ -31,15 +32,23 @@ public class MatcherCompiler {
     CompilerContext compilerContext,
     String targetVar)
   {
-    MatcherCompiler compiler = new MatcherCompiler(labelNoMatch, keepIfNoMatch, compilerContext);
+    VarRef keepIfNoMatchRef;
+    if (keepIfNoMatch) {
+      keepIfNoMatchRef = compilerContext.scope.allocateAnonymous(null);
+      keepIfNoMatchRef.storeNoPop(compilerContext.out);
+    } else {
+      keepIfNoMatchRef = null;
+    }
+
+    MatcherCompiler compiler = new MatcherCompiler(compilerContext);
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
     compiler.scratchVars.commit(compilerContext.out);
-    compiler.popWorkspace(false);
     if (optionalLabelIfMatched != null) {
       compilerContext.out.gotoAbs(optionalLabelIfMatched);
     }
+
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.
       EffesParser.MatcherPatternContext pattern = ((EffesParser.MatcherWithPatternContext) matcherContext).matcherPattern();
@@ -59,16 +68,51 @@ public class MatcherCompiler {
         compilerContext.scope.replaceType(targetVar, type);
       }
     }
+
+    // Finally, write the pops-and-goto for failure. Only do this if popAndFailTargets is non-empty; if it's empty, it means the match can never fail.
+    if (!compiler.popAndFailTargets.isEmpty()) {
+      for (int i = compiler.popAndFailTargets.size() - 1; i >= 0; --i) {
+        String target = compiler.popAndFailTargets.get(i);
+        if (target != null) {
+          compiler.cc.out.label(target);
+        }
+        if (i > 0) {
+          compiler.cc.out.pop();
+        }
+      }
+      if (keepIfNoMatchRef != null) {
+        keepIfNoMatchRef.push(compilerContext.out);
+      }
+      compiler.cc.out.gotoAbs(labelNoMatch);
+    }
   }
 
-  private MatcherCompiler(String labelNoMatch, boolean keepIfNoMatch, CompilerContext cc) {
-    this.labelNoMatch = labelNoMatch;
-    this.keepIfNoMatch = keepIfNoMatch;
+  private MatcherCompiler(CompilerContext cc) {
     this.cc = cc;
     scratchVars = new ScratchVars();
-    depth = 1;
+    depth = 0;
+    popAndFailTargets = new ArrayList<>();
   }
 
+  private String getPopAndFailLabel() {
+    while (popAndFailTargets.size() <= depth) {
+      popAndFailTargets.add(null);
+    }
+    String res = popAndFailTargets.get(depth);
+    if (res == null) {
+      res = cc.labelAssigner.allocate(String.format("match_fail_pop_%d", depth));
+      popAndFailTargets.set(depth, res);
+    }
+    return res;
+  }
+
+  /**
+   * Dispatch for the three top-level "matcher" productions.
+   *
+   *   - Each "apply" assumes that its LHS operand is at the top of the stack.
+   *   - A successful match should pop that operand and otherwise fall through.
+   *   - An unsuccessful match should have a goto to the appropriate stack-unrolling-and-goto-fail section.
+   */
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class MatcherImpl extends CompileDispatcher<EffesParser.MatcherContext> {
 
@@ -78,142 +122,103 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherAnyContext input) {
-      handle(null, null, null, null, null);
+      // <op IS> *
+      cc.out.pop(); // Always matches, so just need to pop the LHS
     }
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      String langType = input.matcherPattern() instanceof EffesParser.PatternRegexContext
-        ? EffesBuiltinType.REGEX_MATCH.typeName()
-        : null;
-      handle(input.AT(), input.IDENT_NAME(), null, langType, null, () -> new MatcherPatternImpl().apply(input.matcherPattern()));
+      Consumer<String> varBinderByType = bindType -> bindVarIfNeeded(input.IDENT_NAME(), input.AT(), bindType);
+      new MatcherWithPatternImpl(this, varBinderByType).apply(input.matcherPattern());
     }
 
     @Dispatched
     public void apply(EffesParser.MatcherJustNameContext input) {
-      handle(
-        input.AT(),
-        input.IDENT_NAME(),
-        null,
-        input.expression() == null ? null : () -> new ExpressionCompiler(cc).apply(input.expression()),
-        null);
+      // <op IS> [@]fooName [:? expr]
+      // Always matches the type, but still need to do the binding and check the expression.
+      bindVarIfNeeded(input.IDENT_NAME(), input.AT(), null);
+      cc.out.pop();
+      if (input.expression() != null) {
+        new ExpressionCompiler(cc).apply(input.expression());
+        cc.out.gotoIfNot(getPopAndFailLabel());
+      }
+    }
+
+    public void bindVarIfNeeded(TerminalNode varBind, TerminalNode varBindAt, String varBindType) {
+      if (varBind != null) {
+        String varName = varBind.getSymbol().getText();
+        final VarRef varRef = cc.scope.allocateLocal(varName, true, varBindType);
+        if (varBindAt != null) {
+          assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
+          VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
+          scratchVars.add(varRef, eventualBind);
+        }
+        varRef.storeNoPop(cc.out);
+      }
     }
   }
 
   @Dispatcher.SubclassesAreIn(EffesParser.class)
-  private class MatcherPatternImpl extends CompileDispatcher<EffesParser.MatcherPatternContext> {
-    MatcherPatternImpl() {
+  private class MatcherWithPatternImpl extends CompileDispatcher<EffesParser.MatcherPatternContext> {
+
+    private final Consumer<String> varBinderByType;
+    private final MatcherImpl matcherDispatch;
+
+    MatcherWithPatternImpl(MatcherImpl matcherDispatch, Consumer<String> varBinderByType) {
       super(EffesParser.MatcherPatternContext.class);
+      this.matcherDispatch = matcherDispatch;
+      this.varBinderByType = varBinderByType;
     }
 
     @Dispatched
     public void apply(EffesParser.PatternRegexContext input) {
-      handle(
-        null,
-        null,
-        EffesNativeType.STRING.getEvmType(),
-        checkRegex(input.REGEX().getSymbol().getText()),
-        null);
+      ++depth;
+      applyRegex((input.REGEX().getSymbol().getText()));
+      --depth;
     }
 
     @Dispatched
     public void apply(EffesParser.PatternTypeContext input) {
-      String typeName = input.IDENT_TYPE().getSymbol().getText();
-      handle(
-        null,
-        null,
-        typeName,
-        null,
-        () -> {
-          ++depth;
-          List<EffesParser.MatcherContext> matcher = input.matcher();
-          for (int childIdx = 0; childIdx < matcher.size(); childIdx++) {
-            EffesParser.MatcherContext childContext = matcher.get(childIdx);
-            String fieldName = cc.typeInfo.fieldName(typeName, childIdx);
-            cc.out.PushField(cc.qualifyType(typeName), fieldName);
-            new MatcherImpl().apply(childContext);
-            cc.out.pop();
-          }
-          --depth;
-        }
-      );
+      ++depth;
+      //                                                                          // [..., val]
+      String type = cc.qualifyType(input.IDENT_TYPE().getSymbol().getText());
+      checkType(type);
+      List<EffesParser.MatcherContext> fieldMatchers = input.matcher();
+      int nFields = cc.typeInfo.fieldsCount(type);
+      if (nFields != fieldMatchers.size()) {
+        throw new CompilationException(
+          input,
+          String.format("incorrect number of field matchers for %s (expected %d, found %d)", type, nFields, fieldMatchers.size()));
+      }
+      for (int i = 0; i < nFields; ++i) {
+        String fieldName = cc.typeInfo.fieldName(type, i);
+        cc.out.PushField(type, fieldName);                                        // [..., val, val.fieldN]
+        matcherDispatch.apply(fieldMatchers.get(i));                              // [..., val]
+      }
+      cc.out.pop();
+      --depth;
     }
 
     @Dispatched
     public void apply(EffesParser.PatternStringLiteralContext input) {
-      handle(
-        null,
-        null,
-        EffesNativeType.STRING.getEvmType(),
-        checkRegex(Pattern.quote(ExpressionCompiler.getQuotedString(input.QUOTED_STRING()))),
-        null);
+      ++depth;
+      applyRegex(Pattern.quote(EvmStrings.quotedEfToString(input.QUOTED_STRING())));
+      --depth;
     }
 
-    private Runnable checkRegex(String regex) {
-      return () -> {
-        cc.out.strPush(EvmStrings.escape(regex));
-        cc.out.stringRegex();
-        cc.out.typp(EffesNativeType.MATCH.getEvmType());
-      };
+    public void checkType(String type) {
+      cc.out.typp(type);
+      cc.out.gotoIfNot(getPopAndFailLabel());
+    }
+
+    public void applyRegex(String pattern) {
+      //                                                  // [..., str]
+      checkType(cc.qualifyType(EffesNativeType.STRING));
+      cc.out.strPush(EvmStrings.escape(pattern));         // [..., str, pattern]
+      cc.out.stringRegex();                               // [..., match?]
+      checkType(cc.qualifyType(EffesNativeType.MATCH));
+      varBinderByType.accept(cc.qualifyType(EffesNativeType.MATCH));
+      cc.out.pop();                                       // [...]
     }
   }
-
-  private void handle(TerminalNode varBindAt, TerminalNode varBind, String evmType, String langType, Runnable suchThat, Runnable next) {
-    // stack coming in: [... target]
-    if (varBind != null) {
-      String varName = varBind.getSymbol().getText();
-      final VarRef varRef;
-      if (varBindAt == null) {
-        // local var, just allocate it. We'll only ever care about the var if the type matches, so assume that type
-        varRef = cc.scope.allocateLocal(varName, true, langType);
-      } else {
-        assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
-        VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
-        varRef = cc.scope.allocateLocal(varName, true, langType);
-        scratchVars.add(varRef, eventualBind);
-      }
-      varRef.storeNoPop(cc.out);
-    }
-    if (evmType != null) {
-      String typeMatchLabel = cc.labelAssigner.allocate(String.format("match_%d_%s", depth, evmType));
-      cc.out.typp(cc.qualifyType(evmType));
-      // stack: [... target, isRightType]
-      cc.out.gotoIf(typeMatchLabel);
-      // stack: [... target]
-      // If we get past the goto, that means we had a type mismatch. Handle the failure (that'll include a goto).
-      // Otherwise, we're done with the type check, so just provide the gotoIf's destination pin
-      handleFailure();
-      cc.labelAssigner.place(typeMatchLabel);
-    }
-    if (suchThat != null) {
-      String suchThatSuccessLabel = cc.labelAssigner.allocate(String.format("match_%d_suchThat", depth));
-      suchThat.run();
-      // stack: [... target, suchThat]
-      cc.out.gotoIf(suchThatSuccessLabel);
-      // stack: [... target]
-      // Same branching as the "if type != null" bit
-      handleFailure();
-      cc.labelAssigner.place(suchThatSuccessLabel);
-    }
-    if (next != null) {
-      next.run();
-    }
-  }
-
-  private void handle(TerminalNode varBindAt, TerminalNode varBind, String type, Runnable suchThat, Runnable next) {
-    handle(varBindAt, varBind, type, type, suchThat, next);
-  }
-
-  private void handleFailure() {
-    popWorkspace(keepIfNoMatch);
-    cc.out.gotoAbs(labelNoMatch);
-  }
-
-  private void popWorkspace(boolean keepLast) {
-    int pops = keepLast ? (depth - 1) : depth;
-    for (int i = 0; i < pops; ++i) {
-      cc.out.pop(); //this is popping the match right away even when it matches! Yikes
-    }
-  }
-
 }

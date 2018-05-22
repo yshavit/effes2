@@ -94,9 +94,9 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   }
 
   private static CompilerContextGenerator compilerContextGenerator(TestCase testCase, StringBuilder out, Preload preload) {
-    Map<String,SerTypeInfo> testTypes = testCase.types;
+    Map<String,SerTypeInfo> testTypes = new HashMap<>(testCase.types.size());
+    testCase.types.forEach((k, v) -> testTypes.put(":" + k, v));
     if (preload != null) {
-      testTypes = new HashMap<>(testTypes); // defensive, mutable copy
       testTypes.keySet().stream().filter(preload.types::containsKey).findAny().ifPresent(dupe -> {
         throw new RuntimeException("duplicate type: " + dupe);
       });
@@ -184,7 +184,8 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     }
 
     private List<String> fieldsFor(String type) {
-      return Objects.requireNonNull(fields.get(type), "no fields defined for " + type);
+      List<String> fieldsForType = fields.get(type);
+      return fieldsForType == null ? Collections.emptyList() : fieldsForType;
     }
   }
 }

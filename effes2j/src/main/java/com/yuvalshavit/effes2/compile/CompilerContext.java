@@ -49,6 +49,10 @@ class CompilerContext {
     return new AppendableBackedEfctDeclarations(appendable);
   }
 
+  public String qualifyType(EffesNativeType type) {
+    return type.getEvmType();
+  }
+
   public String qualifyType(String typeName) {
     if (typeName.endsWith(":")) {
       // module name, so already qualified

@@ -1,5 +1,10 @@
 package com.yuvalshavit.effes2.util;
 
+import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
+
+import com.yuvalshavit.effes2.parse.EffesLexer;
+
 public class EvmStrings {
   private static final int WIGGLE_ROOM = 16; // for escape chars and all that. just a guess
 
@@ -50,6 +55,15 @@ public class EvmStrings {
     });
     sb.append('"');
     return sb.toString();
+  }
+
+  public static String quotedEfToString(TerminalNode terminalNode) {
+    Token symbol = terminalNode.getSymbol();
+    if (symbol.getType() != EffesLexer.QUOTED_STRING) {
+      throw new RuntimeException("expected QUOTED_STRING, found" + EffesLexer.VOCABULARY.getDisplayName(symbol.getType()));
+    }
+    String text = symbol.getText();
+    return text.substring(1, text.length() - 1);
   }
 
   /**
