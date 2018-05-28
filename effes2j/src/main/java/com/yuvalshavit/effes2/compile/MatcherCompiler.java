@@ -11,7 +11,6 @@ import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
-import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 
 public class MatcherCompiler {
 
@@ -35,7 +34,7 @@ public class MatcherCompiler {
     VarRef keepIfNoMatchRef;
     if (keepIfNoMatch) {
       keepIfNoMatchRef = compilerContext.scope.allocateAnonymous(null);
-      keepIfNoMatchRef.storeNoPop(compilerContext.out);
+      keepIfNoMatchRef.storeNoPop(compilerContext.module, compilerContext.out);
     } else {
       keepIfNoMatchRef = null;
     }
@@ -52,10 +51,10 @@ public class MatcherCompiler {
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.
       EffesParser.MatcherPatternContext pattern = ((EffesParser.MatcherWithPatternContext) matcherContext).matcherPattern();
-      String type = Dispatcher.dispatch(EffesParser.MatcherPatternContext.class, String.class)
-        .when(EffesParser.PatternTypeContext.class, c -> c.IDENT_TYPE().getSymbol().getText())
-        .when(EffesParser.PatternRegexContext.class, c -> EffesNativeType.MATCH.getEvmType())
-        .when(EffesParser.PatternStringLiteralContext.class, c -> EffesNativeType.STRING.getEvmType())
+      Name.QualifiedType type = Dispatcher.dispatch(EffesParser.MatcherPatternContext.class, Name.QualifiedType.class)
+        .when(EffesParser.PatternTypeContext.class, c -> compilerContext.type(c.IDENT_TYPE()))
+        .when(EffesParser.PatternRegexContext.class, c -> Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH))
+        .when(EffesParser.PatternStringLiteralContext.class, c -> Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING))
         .on(pattern);
       VarRef atMatched = compilerContext.scope.tryLookUpInTopFrame(targetVar);
       if (atMatched == null) {
@@ -81,7 +80,7 @@ public class MatcherCompiler {
         }
       }
       if (keepIfNoMatchRef != null) {
-        keepIfNoMatchRef.push(compilerContext.out);
+        keepIfNoMatchRef.push(compilerContext.module, compilerContext.out);
       }
       compiler.cc.out.gotoAbs(labelNoMatch);
     }
@@ -89,7 +88,7 @@ public class MatcherCompiler {
 
   private MatcherCompiler(CompilerContext cc) {
     this.cc = cc;
-    scratchVars = new ScratchVars();
+    scratchVars = new ScratchVars(cc.module);
     depth = 0;
     popAndFailTargets = new ArrayList<>();
   }
@@ -128,7 +127,7 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherWithPatternContext input) {
-      Consumer<String> varBinderByType = bindType -> bindVarIfNeeded(input.IDENT_NAME(), input.AT(), bindType);
+      Consumer<Name.QualifiedType> varBinderByType = bindType -> bindVarIfNeeded(input.IDENT_NAME(), input.AT(), bindType);
       new MatcherWithPatternImpl(this, varBinderByType).apply(input.matcherPattern());
     }
 
@@ -144,7 +143,7 @@ public class MatcherCompiler {
       }
     }
 
-    public void bindVarIfNeeded(TerminalNode varBind, TerminalNode varBindAt, String varBindType) {
+    public void bindVarIfNeeded(TerminalNode varBind, TerminalNode varBindAt, Name.QualifiedType varBindType) {
       if (varBind != null) {
         String varName = varBind.getSymbol().getText();
         final VarRef varRef = cc.scope.allocateLocal(varName, true, varBindType);
@@ -153,7 +152,7 @@ public class MatcherCompiler {
           VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
           scratchVars.add(varRef, eventualBind);
         }
-        varRef.storeNoPop(cc.out);
+        varRef.storeNoPop(cc.module, cc.out);
       }
     }
   }
@@ -161,10 +160,10 @@ public class MatcherCompiler {
   @Dispatcher.SubclassesAreIn(EffesParser.class)
   private class MatcherWithPatternImpl extends CompileDispatcher<EffesParser.MatcherPatternContext> {
 
-    private final Consumer<String> varBinderByType;
+    private final Consumer<Name.QualifiedType> varBinderByType;
     private final MatcherImpl matcherDispatch;
 
-    MatcherWithPatternImpl(MatcherImpl matcherDispatch, Consumer<String> varBinderByType) {
+    MatcherWithPatternImpl(MatcherImpl matcherDispatch, Consumer<Name.QualifiedType> varBinderByType) {
       super(EffesParser.MatcherPatternContext.class);
       this.matcherDispatch = matcherDispatch;
       this.varBinderByType = varBinderByType;
@@ -181,7 +180,7 @@ public class MatcherCompiler {
     public void apply(EffesParser.PatternTypeContext input) {
       ++depth;
       //                                                                          // [..., val]
-      String type = cc.qualifyType(input.IDENT_TYPE().getSymbol().getText());
+      Name.QualifiedType type = cc.type(input.IDENT_TYPE());
       checkType(type);
       List<EffesParser.MatcherContext> fieldMatchers = input.matcher();
       int nFields = cc.typeInfo.fieldsCount(type);
@@ -192,7 +191,7 @@ public class MatcherCompiler {
       }
       for (int i = 0; i < nFields; ++i) {
         String fieldName = cc.typeInfo.fieldName(type, i);
-        cc.out.PushField(type, fieldName);                                        // [..., val, val.fieldN]
+        cc.out.PushField(type.evmDescriptor(cc.module), fieldName);               // [..., val, val.fieldN]
         matcherDispatch.apply(fieldMatchers.get(i));                              // [..., val]
       }
       cc.out.pop();
@@ -206,18 +205,18 @@ public class MatcherCompiler {
       --depth;
     }
 
-    public void checkType(String type) {
-      cc.out.typp(type);
+    public void checkType(Name.QualifiedType type) {
+      cc.out.typp(type.evmDescriptor(cc.module));
       cc.out.gotoIfNot(getPopAndFailLabel());
     }
 
     public void applyRegex(String pattern) {
       //                                                  // [..., str]
-      checkType(cc.qualifyType(EffesNativeType.STRING));
+      checkType(Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING));
       cc.out.strPush(EvmStrings.escape(pattern));         // [..., str, pattern]
       cc.out.stringRegex();                               // [..., match?]
-      checkType(cc.qualifyType(EffesNativeType.MATCH));
-      varBinderByType.accept(cc.qualifyType(EffesNativeType.MATCH));
+      checkType(Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH));
+      varBinderByType.accept(Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH));
       cc.out.pop();                                       // [...]
     }
   }

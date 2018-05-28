@@ -70,8 +70,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprInstantiationContext input) {
-    String typeName = input.IDENT_TYPE().getSymbol().getText();
-    int expectedArgs = cc.typeInfo.fieldsCount(typeName);
+    Name.QualifiedType type = cc.type(input.IDENT_TYPE());
+    int expectedArgs = cc.typeInfo.fieldsCount(type);
     List<EffesParser.ExpressionContext> args = input.argsInvocation() == null
       ? null
       : input.argsInvocation().expression();
@@ -82,7 +82,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(input, String.format("expected %d argument%s, found %d", expectedArgs, expectedArgs == 1 ? "" : "s", args.size()));
     }
     Lists.reverse(args).forEach(this::apply);
-    cc.out.call(cc.qualifyType(typeName), typeName);
+    cc.out.call(type.evmDescriptor(cc.module), type.getUnqualifiedType().getName());
   }
 
   @Dispatched
@@ -106,15 +106,15 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       // If it's "foo", then just look up the field.
       if (qualifiedMiddle != null) {
         VarRef localVar = cc.scope.lookUp(qualifiedMiddle.IDENT_NAME().getSymbol().getText());
-        String localVarType = localVar.getType();
+        Name.QualifiedType localVarType = localVar.getType();
         if (localVarType == null) {
           throw new CompilationException(qualifiedMiddle, "can't infer type");
         }
         if (!cc.typeInfo.hasField(localVarType, fieldName)) {
           throw new CompilationException(qualifiedMiddle, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
         }
-        localVar.push(cc.out);
-        cc.out.pushField(cc.qualifyType(localVarType), fieldName);
+        localVar.push(cc.module, cc.out);
+        cc.out.pushField(localVarType.evmDescriptor(cc.module), fieldName);
       } else {
         TerminalNode finalName = qualifiedName.IDENT_NAME();
         String symbolName = finalName.getSymbol().getText();
@@ -122,11 +122,11 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       }
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentThisContext) {
       VarRef thisVar = cc.getInstanceContextVar(qualifiedStart.getStart(), qualifiedStart.getStop());
-      String thisVarType = thisVar.getType();
+      Name.QualifiedType thisVarType = thisVar.getType();
       if (!cc.typeInfo.hasField(thisVarType, fieldName)) {
         throw new CompilationException(qualifiedMiddle, "no field \"" + fieldName + "\" on type " + thisVarType);
       }
-      cc.out.pushField(CompilerContext.qualified("", thisVarType), fieldName);
+      cc.out.pushField(thisVarType.evmDescriptor(cc.module), fieldName);
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentTypeContext) {
       EffesParser.QualifiedIdentTypeContext moduleNameCtx = (EffesParser.QualifiedIdentTypeContext) qualifiedStart;
       String moduleName = moduleNameCtx.IDENT_TYPE().getSymbol().getText();
@@ -209,14 +209,14 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       if (thisVar == null) {
         throw Scope.noSuchVariableException(symbolName);
       }
-      String thisType = thisVar.getType();
+      Name.QualifiedType thisType = thisVar.getType();
       if (!cc.typeInfo.hasField(thisType, symbolName)) {
         throw new NoSuchElementException("no local or instance variable named " + symbolName);
       }
-      thisVar.push(cc.out);
-      cc.out.pushField(thisType, symbolName);
+      thisVar.push(cc.module, cc.out);
+      cc.out.pushField(thisType.evmDescriptor(cc.module), symbolName);
     } else {
-      var.push(cc.out);
+      var.push(cc.module, cc.out);
     }
   }
 
@@ -225,13 +225,14 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
     EffesParser.QualifiedIdentNameMiddleContext targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
     final String methodName = targetCtx.IDENT_NAME().getText();
-    String targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, String.class)
+    Name.QualifiedType targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, Name.QualifiedType.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         // static method
         if (targetNameMidCtx != null) {
           throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
-        return c.IDENT_TYPE().getText() + TypeInfo.MODULE_PREFIX;
+        Name.Module moduleName = CompilerContext.readModuleName(c.IDENT_TYPE());
+        return Name.QualifiedType.forStaticCalls(moduleName);
       })
       .when(EffesParser.QualifiedIdentThisContext.class, c -> {
         // method explicitly on "this"
@@ -239,18 +240,18 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
         }
         VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
-        instanceVar.push(cc.out);
+        instanceVar.push(cc.module, cc.out);
         return instanceVar.getType();
       })
       .whenNull(() -> {
-        final String result;
+        final Name.QualifiedType result;
         if (targetNameMidCtx == null) {
           VarRef instanceVar = cc.tryGetInstanceContextVar();
           if (instanceVar == null) {
-            result = "";
+            result = Name.QualifiedType.forStaticCalls(cc.module);
           } else {
             result = instanceVar.getType();
-            instanceVar.push(cc.out);
+            instanceVar.push(cc.module, cc.out);
           }
         } else {
           String varName = targetNameMidCtx.IDENT_NAME().getText();
@@ -259,7 +260,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
             throw new CompilationException(targetCtx, "no local var named " + varName);
           }
           result = targetVar.getType();
-          targetVar.push(cc.out);
+          targetVar.push(cc.module, cc.out);
         }
         return result;
       })
@@ -271,13 +272,9 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     // Then the invocation args, in reverse order.
     Lists.reverse(argsInvocation.expression()).forEach(this::apply);
 
-    String resolvingTargetType = targetType.isEmpty() ? (cc.moduleName + ":") : targetType;
-    MethodInfo methodInfo = cc.typeInfo.getMethod(resolvingTargetType, methodName);
+    MethodInfo methodInfo = cc.typeInfo.getMethod(targetType, methodName);
     if (methodInfo == null) {
-      String description = targetType.isEmpty()
-        ? ("module " + cc.moduleName)
-        : ("type " + targetType);
-      throw new CompilationException(targetCtx, description + " doesn't have a method named " + methodName);
+      throw new CompilationException(targetCtx, "no method named " + methodName);
     } else if (methodInfo.getDeclaredArgsCount() != argsInvocation.expression().size()) {
       throw new CompilationException(
         targetCtx,

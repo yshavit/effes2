@@ -22,11 +22,11 @@ public class DeclarationCompiler {
 
   public void apply(EffesParser.TypeDeclarationContext ctx) {
     // Type and ctor args are already registered. Just compile.
-    String typeName = ctx.IDENT_TYPE().getSymbol().getText();
-    ccGen.declarations.typeDeclaration(typeName, getArgNames(ctx));
+    Name.UnqualifiedType type = CompilerContext.readUnqualifiedType(ctx.IDENT_TYPE());
+    ccGen.declarations.typeDeclaration(type.getName(), getArgNames(ctx));
     List<EffesParser.MethodDeclarationContext> methods = ctx.methodDeclaration();
     if (methods != null) {
-      methods.forEach(c -> MethodCompiler.compile(c, ccGen, typeName));
+      methods.forEach(c -> MethodCompiler.compile(c, ccGen, type));
     }
   }
 

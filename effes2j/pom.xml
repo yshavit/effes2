@@ -20,6 +20,14 @@
 
 
   <dependencies>
+    <!-- provided dependencies -->
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.16.20</version>
+      <scope>provided</scope>
+    </dependency>
+
     <!-- compile dependencies -->
     <dependency>
       <groupId>com.yuvalshavit</groupId>
@@ -83,7 +91,7 @@
           <showWarnings>true</showWarnings>
           <showDeprecation>true</showDeprecation>
           <compilerArguments>
-            <Xlint />
+            <Xlint/>
           </compilerArguments>
         </configuration>
       </plugin>

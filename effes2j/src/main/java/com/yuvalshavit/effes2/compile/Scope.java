@@ -117,14 +117,14 @@ public class Scope {
     }
   }
 
-  public VarRef allocateLocal(String symbolName, boolean allowShadowing, String type) {
+  public VarRef allocateLocal(String symbolName, boolean allowShadowing, Name.QualifiedType type) {
     VarRef varRef = new VarRef.LocalVar(frame.firstAvailableReg, type);
     allocateLocal(symbolName, allowShadowing, varRef);
     return varRef;
   }
 
   public VarRef allocateLocal(String symbolName, boolean allowShadowing) {
-    return allocateLocal(symbolName, allowShadowing, (String) null);
+    return allocateLocal(symbolName, allowShadowing, (Name.QualifiedType) null);
   }
 
   public VarRef tryLookUpInTopFrame(String symbolName) {
@@ -134,13 +134,13 @@ public class Scope {
   /**
    * Allocates an anonymous local variable.
    */
-  public VarRef allocateAnonymous(String typeName) {
+  public VarRef allocateAnonymous(Name.QualifiedType typeName) {
     int varIdx = frame.firstAvailableAnonymousVar++;
     String varName = "$" + varIdx; // not a legal var name in Effes, so we don't need to check availability
     return allocateLocal(varName, false, typeName);
   }
 
-  public void replaceType(String symbolName, String type) {
+  public void replaceType(String symbolName, Name.QualifiedType type) {
     VarRef var = lookUp(symbolName);
     frame.symbols.put(symbolName, var.withType(type));
   }

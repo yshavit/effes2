@@ -2,11 +2,13 @@ package com.yuvalshavit.effes2.compile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.Token;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
-import com.yuvalshavit.effesvm.runtime.EffesNativeType;
+import com.yuvalshavit.effes2.parse.EffesLexer;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 class CompilerContext {
@@ -14,7 +16,7 @@ class CompilerContext {
   final LabelAssigner labelAssigner;
   final EffesOps<Void> out;
   final TypeInfo typeInfo;
-  final String moduleName;
+  final Name.Module module;
   private final VarRef instanceVar;
 
   public CompilerContext(
@@ -22,14 +24,14 @@ class CompilerContext {
     LabelAssigner labelAssigner,
     EffesOps<Void> out,
     TypeInfo typeInfo,
-    String moduleName,
+    Name.Module module,
     VarRef instanceVar)
   {
     this.scope = scope;
     this.labelAssigner = labelAssigner;
     this.out = out;
     this.typeInfo = typeInfo;
-    this.moduleName = moduleName;
+    this.module = module;
     this.instanceVar = instanceVar;
   }
 
@@ -49,35 +51,56 @@ class CompilerContext {
     return new AppendableBackedEfctDeclarations(appendable);
   }
 
-  public String qualifyType(EffesNativeType type) {
-    return type.getEvmType();
+  public Name.QualifiedType type(TerminalNode node) {
+    return typeInfo.qualify(readUnqualifiedType(node));
   }
 
-  public String qualifyType(String typeName) {
-    if (typeName.endsWith(":")) {
-      // module name, so already qualified
-      return typeName;
-    } else if (EffesNativeType.tryGetFromEvmType(typeName) != null) {
-      return typeName;
+  public static Name.Module readModuleName(TerminalNode node) {
+    return readIdentTYpe(node, Name.Module::new);
+  }
+
+  public static Name.UnqualifiedType readUnqualifiedType(TerminalNode node) {
+    return readIdentTYpe(node, Name.UnqualifiedType::new);
+  }
+
+  private static <T> T readIdentTYpe(TerminalNode node, Function<String,T> constructor) {
+    Token symbol = node.getSymbol();
+    if (symbol.getType() != EffesLexer.IDENT_TYPE) {
+      throw new CompilationException(node.getSymbol(), node.getSymbol(), "internal error: not an IDENT_TYPE");
     }
-    String typeModule = typeModuleName(typeName);
-    return qualified(typeModule, typeName);
+    String typeName = symbol.getText();
+    return constructor.apply(typeName);
   }
 
-  public static String qualified(String typeModule, String typeName) {
-    return typeModule + ':' + typeName;
-  }
-
-  public String typeModuleName(String typeName) {
-    String typeModule = typeInfo.getModule(typeName);
-    if (typeModule.equals(moduleName)) {
-      typeModule = "";
-    }
-    return typeModule;
-  }
+  //  public String qualifyType(EffesNativeType type) {
+//    return type.getEvmType();
+//  }
+//
+//  public String qualifyType(String typeName) {
+//    if (typeName.endsWith(":")) {
+//      // module name, so already qualified
+//      return typeName;
+//    } else if (EffesNativeType.tryGetFromEvmType(typeName) != null) {
+//      return typeName;
+//    }
+//    String typeModule = typeModuleName(typeName);
+//    return qualified(typeModule, typeName);
+//  }
+//
+//  public static String qualified(String typeModule, String typeName) {
+//    return typeModule + ':' + typeName;
+//  }
+//
+//  public String typeModuleName(String typeName) {
+//    String typeModule = typeInfo.getModule(typeName);
+//    if (typeModule.equals(moduleName)) {
+//      typeModule = "";
+//    }
+//    return typeModule;
+//  }
 
   public interface EfctDeclarations {
-    void methodDeclaration(String scope, String functionName, int nArgs, boolean hasRv);
+    void methodDeclaration(Name.QualifiedType scope, String functionName, int nArgs, boolean hasRv);
     void endMethodDeclaration();
     void typeDeclaration(String typeName, List<String> argNames);
   }
@@ -91,12 +114,12 @@ class CompilerContext {
     }
 
     @Override
-    public void methodDeclaration(String scope, String functionName, int nArgs, boolean hasRv) {
+    public void methodDeclaration(Name.QualifiedType scope, String functionName, int nArgs, boolean hasRv) {
       try {
         start(DeclarationType.METHOD);
         appendable
           .append("FUNC ")
-          .append(scope).append(' ')
+          .append(scope.evmDescriptor(scope.getModule())).append(' ')
           .append(functionName).append(' ')
           .append(String.valueOf(nArgs)).append(' ')
           .append(hasRv ? "1" : "0").append(' ')

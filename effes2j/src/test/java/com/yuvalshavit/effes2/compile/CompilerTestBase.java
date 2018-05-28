@@ -7,8 +7,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.testng.annotations.DataProvider;
@@ -22,7 +24,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
-  private static final String MODULE_NAME = "TestModule";
+  private static final Name.Module MODULE = new Name.Module("TestModule");
   private final String yamlFile;
   private final Function<EffesParser,T> rule;
 
@@ -80,7 +82,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
   public static class TestLocalVar {
     public int reg;
-    public String type;
+    public Name.UnqualifiedType type;
   }
 
   public static class SerTypeInfo {
@@ -94,25 +96,28 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   }
 
   private static CompilerContextGenerator compilerContextGenerator(TestCase testCase, StringBuilder out, Preload preload) {
-    Map<String,SerTypeInfo> testTypes = new HashMap<>(testCase.types.size());
-    testCase.types.forEach((k, v) -> testTypes.put(":" + k, v));
+    Map<Name.QualifiedType,SerTypeInfo> testTypes = new HashMap<>(testCase.types.size());
+    testCase.types.forEach((k, v) -> testTypes.put(new Name.QualifiedType(MODULE, new Name.UnqualifiedType(k)), v));
     if (preload != null) {
-      testTypes.keySet().stream().filter(preload.types::containsKey).findAny().ifPresent(dupe -> {
-        throw new RuntimeException("duplicate type: " + dupe);
+      preload.types.forEach((k, v) -> {
+        Name.QualifiedType qualifiedPreloadType = new Name.QualifiedType(MODULE, new Name.UnqualifiedType(k));
+        if (testTypes.containsKey(qualifiedPreloadType)) {
+          throw new RuntimeException("duplicate type: " + qualifiedPreloadType);
+        }
+        testTypes.put(qualifiedPreloadType, v);
       });
-      testTypes.putAll(preload.types);
     }
     TypeInfo typeInfo = createTypeInfo(testTypes);
     EffesOps<Void> outOps = TUtils.opsToString(out);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
-    return new CompilerContextGenerator(MODULE_NAME, outOps, efctDecls, typeInfo);
+    return new CompilerContextGenerator(MODULE, outOps, efctDecls, typeInfo);
   }
 
   private static CompilerContext compilerContext(TestCase testCase, CompilerContextGenerator ccGen) {
     Scope scope = new Scope();
     scope.push();
     testCase.localVars.forEach((name, var) -> {
-      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, var.type);
+      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, new Name.QualifiedType(Name.Module.BUILT_IN, var.type));
       scope.allocateLocal(name, false, varRef);
     });
     scope.push();
@@ -120,13 +125,13 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     LabelAssigner labelAssigner = new LabelAssigner(ccGen.ops);
     VarRef.LocalVar instanceVar = testCase.instanceContextType == null
       ? null
-      : new VarRef.LocalVar(0, testCase.instanceContextType);
-    return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, MODULE_NAME, instanceVar);
+      : new VarRef.LocalVar(0, new Name.QualifiedType(MODULE, new Name.UnqualifiedType(testCase.instanceContextType)));
+    return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, MODULE, instanceVar);
   }
 
-  private static TypeInfo createTypeInfo(Map<String,SerTypeInfo> types) {
-    Map<String,List<String>> fields = new HashMap<>();
-    Map<String,Map<String,MethodInfo>> methodInfo = new HashMap<>();
+  private static TypeInfo createTypeInfo(Map<Name.QualifiedType,SerTypeInfo> types) {
+    Map<Name.QualifiedType,List<String>> fields = new HashMap<>();
+    Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo = new HashMap<>();
     types.forEach((typeName, typeInfoSer) -> {
       if (typeInfoSer.fields != null) {
         fields.put(typeName, typeInfoSer.fields);
@@ -140,7 +145,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     return new MockTypeInfo(fields, methodInfo);
   }
 
-  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo, String typeName, String methodName) {
+  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo, Name.QualifiedType typeName, String methodName) {
     return new Compiler.UserlandMethodInfo(
       Objects.requireNonNull(serMethodInfo.declaredArgs, "declaredArgs can't be null"),
       Objects.requireNonNull(serMethodInfo.hasRv, "hasRv can't be null"),
@@ -149,41 +154,47 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   }
 
   private static class MockTypeInfo implements TypeInfo {
-    private final Map<String,List<String>> fields;
-    private final Map<String,Map<String,MethodInfo>> methodInfo;
+    private final Map<Name.QualifiedType,List<String>> fields;
+    private final Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo;
 
-    public MockTypeInfo(Map<String,List<String>> fields, Map<String,Map<String,MethodInfo>> methodInfo) {
+    public MockTypeInfo(Map<Name.QualifiedType,List<String>> fields, Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo) {
       this.fields = fields;
       this.methodInfo = methodInfo;
     }
 
     @Override
-    public int fieldsCount(String type) {
+    public int fieldsCount(Name.QualifiedType type) {
       return fieldsFor(type).size();
     }
 
     @Override
-    public boolean hasField(String type, String fieldName) {
+    public boolean hasField(Name.QualifiedType type, String fieldName) {
       return fieldsFor(type).indexOf(fieldName) >= 0;
     }
 
     @Override
-    public String fieldName(String type, int fieldIndex) {
+    public String fieldName(Name.QualifiedType type, int fieldIndex) {
       return fieldsFor(type).get(fieldIndex);
     }
 
     @Override
-    public MethodInfo getMethod(String type, String methodName) {
+    public MethodInfo getMethod(Name.QualifiedType type, String methodName) {
       Map<String,MethodInfo> methods = Objects.requireNonNull(methodInfo.get(type), String.format("no type named %s", type));
       return Objects.requireNonNull(methods.get(methodName), String.format("no method named %s on %s", methodName, type));
     }
 
     @Override
-    public String getModule(String typeName) {
-      return MODULE_NAME;
+    public Name.QualifiedType qualify(Name.UnqualifiedType unqualified) {
+      List<Name.QualifiedType> possible = fields.keySet().stream().filter(k -> unqualified.equals(k.getUnqualifiedType())).collect(Collectors.toList());
+      if (possible.isEmpty()) {
+        throw new NoSuchElementException(unqualified.getName());
+      } else if (possible.size() > 1) {
+        throw new RuntimeException("multiple matches: " + possible);
+      }
+      return possible.get(0);
     }
 
-    private List<String> fieldsFor(String type) {
+    private List<String> fieldsFor(Name.QualifiedType type) {
       List<String> fieldsForType = fields.get(type);
       return fieldsForType == null ? Collections.emptyList() : fieldsForType;
     }

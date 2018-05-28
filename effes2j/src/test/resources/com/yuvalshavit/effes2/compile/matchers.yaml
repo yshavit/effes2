@@ -84,6 +84,9 @@ expect: |
 ---
 name: singleton type pattern
 options: { keepIfNotMatched: false }
+types:
+  Nothing:
+    fields: []
 input: Nothing
 expect: |
   typp :Nothing           # [val, valIsNothing]

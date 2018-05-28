@@ -16,9 +16,9 @@ public class MethodCompilerTest extends CompilerTestBase<EffesParser.MethodDecla
   @Override
   protected void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, EffesParser.MethodDeclarationContext rule, Map<String,?> options) {
     VarRef thisVar = compilerContext.tryGetInstanceContextVar();
-    String thisVarType = thisVar == null
+    Name.UnqualifiedType thisVarType = thisVar == null
       ? null
-      : thisVar.getType();
+      : thisVar.getType().getUnqualifiedType();
     MethodCompiler.compile(rule, ccGen, thisVarType);
   }
 

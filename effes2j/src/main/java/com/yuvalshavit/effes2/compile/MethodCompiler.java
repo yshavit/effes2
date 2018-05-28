@@ -12,7 +12,7 @@ public class MethodCompiler {
 
   private MethodCompiler() {}
 
-  public static void compile(EffesParser.MethodDeclarationContext ctx, CompilerContextGenerator ccGen, String instanceType) {
+  public static void compile(EffesParser.MethodDeclarationContext ctx, CompilerContextGenerator ccGen, Name.UnqualifiedType instanceType) {
     List<TerminalNode> argNodes = ctx.argsDeclaration().IDENT_NAME();
     if (argNodes == null) {
       argNodes = Collections.emptyList();
@@ -20,21 +20,20 @@ public class MethodCompiler {
     List<String> argNames = argNodes.stream().map(n -> {
       return n.getSymbol().getText();
     }).collect(Collectors.toList());
-    String scopeName = instanceType == null
-      ? ":"
-      : (instanceType);
-    ccGen.declarations.methodDeclaration(scopeName, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
+    Name.QualifiedType instanceQualifiedName = instanceType == null
+      ? Name.QualifiedType.forStaticCalls(ccGen.getModule())
+      : new Name.QualifiedType(ccGen.getModule(), instanceType);
+    ccGen.declarations.methodDeclaration(instanceQualifiedName, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
     Scope scope = new Scope();
     scope.inNewScope(() -> {
       VarRef thisVar = instanceType == null
         ? null
-        : scope.allocateLocal("<this>", false, instanceType);
+        : scope.allocateLocal("<this>", false, instanceQualifiedName);
       argNames.forEach(name -> scope.allocateLocal(name, false));
       if (thisVar != null) {
-        for (int i = 0, nFields = ccGen.typeInfo.fieldsCount(instanceType); i < nFields; ++i) {
-          String fieldName = ccGen.typeInfo.fieldName(instanceType, i);
-          String moduleName = ""; // the method efct body will go in the same .efct file as the module, so ":TypeName" is always fine
-          scope.allocateLocal(fieldName, false, new VarRef.InstanceAndFieldVar(thisVar, fieldName, moduleName, null));
+        for (int i = 0, nFields = ccGen.typeInfo.fieldsCount(instanceQualifiedName); i < nFields; ++i) {
+          String fieldName = ccGen.typeInfo.fieldName(instanceQualifiedName, i);
+          scope.allocateLocal(fieldName, false, new VarRef.InstanceAndFieldVar(thisVar, fieldName, null));
         }
       }
       CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, ccGen.module, thisVar);

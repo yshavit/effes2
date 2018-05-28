@@ -7,7 +7,6 @@ import java.util.Iterator;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
-import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 
 @Dispatcher.SubclassesAreIn(EffesParser.class)
 public class StatementCompiler extends CompileDispatcher<EffesParser.StatementContext> {
@@ -36,36 +35,36 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     EffesParser.BlockContext body = ctx.block();
     cc.scope.inNewScope(() -> {
       VarRef iterVar = cc.scope.allocateLocal(iterVarname, false);
-      VarRef iterLen = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
-      VarRef iterIdx = cc.scope.allocateAnonymous(EffesNativeType.STRING.getEvmType());
+      VarRef iterLen = cc.scope.allocateAnonymous(Name.QualifiedType.forBuiltin(EffesBuiltinType.INTEGER));
+      VarRef iterIdx = cc.scope.allocateAnonymous(Name.QualifiedType.forBuiltin(EffesBuiltinType.INTEGER));
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
       cc.out.copy();
       cc.out.arrayLen();
-      iterLen.store(cc.out);
+      iterLen.store(cc.module, cc.out);
       cc.out.pushInt("0");
-      iterIdx.store(cc.out);
+      iterIdx.store(cc.module, cc.out);
       // Now the loop. At the top of each iteration, the stack's top contains the iterateOver value.
       String loopTopLabel = cc.labelAssigner.allocate("loopTop");
       String loopDoneLabel = cc.labelAssigner.allocate("loopDone");
       breakLabels.push(new BreakLabels(loopDoneLabel, loopTopLabel));
       cc.labelAssigner.place(loopTopLabel);
       // if arr.len >= idx goto done
-      iterLen.push(cc.out);
-      iterIdx.push(cc.out);
+      iterLen.push(cc.module, cc.out);
+      iterIdx.push(cc.module, cc.out);
       cc.out.ge();
       cc.out.gotoIfNot(loopDoneLabel);
       // otherwise: var, body, increment, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
       cc.out.copy();
-      iterIdx.push(cc.out);
+      iterIdx.push(cc.module, cc.out);
       cc.out.arrayGet();
-      iterVar.store(cc.out);
+      iterVar.store(cc.module, cc.out);
       compileBlock(body);
-      iterIdx.push(cc.out);
+      iterIdx.push(cc.module, cc.out);
       cc.out.pushInt("1");
       cc.out.iAdd();
-      iterIdx.store(cc.out);
+      iterIdx.store(cc.module, cc.out);
       cc.out.gotoAbs(loopTopLabel);
       // end the loop
       cc.labelAssigner.place(loopDoneLabel);
@@ -76,12 +75,12 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignContext ctx) {
-    final String type = (ctx.expression() instanceof EffesParser.ExprInstantiationContext)
-      ? ((EffesParser.ExprInstantiationContext) ctx.expression()).IDENT_TYPE().getSymbol().getText()
+    final Name.QualifiedType type = (ctx.expression() instanceof EffesParser.ExprInstantiationContext)
+      ? cc.type(((EffesParser.ExprInstantiationContext) ctx.expression()).IDENT_TYPE())
       : null;
     VarRef var = getVarForAssign(ctx.qualifiedIdentName(), type);
     cc.scope.inNewScope(() -> expressionCompiler.apply(ctx.expression()));
-    var.store(cc.out);
+    var.store(cc.module, cc.out);
   }
 
   @Dispatched
@@ -167,8 +166,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
   public void apply(EffesParser.StatTypeAssertionContext ctx) {
     // for now, not even any bytecode; just assert it
     String varName = ctx.IDENT_NAME().getSymbol().getText();
-    String type = ctx.IDENT_TYPE().getSymbol().getText();
-    cc.scope.replaceType(varName, type);
+    Name.QualifiedType qualifiedType = cc.type(ctx.IDENT_TYPE());
+    cc.scope.replaceType(varName, qualifiedType);
   }
 
   @Dispatched
@@ -215,7 +214,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         } else if (c.expressionMultiline() != null) {
           VarRef rv = cc.scope.allocateAnonymous(null);
           compileExpressionMultiline(c.expressionMultiline(), rv);
-          rv.push(cc.out);
+          rv.push(cc.module, cc.out);
         }
         cc.out.rtrn();
       })
@@ -300,7 +299,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       cc.scope.inNewScope(() -> {
         MatcherCompiler.compile(exprMatcher.matcher(), null, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
         expressionCompiler.apply(exprMatcher.expression());
-        toVar.store(cc.out);
+        toVar.store(cc.module, cc.out);
         cc.out.gotoAbs(matchersDoneLabel);
       });
     }
@@ -313,7 +312,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     cc.labelAssigner.place(matchersDoneLabel);
   }
 
-  private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx, String inferredType) {
+  private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx, Name.QualifiedType inferredType) {
     return Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, EffesParser.class, VarRef.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         throw new CompilationException(ctx.start, ctx.stop, "static vars not supported");
@@ -348,11 +347,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   private VarRef getInstanceField(EffesParser.QualifiedIdentNameContext ctx, VarRef instanceVar) {
     String fieldName = ctx.IDENT_NAME().getText();
-    String varType = instanceVar.getType();
+    Name.QualifiedType varType = instanceVar.getType();
     if (!cc.typeInfo.hasField(varType, fieldName)) {
       return null;
     }
-    return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, cc.typeModuleName(varType), varType);
+    return new VarRef.InstanceAndFieldVar(instanceVar, fieldName, varType);
   }
 
   private static class BreakLabels {

@@ -4,26 +4,26 @@ import com.google.common.base.Objects;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public abstract class VarRef {
-  private final String type;
+  private final Name.QualifiedType type;
 
-  public VarRef(String type) {
+  public VarRef(Name.QualifiedType type) {
     this.type = type;
   }
 
-  public String getType() {
+  public Name.QualifiedType getType() {
     return type;
   }
 
-  public abstract void push(EffesOps<?> ops);
-  public abstract void store(EffesOps<?> ops);
-  public abstract void storeNoPop(EffesOps<?> ops);
-  public abstract VarRef withType(String type);
+  public abstract void push(Name.Module context, EffesOps<?> ops);
+  public abstract void store(Name.Module context, EffesOps<?> ops);
+  public abstract void storeNoPop(Name.Module context, EffesOps<?> ops);
+  public abstract VarRef withType(Name.QualifiedType type);
 
   public static class LocalVar extends VarRef {
     private final int reg;
     private final String regStr;
 
-    public LocalVar(int reg, String type) {
+    public LocalVar(int reg, Name.QualifiedType type) {
       super(type);
       this.reg = reg;
       this.regStr = String.valueOf(reg);
@@ -34,22 +34,22 @@ public abstract class VarRef {
     }
 
     @Override
-    public LocalVar withType(String type) {
+    public LocalVar withType(Name.QualifiedType type) {
       return new LocalVar(reg, type);
     }
 
     @Override
-    public void push(EffesOps<?> ops) {
+    public void push(Name.Module context, EffesOps<?> ops) {
       ops.pvar(regStr);
     }
 
     @Override
-    public void store(EffesOps<?> ops) {
+    public void store(Name.Module context, EffesOps<?> ops) {
       ops.svar(regStr);
     }
 
     @Override
-    public void storeNoPop(EffesOps<?> ops) {
+    public void storeNoPop(Name.Module context, EffesOps<?> ops) {
       ops.Svar(regStr);
     }
 
@@ -62,36 +62,34 @@ public abstract class VarRef {
   public static class InstanceAndFieldVar extends VarRef {
     private final VarRef instance;
     private final String fieldName;
-    private final String fieldTypeModule;
 
-    public InstanceAndFieldVar(VarRef instance, String fieldName, String fieldTypeModule, String fieldType) {
+    public InstanceAndFieldVar(VarRef instance, String fieldName, Name.QualifiedType fieldType) {
       super(fieldType);
       this.instance = instance;
-      this.fieldTypeModule = fieldTypeModule;
       this.fieldName = fieldName;
     }
 
     @Override
-    public VarRef withType(String type) {
-      return new InstanceAndFieldVar(instance, fieldName, fieldTypeModule, type);
+    public VarRef withType(Name.QualifiedType type) {
+      return new InstanceAndFieldVar(instance, fieldName, type);
     }
 
     @Override
-    public void push(EffesOps<?> ops) {
-      instance.push(ops);
-      ops.pushField(CompilerContext.qualified(fieldTypeModule, instance.getType()), fieldName);
+    public void push(Name.Module context, EffesOps<?> ops) {
+      instance.push(context, ops);
+      ops.pushField(instance.getType().evmDescriptor(context), fieldName);
     }
 
     @Override
-    public void store(EffesOps<?> ops) {
-      instance.push(ops);
-      ops.storeField(CompilerContext.qualified(fieldTypeModule, instance.getType()), fieldName);
+    public void store(Name.Module context, EffesOps<?> ops) {
+      instance.push(context, ops);
+      ops.storeField(instance.getType().evmDescriptor(context), fieldName);
     }
 
     @Override
-    public void storeNoPop(EffesOps<?> ops) {
+    public void storeNoPop(Name.Module context, EffesOps<?> ops) {
       ops.copy();
-      store(ops);
+      store(context, ops);
     }
   }
 }

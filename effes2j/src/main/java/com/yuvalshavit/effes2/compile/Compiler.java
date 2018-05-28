@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -28,8 +29,8 @@ public class Compiler {
     // first, parse
     Map<String,EffesParser.FileContext> parsed = parse(compileUnits, errors);
     TypeInfo typeInfo = scanForTypes(errors, parsed);
-    parsed.forEach((module, fileContext) -> {
-      try (Writer writer = writers.apply(module)) {
+    parsed.forEach((moduleName, fileContext) -> {
+      try (Writer writer = writers.apply(moduleName)) {
         EffesOps<Void> ops = Op.factory(op -> {
           try {
             writer.append(op.toString());
@@ -39,7 +40,7 @@ public class Compiler {
           }
         });
         CompilerContext.EfctDeclarations declarations = CompilerContext.efctDeclarationsFor(writer);
-        CompilerContextGenerator ccg = new CompilerContextGenerator(module, ops, declarations, typeInfo);
+        CompilerContextGenerator ccg = new CompilerContextGenerator(new Name.Module(moduleName), ops, declarations, typeInfo);
         DeclarationCompiler compiler = new DeclarationCompiler(ccg);
         fileContext.declaration().forEach(compiler::apply);
       } catch (IOException e) {
@@ -69,19 +70,20 @@ public class Compiler {
   }
 
   public static TypeInfo scanForTypes(Consumer<String> errors, Map<String,EffesParser.FileContext> parsed) {
-    Map<String,SingleTypeInfo> typeInfos = new HashMap<>();
+    Map<Name.QualifiedType,SingleTypeInfo> typeInfos = new HashMap<>();
+
     parsed.entrySet().stream()
-      .map(entry -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), entry.getValue().declaration()))
+      .map(entry -> new AbstractMap.SimpleImmutableEntry<>(new Name.Module(entry.getKey()), entry.getValue().declaration()))
       .flatMap(entry -> entry
         .getValue().stream()
         .map(EffesParser.DeclarationContext::typeDeclaration).filter(Objects::nonNull)
         .map(typeDeclaration -> new AbstractMap.SimpleImmutableEntry<>(entry.getKey(), typeDeclaration)))
       .forEach(entry -> {
-        String moduleName = entry.getKey();
+        Name.Module moduleName = entry.getKey();
         EffesParser.TypeDeclarationContext typeDeclaration = entry.getValue();
-        String typeName = typeDeclaration.IDENT_TYPE().getSymbol().getText();
-        if (typeInfos.containsKey(typeName)) {
-          errors.accept("Duplicate type name: " + typeName);
+        Name.QualifiedType qualifiedTypeName = new Name.QualifiedType(moduleName, new Name.UnqualifiedType(typeDeclaration.IDENT_TYPE().getSymbol().getText()));
+        if (typeInfos.containsKey(qualifiedTypeName)) {
+          errors.accept("Duplicate type name: " + qualifiedTypeName);
           return;
         }
         Map<String,MethodInfo> methods;
@@ -91,37 +93,37 @@ public class Compiler {
         } else {
           methods = new HashMap<>(methodDeclarations.size());
           for (EffesParser.MethodDeclarationContext methodDeclaration : methodDeclarations) {
-            UserlandMethodInfo methodInfo = createMethodInfo(typeName, methodDeclaration);
+            UserlandMethodInfo methodInfo = createMethodInfo(qualifiedTypeName, methodDeclaration);
             if (methods.containsKey(methodInfo.methodName)) {
-              errors.accept("duplicate method " + methodInfo.methodName + " in " + typeName);
+              errors.accept("duplicate method " + methodInfo.methodName + " in " + qualifiedTypeName);
               continue;
             }
             methods.put(methodInfo.methodName, methodInfo);
           }
         }
         SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration), methods);
-        typeInfos.put(typeName, typeInfo);
+        typeInfos.put(qualifiedTypeName, typeInfo);
       });
     for (Map.Entry<String, EffesParser.FileContext> entry : parsed.entrySet()) {
-      String moduleName = entry.getKey();
-      String moduleNameWithColon = moduleName + TypeInfo.MODULE_PREFIX;
+      Name.Module module = new Name.Module(entry.getKey());
+      Name.QualifiedType qualifiedType = Name.QualifiedType.forStaticCalls(module);
       Map<String, UserlandMethodInfo> methodInfos = entry.getValue()
         .declaration()
         .stream()
         .map(EffesParser.DeclarationContext::methodDeclaration)
         .filter(Objects::nonNull)
-        .map(methodDecl -> createMethodInfo(moduleNameWithColon, methodDecl))
+        .map(methodDecl -> createMethodInfo(qualifiedType, methodDecl))
         .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
-      typeInfos.put(moduleNameWithColon, new SingleTypeInfo(moduleNameWithColon, Collections.emptyList(), methodInfos));
+      typeInfos.put(qualifiedType, new SingleTypeInfo(module, Collections.emptyList(), methodInfos));
     }
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
-      SingleTypeInfo typeInfo = new SingleTypeInfo("Builtin", Collections.emptyList(), builtinType.methods());
-      typeInfos.put(builtinType.typeName(), typeInfo);
+      SingleTypeInfo typeInfo = new SingleTypeInfo(Name.Module.BUILT_IN, Collections.emptyList(), builtinType.methods());
+      typeInfos.put(Name.QualifiedType.forBuiltin(builtinType), typeInfo);
     }
     return new TypeInfoImpl(typeInfos);
   }
 
-  private static UserlandMethodInfo createMethodInfo(String typeName, EffesParser.MethodDeclarationContext methodDeclaration) {
+  private static UserlandMethodInfo createMethodInfo(Name.QualifiedType typeName, EffesParser.MethodDeclarationContext methodDeclaration) {
     String methodName = methodDeclaration.IDENT_NAME().getSymbol().getText();
     int nArgs = methodDeclaration.argsDeclaration().IDENT_NAME() == null
       ? 0
@@ -142,11 +144,11 @@ public class Compiler {
   }
 
   private static class SingleTypeInfo {
-    final String module;
+    final Name.Module module;
     final List<String> fields;
     final Map<String,? extends MethodInfo> methods;
 
-    public SingleTypeInfo(String module, List<String> fields, Map<String,? extends MethodInfo> methods) {
+    public SingleTypeInfo(Name.Module module, List<String> fields, Map<String,? extends MethodInfo> methods) {
       this.module = module;
       this.fields = fields;
       this.methods = methods;
@@ -155,11 +157,10 @@ public class Compiler {
 
   @VisibleForTesting
   static class UserlandMethodInfo extends MethodInfo {
-
-    private final String targetType;
+    private final Name.QualifiedType targetType;
     private final String methodName;
 
-    public UserlandMethodInfo(int nDeclaredArgs, boolean hasReturnValue, String targetType, String methodName) {
+    public UserlandMethodInfo(int nDeclaredArgs, boolean hasReturnValue, Name.QualifiedType targetType, String methodName) {
       super(nDeclaredArgs, hasReturnValue);
       this.targetType = targetType;
       this.methodName = methodName;
@@ -167,19 +168,28 @@ public class Compiler {
 
     @Override
     public void invoke(CompilerContext cc) {
-      cc.out.call(cc.qualifyType(targetType), methodName);
+      cc.out.call(targetType.evmDescriptor(cc.module), methodName);
     }
   }
 
   private static class TypeInfoImpl implements TypeInfo {
-    private final Map<String,SingleTypeInfo> typeInfos;
+    private final Map<Name.QualifiedType,SingleTypeInfo> typeInfos;
+    private final Map<Name.UnqualifiedType,Name.QualifiedType> globalNameLookup;
 
-    public TypeInfoImpl(Map<String,SingleTypeInfo> typeInfos) {
+    public TypeInfoImpl(Map<Name.QualifiedType,SingleTypeInfo> typeInfos) {
       this.typeInfos = typeInfos;
+      globalNameLookup = new HashMap<>(typeInfos.size());
+      for (Name.QualifiedType qualifiedType : typeInfos.keySet()) {
+        Name.UnqualifiedType unqualifiedType = qualifiedType.getUnqualifiedType();
+        if (globalNameLookup.containsKey(unqualifiedType)) {
+          throw new RuntimeException("duplicate unqualified types: " + qualifiedType + " would override " + globalNameLookup.get(unqualifiedType));
+        }
+        globalNameLookup.put(unqualifiedType, qualifiedType);
+      }
     }
 
     @Override
-    public int fieldsCount(String type) {
+    public int fieldsCount(Name.QualifiedType type) {
       SingleTypeInfo info = typeInfos.get(type);
       return info == null
         ? -1
@@ -187,25 +197,29 @@ public class Compiler {
     }
 
     @Override
-    public boolean hasField(String type, String fieldName) {
+    public boolean hasField(Name.QualifiedType type, String fieldName) {
       SingleTypeInfo info = typeInfos.get(type);
       return info != null && info.fields.contains(fieldName);
     }
 
     @Override
-    public String fieldName(String type, int fieldIndex) {
+    public String fieldName(Name.QualifiedType type, int fieldIndex) {
       return typeInfos.get(type).fields.get(fieldIndex); // TODO need better errors
     }
 
     @Override
-    public MethodInfo getMethod(String targetType, String methodName) {
+    public MethodInfo getMethod(Name.QualifiedType targetType, String methodName) {
       SingleTypeInfo info = typeInfos.get(targetType);
       return info == null ? null : info.methods.get(methodName);
     }
 
     @Override
-    public String getModule(String typeName) {
-      return typeInfos.get(typeName).module; // TODO better errors here, too
+    public Name.QualifiedType qualify(Name.UnqualifiedType unqualified) {
+      Name.QualifiedType qualifiedType = globalNameLookup.get(unqualified);
+      if (qualifiedType == null) {
+        throw new NoSuchElementException(unqualified.getName());
+      }
+      return qualifiedType;
     }
   }
 }
