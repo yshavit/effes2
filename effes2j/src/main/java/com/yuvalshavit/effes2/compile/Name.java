@@ -18,7 +18,8 @@ public class Name {
 
     @Override
     public String evmDescriptor(Module context) {
-      return name + ":";
+      String desc = this == context ? "" : name;
+      return desc + ":";
     }
 
     @Override
@@ -54,10 +55,7 @@ public class Name {
       if (evmDescriptor != null) {
         return evmDescriptor;
       } else {
-        String moduleDescriptor = module == context
-          ? ""
-          : module.getName();
-        return String.format("%s:%s", moduleDescriptor, unqualifiedType.getName());
+        return module.evmDescriptor(context) + unqualifiedType.getName();
       }
     }
 
