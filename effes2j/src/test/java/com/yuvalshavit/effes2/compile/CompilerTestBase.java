@@ -3,6 +3,7 @@ package com.yuvalshavit.effes2.compile;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
+import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -68,6 +69,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   public static class TestCase {
     public String instanceContextType;
     public Map<String,SerTypeInfo> types = Collections.emptyMap();
+    public Map<String,SerMethodInfo> staticMethods = Collections.emptyMap();
     public String input;
     public String name;
     public Map<String,TestLocalVar> localVars = Collections.emptyMap();
@@ -107,7 +109,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
         testTypes.put(qualifiedPreloadType, v);
       });
     }
-    TypeInfo typeInfo = createTypeInfo(testTypes);
+    TypeInfo typeInfo = createTypeInfo(testTypes, testCase.staticMethods);
     EffesOps<Void> outOps = TUtils.opsToString(out);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
     return new CompilerContextGenerator(MODULE, outOps, efctDecls, typeInfo);
@@ -129,9 +131,9 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     return new CompilerContext(scope, labelAssigner, ccGen.ops, ccGen.typeInfo, MODULE, instanceVar);
   }
 
-  private static TypeInfo createTypeInfo(Map<Name.QualifiedType,SerTypeInfo> types) {
+  private static TypeInfo createTypeInfo(Map<Name.QualifiedType,SerTypeInfo> types, Map<String,SerMethodInfo> staticMethods) {
     Map<Name.QualifiedType,List<String>> fields = new HashMap<>();
-    Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo = new HashMap<>();
+    Map<Name.EvmScope,Map<String,MethodInfo>> methodInfo = new HashMap<>();
     types.forEach((typeName, typeInfoSer) -> {
       if (typeInfoSer.fields != null) {
         fields.put(typeName, typeInfoSer.fields);
@@ -142,10 +144,15 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
         methodInfo.put(typeName, methods);
       }
     });
+    Map<String, MethodInfo> staticMethodsInfos = staticMethods.entrySet()
+      .stream()
+      .map(e -> new AbstractMap.SimpleEntry<>(e.getKey(), toMethodInfo(e.getValue(), MODULE, e.getKey())))
+      .collect(Collectors.toMap(AbstractMap.SimpleEntry::getKey, AbstractMap.SimpleEntry::getValue));
+    methodInfo.put(MODULE, staticMethodsInfos);
     return new MockTypeInfo(fields, methodInfo);
   }
 
-  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo, Name.QualifiedType typeName, String methodName) {
+  private static MethodInfo toMethodInfo(SerMethodInfo serMethodInfo, Name.EvmScope typeName, String methodName) {
     return new Compiler.UserlandMethodInfo(
       Objects.requireNonNull(serMethodInfo.declaredArgs, "declaredArgs can't be null"),
       Objects.requireNonNull(serMethodInfo.hasRv, "hasRv can't be null"),
@@ -155,9 +162,9 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
   private static class MockTypeInfo implements TypeInfo {
     private final Map<Name.QualifiedType,List<String>> fields;
-    private final Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo;
+    private final Map<Name.EvmScope,Map<String,MethodInfo>> methodInfo;
 
-    public MockTypeInfo(Map<Name.QualifiedType,List<String>> fields, Map<Name.QualifiedType,Map<String,MethodInfo>> methodInfo) {
+    public MockTypeInfo(Map<Name.QualifiedType,List<String>> fields, Map<Name.EvmScope,Map<String,MethodInfo>> methodInfo) {
       this.fields = fields;
       this.methodInfo = methodInfo;
     }
@@ -178,7 +185,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     }
 
     @Override
-    public MethodInfo getMethod(Name.QualifiedType type, String methodName) {
+    public MethodInfo getMethod(Name.EvmScope type, String methodName) {
       Map<String,MethodInfo> methods = Objects.requireNonNull(methodInfo.get(type), String.format("no type named %s", type));
       return Objects.requireNonNull(methods.get(methodName), String.format("no method named %s on %s", methodName, type));
     }

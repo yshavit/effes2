@@ -225,14 +225,13 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
     EffesParser.QualifiedIdentNameMiddleContext targetNameMidCtx = targetCtx.qualifiedIdentNameMiddle();
     final String methodName = targetCtx.IDENT_NAME().getText();
-    Name.QualifiedType targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, Name.QualifiedType.class)
+    Name.EvmScope targetType = Dispatcher.dispatch(EffesParser.QualifiedIdentNameStartContext.class, Name.EvmScope.class)
       .when(EffesParser.QualifiedIdentTypeContext.class, c -> {
         // static method
         if (targetNameMidCtx != null) {
           throw new CompilationException(targetCtx, "can't have qualified static methods");
         }
-        Name.Module moduleName = CompilerContext.readModuleName(c.IDENT_TYPE());
-        return Name.QualifiedType.forStaticCalls(moduleName);
+        return CompilerContext.readModuleName(c.IDENT_TYPE());
       })
       .when(EffesParser.QualifiedIdentThisContext.class, c -> {
         // method explicitly on "this"
@@ -244,11 +243,11 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
         return instanceVar.getType();
       })
       .whenNull(() -> {
-        final Name.QualifiedType result;
+        final Name.EvmScope result;
         if (targetNameMidCtx == null) {
           VarRef instanceVar = cc.tryGetInstanceContextVar();
           if (instanceVar == null) {
-            result = Name.QualifiedType.forStaticCalls(cc.module);
+            result = cc.module;
           } else {
             result = instanceVar.getType();
             instanceVar.push(cc.module, cc.out);

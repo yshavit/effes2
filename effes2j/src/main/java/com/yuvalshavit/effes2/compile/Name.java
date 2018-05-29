@@ -5,10 +5,26 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 public class Name {
+
+  public interface EvmScope {
+    String evmDescriptor(Module context);
+    Module getModule();
+  }
+
   @Data
-  public static class Module {
+  public static class Module implements EvmScope {
     public static final Module BUILT_IN = new Module("Builtin");
     private final String name;
+
+    @Override
+    public String evmDescriptor(Module context) {
+      return name + ":";
+    }
+
+    @Override
+    public Module getModule() {
+      return this;
+    }
   }
 
   @Data
@@ -18,9 +34,8 @@ public class Name {
 
   @Data
   @AllArgsConstructor(access = AccessLevel.PRIVATE)
-  public static class QualifiedType {
+  public static class QualifiedType implements EvmScope {
     private static UnqualifiedType UNKNOWN = new UnqualifiedType("<unknown>");
-    private static final UnqualifiedType STATIC = new UnqualifiedType("<static>");
 
     private final Module module;
     private final UnqualifiedType unqualifiedType;
@@ -30,25 +45,18 @@ public class Name {
       this(module, unqualifiedType, null);
     }
 
-    public static QualifiedType forStaticCalls(Module module) {
-      return new QualifiedType(module, STATIC);
-    }
-
     public static QualifiedType forBuiltin(EffesBuiltinType type) {
       return new QualifiedType(Module.BUILT_IN, new UnqualifiedType(type.typeName()), type.evmType().getEvmType());
     }
 
+    @Override
     public String evmDescriptor(Module context) {
       if (evmDescriptor != null) {
         return evmDescriptor;
-      }
-
-      String moduleDescriptor = module == context
-        ? ""
-        : module.getName();
-      if (unqualifiedType == STATIC) {
-        return moduleDescriptor + ":";
       } else {
+        String moduleDescriptor = module == context
+          ? ""
+          : module.getName();
         return String.format("%s:%s", moduleDescriptor, unqualifiedType.getName());
       }
     }

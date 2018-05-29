@@ -71,6 +71,7 @@ public class Compiler {
 
   public static TypeInfo scanForTypes(Consumer<String> errors, Map<String,EffesParser.FileContext> parsed) {
     Map<Name.QualifiedType,SingleTypeInfo> typeInfos = new HashMap<>();
+    Map<Name.EvmScope,Map<String, ? extends MethodInfo>> methodInfosByScope = new HashMap<>();
 
     parsed.entrySet().stream()
       .map(entry -> new AbstractMap.SimpleImmutableEntry<>(new Name.Module(entry.getKey()), entry.getValue().declaration()))
@@ -101,34 +102,35 @@ public class Compiler {
             methods.put(methodInfo.methodName, methodInfo);
           }
         }
-        SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration), methods);
+        SingleTypeInfo typeInfo = new SingleTypeInfo(moduleName, DeclarationCompiler.getArgNames(typeDeclaration));
         typeInfos.put(qualifiedTypeName, typeInfo);
+        methodInfosByScope.put(qualifiedTypeName, methods);
       });
     for (Map.Entry<String, EffesParser.FileContext> entry : parsed.entrySet()) {
       Name.Module module = new Name.Module(entry.getKey());
-      Name.QualifiedType qualifiedType = Name.QualifiedType.forStaticCalls(module);
       Map<String, UserlandMethodInfo> methodInfos = entry.getValue()
         .declaration()
         .stream()
         .map(EffesParser.DeclarationContext::methodDeclaration)
         .filter(Objects::nonNull)
-        .map(methodDecl -> createMethodInfo(qualifiedType, methodDecl))
+        .map(methodDecl -> createMethodInfo(module, methodDecl))
         .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
-      typeInfos.put(qualifiedType, new SingleTypeInfo(module, Collections.emptyList(), methodInfos));
+      methodInfosByScope.put(module, methodInfos);
     }
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
-      SingleTypeInfo typeInfo = new SingleTypeInfo(Name.Module.BUILT_IN, Collections.emptyList(), builtinType.methods());
+      SingleTypeInfo typeInfo = new SingleTypeInfo(Name.Module.BUILT_IN, Collections.emptyList());
       typeInfos.put(Name.QualifiedType.forBuiltin(builtinType), typeInfo);
+      methodInfosByScope.put(Name.QualifiedType.forBuiltin(builtinType), builtinType.methods());
     }
-    return new TypeInfoImpl(typeInfos);
+    return new TypeInfoImpl(typeInfos, methodInfosByScope);
   }
 
-  private static UserlandMethodInfo createMethodInfo(Name.QualifiedType typeName, EffesParser.MethodDeclarationContext methodDeclaration) {
+  private static UserlandMethodInfo createMethodInfo(Name.EvmScope scope, EffesParser.MethodDeclarationContext methodDeclaration) {
     String methodName = methodDeclaration.IDENT_NAME().getSymbol().getText();
     int nArgs = methodDeclaration.argsDeclaration().IDENT_NAME() == null
       ? 0
       : methodDeclaration.argsDeclaration().IDENT_NAME().size();
-    return new UserlandMethodInfo(nArgs, methodDeclaration.ARROW() != null, typeName, methodName);
+    return new UserlandMethodInfo(nArgs, methodDeclaration.ARROW() != null, scope, methodName);
   }
 
   public static class CompileUnit {
@@ -146,23 +148,21 @@ public class Compiler {
   private static class SingleTypeInfo {
     final Name.Module module;
     final List<String> fields;
-    final Map<String,? extends MethodInfo> methods;
 
-    public SingleTypeInfo(Name.Module module, List<String> fields, Map<String,? extends MethodInfo> methods) {
+    public SingleTypeInfo(Name.Module module, List<String> fields) {
       this.module = module;
       this.fields = fields;
-      this.methods = methods;
     }
   }
 
   @VisibleForTesting
   static class UserlandMethodInfo extends MethodInfo {
-    private final Name.QualifiedType targetType;
+    private final Name.EvmScope targetType;
     private final String methodName;
 
-    public UserlandMethodInfo(int nDeclaredArgs, boolean hasReturnValue, Name.QualifiedType targetType, String methodName) {
+    public UserlandMethodInfo(int nDeclaredArgs, boolean hasReturnValue, Name.EvmScope targetScope, String methodName) {
       super(nDeclaredArgs, hasReturnValue);
-      this.targetType = targetType;
+      this.targetType = targetScope;
       this.methodName = methodName;
     }
 
@@ -175,9 +175,11 @@ public class Compiler {
   private static class TypeInfoImpl implements TypeInfo {
     private final Map<Name.QualifiedType,SingleTypeInfo> typeInfos;
     private final Map<Name.UnqualifiedType,Name.QualifiedType> globalNameLookup;
+    private final Map<Name.EvmScope, Map<String, ? extends MethodInfo>> methodInfos;
 
-    public TypeInfoImpl(Map<Name.QualifiedType,SingleTypeInfo> typeInfos) {
+    public TypeInfoImpl(Map<Name.QualifiedType, SingleTypeInfo> typeInfos, Map<Name.EvmScope, Map<String, ? extends MethodInfo>> methodInfos) {
       this.typeInfos = typeInfos;
+      this.methodInfos = methodInfos;
       globalNameLookup = new HashMap<>(typeInfos.size());
       for (Name.QualifiedType qualifiedType : typeInfos.keySet()) {
         Name.UnqualifiedType unqualifiedType = qualifiedType.getUnqualifiedType();
@@ -208,9 +210,9 @@ public class Compiler {
     }
 
     @Override
-    public MethodInfo getMethod(Name.QualifiedType targetType, String methodName) {
-      SingleTypeInfo info = typeInfos.get(targetType);
-      return info == null ? null : info.methods.get(methodName);
+    public MethodInfo getMethod(Name.EvmScope scope, String methodName) {
+      Map<String, ? extends MethodInfo> methods = methodInfos.get(scope);
+      return methods == null ? null : methods.get(methodName);
     }
 
     @Override

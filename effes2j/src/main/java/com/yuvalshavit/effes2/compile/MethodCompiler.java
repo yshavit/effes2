@@ -20,12 +20,13 @@ public class MethodCompiler {
     List<String> argNames = argNodes.stream().map(n -> {
       return n.getSymbol().getText();
     }).collect(Collectors.toList());
-    Name.QualifiedType instanceQualifiedName = instanceType == null
-      ? Name.QualifiedType.forStaticCalls(ccGen.getModule())
+    Name.EvmScope declarationScope = instanceType == null
+      ? ccGen.getModule()
       : new Name.QualifiedType(ccGen.getModule(), instanceType);
-    ccGen.declarations.methodDeclaration(instanceQualifiedName, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
+    ccGen.declarations.methodDeclaration(declarationScope, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
     Scope scope = new Scope();
     scope.inNewScope(() -> {
+      Name.QualifiedType instanceQualifiedName = ((Name.QualifiedType) declarationScope);
       VarRef thisVar = instanceType == null
         ? null
         : scope.allocateLocal("<this>", false, instanceQualifiedName);

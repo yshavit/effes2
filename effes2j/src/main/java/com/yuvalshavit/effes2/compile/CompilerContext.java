@@ -72,35 +72,8 @@ class CompilerContext {
     return constructor.apply(typeName);
   }
 
-  //  public String qualifyType(EffesNativeType type) {
-//    return type.getEvmType();
-//  }
-//
-//  public String qualifyType(String typeName) {
-//    if (typeName.endsWith(":")) {
-//      // module name, so already qualified
-//      return typeName;
-//    } else if (EffesNativeType.tryGetFromEvmType(typeName) != null) {
-//      return typeName;
-//    }
-//    String typeModule = typeModuleName(typeName);
-//    return qualified(typeModule, typeName);
-//  }
-//
-//  public static String qualified(String typeModule, String typeName) {
-//    return typeModule + ':' + typeName;
-//  }
-//
-//  public String typeModuleName(String typeName) {
-//    String typeModule = typeInfo.getModule(typeName);
-//    if (typeModule.equals(moduleName)) {
-//      typeModule = "";
-//    }
-//    return typeModule;
-//  }
-
   public interface EfctDeclarations {
-    void methodDeclaration(Name.QualifiedType scope, String functionName, int nArgs, boolean hasRv);
+    void methodDeclaration(Name.EvmScope scope, String functionName, int nArgs, boolean hasRv);
     void endMethodDeclaration();
     void typeDeclaration(String typeName, List<String> argNames);
   }
@@ -114,7 +87,7 @@ class CompilerContext {
     }
 
     @Override
-    public void methodDeclaration(Name.QualifiedType scope, String functionName, int nArgs, boolean hasRv) {
+    public void methodDeclaration(Name.EvmScope scope, String functionName, int nArgs, boolean hasRv) {
       try {
         start(DeclarationType.METHOD);
         appendable
