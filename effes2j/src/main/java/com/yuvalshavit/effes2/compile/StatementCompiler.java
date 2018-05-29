@@ -239,14 +239,16 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         cc.labelAssigner.place(nextMatcherLabel);
       }
       if (iterator.hasNext()) {
-        nextMatcherLabel = cc.labelAssigner.allocate("matcher");
+        nextMatcherLabel = cc.labelAssigner.allocate("whileMultiTry");
       } else {
         nextMatcherLabel = gotoAfterNoMatchesLabel;
       }
       // Okay, labels are done. Reminder: stack here is just [valueToLookAt]. So in a new scope, evaluate the matcher and jump accordingly.
       final String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(blockMatcherContext.matcher(), null, nextMatcherLabelClosure, true, cc, targetVar);
+        String matchedLabel = cc.labelAssigner.allocate("whileMultiMatched");
+        MatcherCompiler.compile(blockMatcherContext.matcher(), matchedLabel, nextMatcherLabelClosure, iterator.hasNext(), cc, targetVar);
+        cc.out.label(matchedLabel);
         if (!compileBlock(blockMatcherContext.block())) {
           cc.out.gotoAbs(gotoAfterMatchLabel);
         }

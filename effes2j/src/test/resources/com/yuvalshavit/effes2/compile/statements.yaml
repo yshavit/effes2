@@ -106,15 +106,13 @@ name: while colon
 input: |
   while condition():
     doSomething()
-types:
-  'TestModule:':
-    methods:
-      condition:
-        declaredArgs: 0
-        hasRv: true
-      doSomething:
-        declaredArgs: 0
-        hasRv: false
+staticMethods:
+  condition:
+    declaredArgs: 0
+    hasRv: true
+  doSomething:
+    declaredArgs: 0
+    hasRv: false
 expect: |
   labl whileLoopTop
   call TestModule: condition
@@ -140,54 +138,81 @@ localVars:
   thing:
     reg: 1
 types:
-  'TestModule:':
-    methods:
-      doStringThing:
-        declaredArgs: 0
-        hasRv: false
-      doIntThing:
-        declaredArgs: 0
-        hasRv: false
+  String: {fields: []}
+  Int: {fields: []}
+  Foo: {fields: []}
+  Bar: {fields: []}
+  Baz: {fields: []}
+staticMethods:
+  doStringThing:
+    declaredArgs: 0
+    hasRv: false
+  doIntThing:
+    declaredArgs: 0
+    hasRv: false
 expect: |
-  labl whileLoopTop     # []
-  pvar 1                # [thing]
-  typp String           # [thing, thingIsString]
-  goif match_1_String   # [thing]
-  goto matcher          # [thing]
-  labl match_1_String   # [thing]   (if is String)
-  pop                   # []
-  call TestModule: doStringThing  # []
-  goto whileLoopTop     # []
-  labl matcher          # [thing]
-  typp :Int             # [thing, isInt]
-  goif match_1_Int      # [thing]
-  goto matcher:1        # [thing]
-  labl match_1_Int      # [thing]  (if is Int)
-  pop                   # []
-  call TestModule: doIntThing     # []
-  goto whileLoopTop     # []
-  labl matcher:1        # [thing]
-  typp :Foo             # [thing, isFoo]
-  goif match_1_Foo      # [thing]
-  goto matcher:2        # [thing]
-  labl match_1_Foo      # [thing]  (if is Foo)
-  pop                   # []
-  goto whileLoopEnd     # []
-  labl matcher:2        # [thing]
-  typp :Bar             # [thing, isBar]
-  goif match_1_Bar      # [thing]
-  goto matcher:3        # [thing]
-  labl match_1_Bar      # [thing]  (if is Bar)
-  pop                   # []
-  rtrn                  # []
-  labl matcher:3        # [thing]
-  typp :Baz             # [thing, isBaz]
-  goif match_1_Baz      # [thing]
-  goto whileLoopEnd     # [thing]  (final case failure falls through to end)
-  labl match_1_Baz      # [thing]  (if is Baz)
-  pop                   # []
-  goto whileLoopTop     # []
-  labl whileLoopEnd     # []
+  labl whileLoopTop                 # []
+  pvar 1                            # [thing]
+  Svar 2                            # [thing]   $2=thing
+  typp :String                      # [thing, thingIsString]
+  gofi match_fail_pop_1             # [thing]
+  pop                               # []
+  goto whileMultiMatched            # []
+  labl match_fail_pop_1             # [thing]
+  pop                               # []
+  pvar 2                            # [thing]
+  goto whileMultiTry                # [thing]
+  labl whileMultiMatched            # []
+  call TestModule: doStringThing    # []
+  goto whileLoopTop                 # []
+  labl whileMultiTry                # [thing]
+  Svar 2                            # [thing]   $2=thing
+  typp :Int                         # [thing, thingIsInt]
+  gofi match_fail_pop_1:1           # (etc etc..)
+  pop
+  goto whileMultiMatched:1
+  labl match_fail_pop_1:1
+  pop
+  pvar 2
+  goto whileMultiTry:1
+  labl whileMultiMatched:1
+  call TestModule: doIntThing
+  goto whileLoopTop
+  labl whileMultiTry:1
+  Svar 2
+  typp :Foo
+  gofi match_fail_pop_1:2
+  pop
+  goto whileMultiMatched:2
+  labl match_fail_pop_1:2
+  pop
+  pvar 2
+  goto whileMultiTry:2
+  labl whileMultiMatched:2
+  goto whileLoopEnd
+  labl whileMultiTry:2
+  Svar 2
+  typp :Bar
+  gofi match_fail_pop_1:3
+  pop
+  goto whileMultiMatched:3
+  labl match_fail_pop_1:3
+  pop
+  pvar 2
+  goto whileMultiTry:3
+  labl whileMultiMatched:3
+  rtrn
+  labl whileMultiTry:3
+  typp :Baz
+  gofi match_fail_pop_1:4
+  pop
+  goto whileMultiMatched:4
+  labl match_fail_pop_1:4
+  pop
+  goto whileLoopEnd
+  labl whileMultiMatched:4
+  goto whileLoopTop
+  labl whileLoopEnd
 ---
 name: complex flow
 input: |
@@ -201,68 +226,103 @@ input: |
             return
           BreakType:
             break
-          *:
-            trySomething()
-    Stay:
-      trySomething()
+          a:
+            trySomething(a)
+    Stay(a):
+      trySomething(a)
+staticMethods:
+  outerCondition: { declaredArgs: 0, hasRv: true }
+  innerCondition: { declaredArgs: 0, hasRv: true }
+  innerMostCondition: { declaredArgs: 0, hasRv: true }
+  trySomething: { declaredArgs: 1, hasRv: true }
 types:
-  'TestModule:':
-    methods:
-      outerCondition: { declaredArgs: 0, hasRv: true }
-      innerCondition: { declaredArgs: 0, hasRv: true }
-      innerMostCondition: { declaredArgs: 0, hasRv: true }
-      trySomething: { declaredArgs: 0, hasRv: true }
+  Go: {fields: []}
+  Stay: {fields: [val]}
+  ContinueType: {fields: []}
+  ReturnType: {fields: []}
+  BreakType: {fields: []}
 expect: |
-  labl whileLoopTop             # []
-  call TestModule: outerCondition         # [oCond]
-  typp :Go                      # [oCond, isGo]
-  goif match_1_Go               # [oCond]
-  goto matcher                  # [oCond]
-  labl match_1_Go               # [oCond]
-  pop                           # []
-  labl whileLoopTop:1           # []
-  call TestModule: innerCondition         # [iCond]
-  gofi whileLoopEnd:1           # []
-  call TestModule: innerMostCondition     # [imCond]
-  typp :ContinueType            # [imCond, isCont]
-  goif match_1_ContinueType     # [imCond]
-  goto matcher:1                # [imCond]
-  labl match_1_ContinueType     # [imCond]
-  pop                           # []
-  goto whileLoopTop:1           # []
-  labl matcher:1                # [imCond]
-  typp :ReturnType              # [imCond, isRet]
-  goif match_1_ReturnType       # [imCond]
-  goto matcher:2                # [imCond]
-  labl match_1_ReturnType       # [imCond]
-  pop                           # []
-  rtrn                          # []
-  labl matcher:2                # [imCond]
-  typp :BreakType               # [imCond, isBreak]
-  goif match_1_BreakType        # [imCond]
-  goto matcher:3                # [imCond]
-  labl match_1_BreakType        # [imCond]
-  pop                           # []
-  goto whileLoopEnd:1           # []
-  labl matcher:3                # [imCond]
-  pop                           # []
-  call TestModule: trySomething           # [rv]
-  pop                           # []
-  goto matchersEnd              # []
-  labl matchersEnd              # []
-  goto whileLoopTop:1           # []  (go back to inner loop)
-  labl whileLoopEnd:1           # []  (inner loop end)
-  goto whileLoopTop             # []  (back to outer loop)
-  labl matcher                  # [oCond]  (way back from the outer condition!)
-  typp :Stay                    # [oCond, isStay]
-  goif match_1_Stay             # [oCond]
-  goto whileLoopEnd             # [] (exit outer loop)
-  labl match_1_Stay             # [oCond]
-  pop                           # []
-  call TestModule: trySomething           # [rv]
-  pop                           # []
-  goto whileLoopTop             # [] (back to outer loop)
-  labl whileLoopEnd             # [] (end outer loop)
+  labl whileLoopTop                     # []
+  call TestModule: outerCondition       # [cond]
+  Svar 0                                # [cond]    $0=cond
+  typp :Go                              # [cond, condIsGo]
+  gofi match_fail_pop_1                 # [cond]
+  pop                                   # []
+  goto whileMultiMatched                # []
+  labl match_fail_pop_1                 # [cond]
+  pop                                   # []
+  pvar 0                                # [cond]
+  goto whileMultiTry                    # [cond]
+  labl whileMultiMatched                # []
+  labl whileLoopTop:1                   # []                  (innermost loop)
+  call TestModule: innerCondition       # [innerCond]
+  gofi whileLoopEnd:1                   # []
+  call TestModule: innerMostCondition   # [innestCond]
+  Svar 1                                # [innestCond]   $1=innestCond
+  typp :ContinueType                    # [innestCond, innestCondIsContinue]
+  gofi match_fail_pop_1:1               # [innestCond]
+  pop                                   # []
+  goto whileMultiMatched:1              # []
+  labl match_fail_pop_1:1               # [innestCond]
+  pop                                   # []
+  pvar 1                                # [innestCond]
+  goto whileMultiTry:1                  # [innestCond]
+  labl whileMultiMatched:1              # []                  (if ContinueType)
+  goto whileLoopTop:1                   # []                  (to innermost loop head, above)
+  labl whileMultiTry:1                  # [innestCond]
+  Svar 1                                # [innestCond]  $1=innestCOnd
+  typp :ReturnType                      # [innestCond, innestCondIsReturn]
+  gofi match_fail_pop_1:2               # [innestCond]
+  pop                                   # []
+  goto whileMultiMatched:2              # []
+  labl match_fail_pop_1:2               # [innestCond]
+  pop                                   # []
+  pvar 1                                # [innestCond]
+  goto whileMultiTry:2                  # [innestCond]
+  labl whileMultiMatched:2              # []                  (if ReturnType)
+  rtrn                                  # <rtrn>
+  labl whileMultiTry:2                  # [innestCond]
+  Svar 1                                # [innestCond]    $1=innestCond
+  typp :BreakType                       # [innestCond, innestIsBreak]
+  gofi match_fail_pop_1:3               # [innestCond]
+  pop                                   # []
+  goto whileMultiMatched:3              # []
+  labl match_fail_pop_1:3               # [innestCond]
+  pop                                   # []
+  pvar 1                                # [innestCond]
+  goto whileMultiTry:3                  # [innestCond]
+  labl whileMultiMatched:3              # []                  (if BreakType)
+  goto whileLoopEnd:1                   # []
+  labl whileMultiTry:3                  # [innestCond]
+  Svar 1                                # [innestCond]    $1=innestCond
+  pop                                   # []
+  goto whileMultiMatched:4              # []
+  labl whileMultiMatched:4              # []
+  pvar 1                                # [innestCond]
+  call TestModule: trySomething         # [rv]
+  pop                                   # []
+  goto matchersEnd                      # []
+  labl matchersEnd                      # []
+  goto whileLoopTop:1                   # []
+  labl whileLoopEnd:1                   # []
+  goto whileLoopTop                     # []          (top of inner loop, though we can't actually reach this op)
+  labl whileMultiTry                    # [cond]      (all the way from the outer loop)
+  typp :Stay                            # [cond, condIsStay]
+  gofi match_fail_pop_1:4               # [cond]
+  Pfld :Stay val                        # [cond, cond.val]
+  Svar 0                                # [cond, cond.val]    $0=cond.val
+  pop                                   # [cond]
+  pop                                   # []
+  goto whileMultiMatched:5              # []
+  labl match_fail_pop_1:4               # [cond]
+  pop                                   # []
+  goto whileLoopEnd                     # []          (top loop end)
+  labl whileMultiMatched:5              # []
+  pvar 0                                # [cond.val]
+  call TestModule: trySomething         # [rv]
+  pop                                   # []
+  goto whileLoopTop                     # []
+  labl whileLoopEnd                     # []
 ---
 input: 'abc ::: One(val)'
 localVars:
@@ -271,57 +331,53 @@ types:
   One:
     fields: [value]
 expect: |
-  pvar 1                # [abc]
-  typp :One             # [abc, isOne]
-  goif match_1_One      # [abc]
-  pop                   # []
-  goto statMatcherEnd   # []
-  labl match_1_One      # [abc]  (if is One)
-  Pfld :One value       # [abc, abc.val]
-  Svar 2                # [abc, abc.val]  {$2=val}
-  pop                   # [abc]
-  pop                   # []
-  labl statMatcherEnd   # []
+  pvar 1                  # [abc]
+  typp :One               # [abc, abcIsOne]
+  gofi match_fail_pop_1   # [abc]
+  Pfld :One value         # [abc, abc.value]
+  Svar 2                  # [abc, abc.value]    $2=abc.value
+  pop                     # []
+  pop                     # []
+  labl match_fail_pop_1   # [abd]
+  pop                     # []
+  goto statMatcherEnd     # []
+  labl statMatcherEnd     # []
 ---
 input: |
   for a in foo():
     workWith(a)
-types:
-  'TestModule:':
-    methods:
-      workWith:
-        declaredArgs: 1
-        hasRv: false
-      foo:
-        declaredArgs: 0
-        hasRv: true
+staticMethods:
+  workWith:
+    declaredArgs: 1
+    hasRv: false
+  foo:
+    declaredArgs: 0
+    hasRv: true
 expect: |
-  call TestModule: foo          # [fooRv]
-  copy                # [fooRv, fooRv]
-  call_Array:len      # [fooRv, fooRv.len]
-  svar 1              # [fooRv]                 {$1=len}
-  int 0               # [fooRv, 0]
-  svar 2              # [fooRv]                 {$1=len, $2=idx}
-  labl loopTop        # [fooRv]
-  pvar 1              # [fooRv, len]
-  pvar 2              # [fooRv, len, idx]
-  call_Integer:ge     # [fooRv, lenGtIdx]
-  gofi loopDone       # [fooRv]
-  copy                # [fooRv, fooRv]
-  pvar 2              # [fooRv, fooRv, idx]
-  call_Array:get      # [fooRv, elem]
-  svar 0              # [fooRv]                 {$1=len, $2=idx, $0=elem}
-  pvar 0              # [fooRv, elem]           (start of loop body)
-  call TestModule: workWith     # [fooRv]
-  pvar 2              # [fooRv, idx]
-  int 1               # [fooRv, idx, 1]
-  call_Integer:add    # [fooRv, idx+1]
-  svar 2              # [fooRv]                 {$1=len, $2=idx+1, $0=elem}
-  goto loopTop        # [fooRv]
-  labl loopDone       # [fooRv]
-  pop                 # []
-
-
+  call TestModule: foo    # [foos]
+  copy                    # [foos, foos]
+  call_Array:len          # [foos, foos.len]
+  svar 1                  # [foos]            $1=foos.len
+  int 0                   # [foos, 0]
+  svar 2                  # [foos]            $2=idx
+  labl loopTop            # [foos]
+  pvar 1                  # [foos, foos.len]
+  pvar 2                  # [foos, foos.len, idx]
+  call_Integer:ge         # [foos, idx>=foos.len]
+  gofi loopDone           # [foos]
+  copy                    # [foos, foos]
+  pvar 2                  # [foos, foos, idx]
+  call_Array:get          # [foos, foos@idx]
+  svar 0                  # [foos]            $0=foos@idx
+  pvar 0                  # [foos, foos@idx]
+  call TestModule: workWith  # [foos]
+  pvar 2                  # [foos, idx]
+  int 1                   # [foos, idx, 1]
+  call_Integer:add        # [foos, idx+1]
+  svar 2                  # [foos]
+  goto loopTop            # [foos]
+  labl loopDone           # [foos]
+  pop                     # []
 ---
 input: abc = ?
 expect: ''  # just establishes the var
@@ -334,19 +390,17 @@ input: |
     doB()
 localVars:
   a: { reg: 1 }
-types:
-  'TestModule:':
-    methods:
-      doA: { declaredArgs: 0, hasRv: false }
-      doB: { declaredArgs: 0, hasRv: false }
+staticMethods:
+  doA: { declaredArgs: 0, hasRv: false }
+  doB: { declaredArgs: 0, hasRv: false }
 expect: |
-  pvar 1              # [a]
-  gofi ifNot          # []
-  call TestModule: doA          # []
-  goto ifChainEnd     # []
-  labl ifNot          # []
-  call TestModule: doB          # []
-  labl ifChainEnd     # []
+  pvar 1                  # [a]
+  gofi ifNot              # []
+  call TestModule: doA    # []
+  goto ifChainEnd         # []
+  labl ifNot              # []
+  call TestModule: doB    # []
+  labl ifChainEnd         # []
 ---
 name: 'if-else if'
 input: |
@@ -357,11 +411,9 @@ input: |
 localVars:
   a: { reg: 1 }
   b: { reg: 2 }
-types:
-  'TestModule:':
-    methods:
-      doA: { declaredArgs: 0, hasRv: false }
-      doB: { declaredArgs: 0, hasRv: false }
+staticMethods:
+    doA: { declaredArgs: 0, hasRv: false }
+    doB: { declaredArgs: 0, hasRv: false }
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
@@ -387,13 +439,11 @@ localVars:
   a: { reg: 1 }
   b: { reg: 2 }
   c: { reg: 3 }
-types:
-  'TestModule:':
-    methods:
-      doA: { declaredArgs: 0, hasRv: false }
-      doB: { declaredArgs: 0, hasRv: false }
-      doC: { declaredArgs: 0, hasRv: false }
-      doD: { declaredArgs: 0, hasRv: false }
+staticMethods:
+  doA: { declaredArgs: 0, hasRv: false }
+  doB: { declaredArgs: 0, hasRv: false }
+  doC: { declaredArgs: 0, hasRv: false }
+  doD: { declaredArgs: 0, hasRv: false }
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
@@ -458,40 +508,50 @@ input: |
     return if b is:
       One: "one"
       Two: "two"
+types:
+  One: {fields: []}
+  Two: {fields: []}
 localVars:
   a:
     reg: 2
   b:
     reg: 3
 expect: |
-  labl whileLoopTop               # []
-  pvar 2                          # [a]
-  gofi whileLoopEnd               # []
-  pvar 3                          # [b]
-  typp :One                       # [b, bIsOne]
-  goif match_1_One                # [b]
-  goto exprMatcher                # [b]
-  labl match_1_One                # [b]
-  pop                             # []
-  str one                         # ["one"]
-  svar 4                          # []                  {$4=rv}
-  goto exprMatcherDone            # []
-  labl exprMatcher                # [b]  (b is not One)
-  typp :Two                       # [b, bIsTwo]
-  goif match_1_Two                # [b]
-  pop                             # []
-  goto exprMatcher:1              # []
-  labl match_1_Two                # [b]
-  pop                             # []
-  str two                         # ["two"]
-  svar 4                          # []                  {$4=rv}
-  goto exprMatcherDone            # []
-  labl exprMatcher:1              # []
-  fail "no alternatives matched"  # EXIT
-  labl exprMatcherDone            # []
-  pvar 4                          # [rv]
-  rtrn                            # returned
-  labl whileLoopEnd               # []---
+  labl whileLoopTop
+  pvar 2
+  gofi whileLoopEnd
+  pvar 3
+  Svar 5
+  typp :One
+  gofi match_fail_pop_1
+  pop
+  goto exprMultiMatched
+  labl match_fail_pop_1
+  pop
+  pvar 5
+  goto exprMultiTry
+  labl exprMultiMatched
+  str one
+  svar 4
+  goto exprMultiDone
+  labl exprMultiTry
+  typp :Two
+  gofi match_fail_pop_1:1
+  pop
+  goto exprMultiMatched:1
+  labl match_fail_pop_1:1
+  pop
+  goto exprMultiTry:1
+  labl exprMultiMatched:1
+  str two
+  svar 4
+  goto exprMultiDone
+  labl exprMultiTry:1
+  fail "no alternatives matched"
+  labl exprMultiDone
+  pvar 4
+  rtrn
+  labl whileLoopEnd
 ---
 name: if-is brings type info
 input: |
@@ -511,11 +571,11 @@ types:
 expect: |
   pvar 0
   typp :Dog
-  goif match_1_Dog
+  gofi match_fail_pop_1
+  pop
+  labl match_fail_pop_1
   pop
   goto isA_false
-  labl match_1_Dog
-  pop
   bool True
   goto isA_done
   labl isA_false
@@ -545,10 +605,13 @@ types:
 expect: |
   pvar 1
   typp :Dog
-  goif match_1_Dog
-  goto matchersEnd
-  labl match_1_Dog
+  gofi match_fail_pop_1
   pop
+  goto whileMultiMatched
+  labl match_fail_pop_1
+  pop
+  goto matchersEnd
+  labl whileMultiMatched
   pvar 1
   call :Dog bark
   goto matchersEnd
