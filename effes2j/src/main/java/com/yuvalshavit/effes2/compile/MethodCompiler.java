@@ -26,12 +26,12 @@ public class MethodCompiler {
     ccGen.declarations.methodDeclaration(declarationScope, ctx.IDENT_NAME().getSymbol().getText(), argNames.size(), ctx.ARROW() != null);
     Scope scope = new Scope();
     scope.inNewScope(() -> {
-      Name.QualifiedType instanceQualifiedName = ((Name.QualifiedType) declarationScope);
       VarRef thisVar = instanceType == null
         ? null
-        : scope.allocateLocal("<this>", false, instanceQualifiedName);
+        : scope.allocateLocal("<this>", false, (Name.QualifiedType) declarationScope);
       argNames.forEach(name -> scope.allocateLocal(name, false));
       if (thisVar != null) {
+        Name.QualifiedType instanceQualifiedName = (Name.QualifiedType) declarationScope;
         for (int i = 0, nFields = ccGen.typeInfo.fieldsCount(instanceQualifiedName); i < nFields; ++i) {
           String fieldName = ccGen.typeInfo.fieldName(instanceQualifiedName, i);
           scope.allocateLocal(fieldName, false, new VarRef.InstanceAndFieldVar(thisVar, fieldName, null));
