@@ -5,6 +5,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Objects;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -13,6 +14,10 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.common.io.ByteStreams;
 
 public class ResourceReader {
+  private static final String ONLY_PARAM_KEY = "test.param";
+  private static final String ONLY_PARAM_VALUE = System.getProperty(ONLY_PARAM_KEY);
+  private static final Predicate<TestCaseRead<?>> ONLY_PARAM_PREDICATE = tcr -> ONLY_PARAM_VALUE == null || ONLY_PARAM_VALUE.equals(tcr.payload.toString());
+
   private ResourceReader() {}
 
   public static String read(Class<?> context, String name) {
@@ -37,6 +42,7 @@ public class ResourceReader {
         .filter(Objects::nonNull)
         .map(o -> new TestCaseRead<>(f.replaceAll("\\.yaml$", ""), o)))
       .map(read -> read.convert(readAs))
+      .filter(ONLY_PARAM_PREDICATE)
       .map(o -> new Object[] {o.fileName, o.payload})
       .toArray(Object[][]::new);
   }

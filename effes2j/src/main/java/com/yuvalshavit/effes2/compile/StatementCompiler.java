@@ -285,7 +285,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
     // put [expr] on the stack, and then just set up a bunch of matchers
     String nextMatcherLabel = null;
-    String matchersDoneLabel = cc.labelAssigner.allocate("exprMatcherDone");
+    String matchersDoneLabel = cc.labelAssigner.allocate("exprMultiDone");
     EffesParser.ExpressionContext targetExpression = ctx.expression();
     String targetVar = ExpressionCompiler.tryGetLocalVar(targetExpression);
     expressionCompiler.apply(targetExpression);
@@ -294,10 +294,12 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       if (nextMatcherLabel != null) {
         cc.labelAssigner.place(nextMatcherLabel);
       }
-      nextMatcherLabel = cc.labelAssigner.allocate("exprMatcher");
+      nextMatcherLabel = cc.labelAssigner.allocate("exprMultiTry");
       String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
-        MatcherCompiler.compile(exprMatcher.matcher(), null, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
+        String ifMatched = cc.labelAssigner.allocate("exprMultiMatched");
+        MatcherCompiler.compile(exprMatcher.matcher(), ifMatched, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
+        cc.out.label(ifMatched);
         expressionCompiler.apply(exprMatcher.expression());
         toVar.store(cc.module, cc.out);
         cc.out.gotoAbs(matchersDoneLabel);

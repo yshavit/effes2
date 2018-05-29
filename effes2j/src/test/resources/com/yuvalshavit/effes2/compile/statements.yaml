@@ -34,6 +34,9 @@ expect: |
   svar 3
 ---
 name: 'assign multiline'
+types:
+  One: {fields: []}
+  Two: {fields: []}
 input: |
   abc = if a is:
     One: "one"
@@ -42,38 +45,42 @@ localVars:
   a:
     reg: 2
 expect: |
-  pvar 2                          # [a]
-  typp :One                       # [a, aIsOne]
-  goif match_1_One                # [a]
-  goto exprMatcher                # []
-  labl match_1_One                # [a]
-  pop                             # []
-  str one                         # ["one"]
-  svar 3                          # []           {$3="one"}
-  goto exprMatcherDone            # []
-  labl exprMatcher                # [a]
-  typp :Two                       # [a, aIsTwo]
-  goif match_1_Two                # [a]
-  pop                             # []
-  goto exprMatcher:1              # []
-  labl match_1_Two                # [a]
-  pop                             # []
-  str two                         # ["two"]
-  svar 3                          # []           {$3="two"}
-  goto exprMatcherDone            # []
-  labl exprMatcher:1              # []
-  fail "no alternatives matched"  # EXIT
-  labl exprMatcherDone            # []
-
+  pvar 2                    # [a]
+  Svar 4                    # [a]   $4=a
+  typp :One                 # [a, aIsOne]
+  gofi match_fail_pop_1     # [a]
+  pop                       # []
+  goto exprMultiMatched     # []
+  labl match_fail_pop_1     # [a]
+  pop                       # []
+  pvar 4                    # [a]
+  goto exprMultiTry         # [a]
+  labl exprMultiMatched     # []
+  str one                   # ["one"]
+  svar 3                    # []    $3="one"
+  goto exprMultiDone        # []
+  labl exprMultiTry         # [a]
+  typp :Two                 # [a, aIsTwo]
+  gofi match_fail_pop_1:1   # [a]
+  pop                       # []
+  goto exprMultiMatched:1   # []
+  labl match_fail_pop_1:1   # [a]
+  pop                       # []
+  goto exprMultiTry:1       # []
+  labl exprMultiMatched:1   # []
+  str two                   # ["two"]
+  svar 3                    # []    $3="two"
+  goto exprMultiDone        # []
+  labl exprMultiTry:1       # []
+  fail "no alternatives matched"
+  labl exprMultiDone        # []
 ---
 name: static method, no args, with rv
 input: 'foo()'
-types:
-  'TestModule:':
-    methods:
-      foo:
-        declaredArgs: 0
-        hasRv: true
+staticMethods:
+  foo:
+    declaredArgs: 0
+    hasRv: true
 expect: |
   call TestModule: foo
   pop
