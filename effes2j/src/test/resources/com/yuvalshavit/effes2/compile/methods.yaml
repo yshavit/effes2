@@ -44,7 +44,7 @@ input: |
     value = "value"
 instanceContextType: TargetType
 expect: |
-  FUNC TargetType myStatic 0 0 0
+  FUNC :TargetType myStatic 0 0 0
   pvar 0
   call :TargetType sayHello
   str alpha
@@ -65,7 +65,7 @@ input: |
     value = "value"
 instanceContextType: TargetType
 expect: |
-  FUNC TargetType myStatic 2 0 0
+  FUNC :TargetType myStatic 2 0 0
   str one
   svar 1
   str two
@@ -86,7 +86,7 @@ input: |
     return a
 instanceContextType: TargetType
 expect: |
-  FUNC TargetType myStatic 1 0 0
+  FUNC :TargetType myStatic 1 0 0
   pvar 1
   rtrn
   ␤
