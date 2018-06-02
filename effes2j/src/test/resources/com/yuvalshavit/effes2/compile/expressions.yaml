@@ -82,21 +82,23 @@ localVars:
   foo:
     reg: 0
 expect: |
-  pvar 0            # [foo]
-  typp :One         # [foo, isOne]
-  goif match_1_One  # [foo]
-  pop               # []
-  goto isA_false    # []
-  labl match_1_One  # [foo]
-  Pfld :One value   # [foo, foo.value]
-  Svar 1            # [foo, foo.value]  {$1=foo.value}
-  pop               # [foo]
-  pop               # []
-  bool True         # [true]
-  goto isA_done     # [true]
-  labl isA_false    # []
-  bool False        # [false]
-  labl isA_done     # [trueOrFalse]
+  pvar 0                  # [foo]
+  typp :One               # [foo, fooIsOne]
+  gofi match_fail_pop_1   # [foo]
+  Pfld :One value         # [foo, foo.value]
+  Svar 1                  # [foo, foo.value]    $1=foo.value
+  pop                     # [foo]
+  pop                     # []
+  goto isA_true           # []
+  labl match_fail_pop_1   # [foo]
+  pop                     # []
+  goto isA_false          # []
+  labl isA_true           # []
+  bool True               # [True]
+  goto isA_done           # [True]
+  labl isA_false          # []
+  bool False              # [False]
+  labl isA_done           # [True | False]
 ---
 input: 'foo is One(@bar)'
 types:
@@ -108,23 +110,25 @@ localVars:
   bar:
     reg: 1
 expect: |
-  pvar 0            # [foo]
-  typp :One         # [foo, isOne]
-  goif match_1_One  # [foo]
-  pop               # []
-  goto isA_false    # []
-  labl match_1_One  # [foo]
-  Pfld :One value   # [foo, foo.value]
-  Svar 2            # [foo, foo.value]   {$2=foo.value}
-  pop               # [foo]
-  pvar 2            # [foo, foo.value]   {$2=foo.value}
-  svar 1            # [foo]              {$1=foo.value, $2=foo.value}
-  pop               # []
-  bool True         # [true]
-  goto isA_done     # [true]
-  labl isA_false    # []
-  bool False        # [false]
-  labl isA_done     # [trueOrFalse]
+  pvar 0                  # [foo]
+  typp :One               # [foo, fooIsOne]
+  gofi match_fail_pop_1   # [foo]
+  Pfld :One value         # [foo, foo.value]
+  Svar 2                  # [foo, foo.value]    $2=foo.value
+  pop                     # [foo]
+  pop                     # []
+  pvar 2                  # [foo.value]
+  svar 1                  # []                  $1.bar = foo.value
+  goto isA_true           # []
+  labl match_fail_pop_1   # [foo]
+  pop                     # []
+  goto isA_false          # []
+  labl isA_true           # []
+  bool True               # [True]
+  goto isA_done           # [True]
+  labl isA_false          # []
+  bool False              # [False]
+  labl isA_done           # [True | False]
 ---
 input: 'foo is not One(bar)'
 types:
@@ -134,21 +138,24 @@ localVars:
   foo:
     reg: 0
 expect: |
-  pvar 0            # [foo]
-  typp :One         # [foo, isOne]
-  goif match_1_One  # [foo]
-  pop               # []
-  goto isA_false    # []
-  labl match_1_One  # [foo]
-  Pfld :One value   # [foo, foo.value]
-  Svar 1            # [foo, foo.value]  {$1=foo.value}
-  pop               # [foo]
-  pop               # []
-  bool False        # [false]
-  goto isA_done     # [false]
-  labl isA_false    # []
-  bool True         # [true]
-  labl isA_done     # [trueOrFalse]
+  pvar 0                  # [foo]
+  typp :One               # [foo, fooIsOne]
+  gofi match_fail_pop_1   # [foo]
+  Pfld :One value         # [foo, foo.value]
+  Svar 1                  # [foo, foo.value]    $1=foo.value
+  pop                     # [foo]
+  pop                     # []
+  goto isA_true           # []
+  labl match_fail_pop_1   # [foo]
+  pop                     # []
+  goto isA_false          # []
+  labl isA_true           # []
+  bool False              # [False]
+  goto isA_done           # [False]
+  labl isA_false          # []
+  bool True               # [True]
+  labl isA_done           # [False | True]
+
 ---
 input: dog.eat(food)
 types:

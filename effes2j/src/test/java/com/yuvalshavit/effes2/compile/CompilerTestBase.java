@@ -6,10 +6,12 @@ import static org.testng.Assert.assertNotNull;
 import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -192,13 +194,25 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
     @Override
     public Name.QualifiedType qualify(Name.UnqualifiedType unqualified) {
-      List<Name.QualifiedType> possible = fields.keySet().stream().filter(k -> unqualified.equals(k.getUnqualifiedType())).collect(Collectors.toList());
+      Set<Name.QualifiedType> possible = fields
+        .keySet()
+        .stream()
+        .filter(k -> unqualified.equals(k.getUnqualifiedType()))
+        .collect(Collectors.toCollection(HashSet::new));
+      methodInfo.keySet().forEach(scope -> {
+        if (scope instanceof Name.QualifiedType) {
+          Name.QualifiedType qualifiedType = (Name.QualifiedType) scope;
+          if (qualifiedType.getUnqualifiedType().equals(unqualified)) {
+            possible.add(qualifiedType);
+          }
+        }
+      });
       if (possible.isEmpty()) {
         throw new NoSuchElementException(unqualified.getName());
       } else if (possible.size() > 1) {
         throw new RuntimeException("multiple matches: " + possible);
       }
-      return possible.get(0);
+      return possible.iterator().next();
     }
 
     private List<String> fieldsFor(Name.QualifiedType type) {
