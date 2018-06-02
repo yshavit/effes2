@@ -82,7 +82,7 @@ staticMethods:
     declaredArgs: 0
     hasRv: true
 expect: |
-  call TestModule: foo
+  call : foo
   pop
 ---
 name: instance method, with args, no arv
@@ -115,9 +115,9 @@ staticMethods:
     hasRv: false
 expect: |
   labl whileLoopTop
-  call TestModule: condition
+  call : condition
   gofi whileLoopEnd
-  call TestModule: doSomething
+  call : doSomething
   goto whileLoopTop
   labl whileLoopEnd
 ---
@@ -163,7 +163,7 @@ expect: |
   pvar 2                            # [thing]
   goto whileMultiTry                # [thing]
   labl whileMultiMatched            # []
-  call TestModule: doStringThing    # []
+  call : doStringThing              # []
   goto whileLoopTop                 # []
   labl whileMultiTry                # [thing]
   Svar 2                            # [thing]   $2=thing
@@ -176,7 +176,7 @@ expect: |
   pvar 2
   goto whileMultiTry:1
   labl whileMultiMatched:1
-  call TestModule: doIntThing
+  call : doIntThing
   goto whileLoopTop
   labl whileMultiTry:1
   Svar 2
@@ -243,7 +243,7 @@ types:
   BreakType: {fields: []}
 expect: |
   labl whileLoopTop                     # []
-  call TestModule: outerCondition       # [cond]
+  call : outerCondition                 # [cond]
   Svar 0                                # [cond]    $0=cond
   typp :Go                              # [cond, condIsGo]
   gofi match_fail_pop_1                 # [cond]
@@ -255,9 +255,9 @@ expect: |
   goto whileMultiTry                    # [cond]
   labl whileMultiMatched                # []
   labl whileLoopTop:1                   # []                  (innermost loop)
-  call TestModule: innerCondition       # [innerCond]
+  call : innerCondition                 # [innerCond]
   gofi whileLoopEnd:1                   # []
-  call TestModule: innerMostCondition   # [innestCond]
+  call : innerMostCondition             # [innestCond]
   Svar 1                                # [innestCond]   $1=innestCond
   typp :ContinueType                    # [innestCond, innestCondIsContinue]
   gofi match_fail_pop_1:1               # [innestCond]
@@ -299,7 +299,7 @@ expect: |
   goto whileMultiMatched:4              # []
   labl whileMultiMatched:4              # []
   pvar 1                                # [innestCond]
-  call TestModule: trySomething         # [rv]
+  call : trySomething                   # [rv]
   pop                                   # []
   goto matchersEnd                      # []
   labl matchersEnd                      # []
@@ -319,7 +319,7 @@ expect: |
   goto whileLoopEnd                     # []          (top loop end)
   labl whileMultiMatched:5              # []
   pvar 0                                # [cond.val]
-  call TestModule: trySomething         # [rv]
+  call : trySomething                   # [rv]
   pop                                   # []
   goto whileLoopTop                     # []
   labl whileLoopEnd                     # []
@@ -354,7 +354,7 @@ staticMethods:
     declaredArgs: 0
     hasRv: true
 expect: |
-  call TestModule: foo    # [foos]
+  call : foo              # [foos]
   copy                    # [foos, foos]
   call_Array:len          # [foos, foos.len]
   svar 1                  # [foos]            $1=foos.len
@@ -370,7 +370,7 @@ expect: |
   call_Array:get          # [foos, foos@idx]
   svar 0                  # [foos]            $0=foos@idx
   pvar 0                  # [foos, foos@idx]
-  call TestModule: workWith  # [foos]
+  call : workWith         # [foos]
   pvar 2                  # [foos, idx]
   int 1                   # [foos, idx, 1]
   call_Integer:add        # [foos, idx+1]
@@ -396,10 +396,10 @@ staticMethods:
 expect: |
   pvar 1                  # [a]
   gofi ifNot              # []
-  call TestModule: doA    # []
+  call : doA              # []
   goto ifChainEnd         # []
   labl ifNot              # []
-  call TestModule: doB    # []
+  call : doB              # []
   labl ifChainEnd         # []
 ---
 name: 'if-else if'
@@ -417,12 +417,12 @@ staticMethods:
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
-  call TestModule: doA        # []
+  call : doA        # []
   goto ifChainEnd   # []
   labl ifNot        # []
   pvar 2            # [b]
   gofi elseIfNot    # []
-  call TestModule: doB        # []
+  call : doB        # []
   labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
@@ -447,20 +447,20 @@ staticMethods:
 expect: |
   pvar 1            # [a]
   gofi ifNot        # []
-  call TestModule: doA        # []
+  call : doA        # []
   goto ifChainEnd   # []
   labl ifNot        # []
   pvar 2            # [b]
   gofi elseIfNot    # []
-  call TestModule: doB        # []
+  call : doB        # []
   goto ifChainEnd   # []
   labl elseIfNot    # []
   pvar 3            # [c]
   gofi elseIfNot:1  # []
-  call TestModule: doC        # []
+  call : doC        # []
   goto ifChainEnd   # []
   labl elseIfNot:1  # []
-  call TestModule: doD        # []
+  call : doD        # []
   labl ifChainEnd   # []
 ---
 name: assign to field with unqualified name
