@@ -5,6 +5,7 @@ import org.antlr.v4.runtime.Token;
 
 public class CompilationException extends RuntimeException {
   private static final long serialVersionUID = -7591615499145910642L;
+  private static final boolean NORMALIZE_FAKES_TRACE = true;
 
   private final String locationMessage;
 
@@ -23,9 +24,15 @@ public class CompilationException extends RuntimeException {
   }
 
   public static CompilationException normalize(ParserRuleContext ctx, Exception e) {
-    return (e instanceof CompilationException)
-      ? (CompilationException) e
-      : new CompilationException(ctx.start, ctx.stop, e);
+    if (e instanceof CompilationException) {
+      return (CompilationException) e;
+    } else {
+      CompilationException ce = new CompilationException(ctx.start, ctx.stop, e);
+      if (NORMALIZE_FAKES_TRACE) {
+        ce.setStackTrace(e.getStackTrace());
+      }
+      return ce;
+    }
   }
 
   @Override
