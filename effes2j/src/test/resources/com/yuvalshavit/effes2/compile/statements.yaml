@@ -338,6 +338,7 @@ expect: |
   Svar 2                  # [abc, abc.value]    $2=abc.value
   pop                     # []
   pop                     # []
+  goto statMatcherEnd     # []
   labl match_fail_pop_1   # [abd]
   pop                     # []
   goto statMatcherEnd     # []
@@ -573,9 +574,11 @@ expect: |
   typp :Dog
   gofi match_fail_pop_1
   pop
+  goto isA_true
   labl match_fail_pop_1
   pop
   goto isA_false
+  labl isA_true
   bool True
   goto isA_done
   labl isA_false

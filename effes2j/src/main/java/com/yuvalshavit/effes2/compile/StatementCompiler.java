@@ -175,7 +175,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     String endLabel = cc.labelAssigner.allocate("statMatcherEnd");
     EffesParser.ExpressionContext targetExpression = ctx.expression();
     expressionCompiler.apply(targetExpression);
-    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), null, endLabel, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
+    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), endLabel, endLabel, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
     cc.labelAssigner.place(endLabel);
   }
 
