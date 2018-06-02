@@ -61,7 +61,7 @@ public class Name {
 
     @Override
     public String toString() {
-      return "qualified type" + evmDescriptor(null);
+      return "qualified type " + evmDescriptor(null);
     }
   }
 }

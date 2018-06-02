@@ -25,7 +25,7 @@ public class MatcherCompiler {
    */
   public static void compile(
     EffesParser.MatcherContext matcherContext,
-    String optionalLabelIfMatched,
+    String labelIfMatched,
     String labelNoMatch,
     boolean keepIfNoMatch,
     CompilerContext compilerContext,
@@ -44,9 +44,7 @@ public class MatcherCompiler {
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
     compiler.scratchVars.commit(compilerContext.out);
-    if (optionalLabelIfMatched != null) {
-      compilerContext.out.gotoAbs(optionalLabelIfMatched);
-    }
+    compilerContext.out.gotoAbs(labelIfMatched);
 
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.

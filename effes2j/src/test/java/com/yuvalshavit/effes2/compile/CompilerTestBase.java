@@ -119,7 +119,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     Scope scope = new Scope();
     scope.push();
     testCase.localVars.forEach((name, var) -> {
-      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, new Name.QualifiedType(Name.Module.BUILT_IN, var.type));
+      VarRef.LocalVar varRef = new VarRef.LocalVar(var.reg, var.type == null ? null :ccGen.typeInfo.qualify(var.type));
       scope.allocateLocal(name, false, varRef);
     });
     scope.push();
