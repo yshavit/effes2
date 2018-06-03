@@ -7,4 +7,7 @@ elif [[ -n "$EF_DEBUG" ]]; then
   echo "Using EF_DEBUG=$EF_DEBUG" 1>&2
 fi
 export EFFES_CLASSPATH=../efct
-java $EF_DEBUG -jar "$effes_jar" "$@"
+if [[ -n "$EVM_DEBUG" ]]; then
+  EVM_DEBUG="-Ddebug=$EVM_DEBUG"
+fi
+java $EF_DEBUG $EVM_DEBUG -jar "$effes_jar" "$@"
