@@ -13,8 +13,8 @@ localVars:
   b:
     reg: 0
 expect: |
-  pvar 7
   pvar 0
+  pvar 7
   call_Integer:add
 ---
 input: a * (b - c)
@@ -26,11 +26,11 @@ localVars:
   c:
     reg: 2
 expect: |
-  pvar 0
-  pvar 1
-  pvar 2
-  call_Integer:sub
-  call_Integer:mult
+  pvar 2              # [c]
+  pvar 1              # [c, b]
+  call_Integer:sub    # [c-b]
+  pvar 0              # [c-b, a]
+  call_Integer:mult   # [a*(c-b)]
 ---
 input: a < b
 localVars:
@@ -39,8 +39,8 @@ localVars:
   b:
     reg: 1
 expect: |
-  pvar 0
   pvar 1
+  pvar 0
   call_Integer:lt
 ---
 input: this

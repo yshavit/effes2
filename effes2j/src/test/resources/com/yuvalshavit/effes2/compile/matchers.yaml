@@ -37,8 +37,8 @@ expect: |
   Svar 0                    # [val]   $0=val
   Svar 1                    # [val]   $1{abc}=val
   pop                       # []
-  pvar 1                    # [val]
-  int 1                     # [val, 1]
+  int 1                     # [1]
+  pvar 1                    # [val, 1]
   call_Integer:eq           # [val==1?]
   gofi match_fail_pop_0     # []
   goto @MATCHED             # []
@@ -52,8 +52,8 @@ input: abc :? abc == 1
 expect: |
   Svar 0                    # [val]   $0{abc}=val
   pop                       # []
-  pvar 0                    # [val]
-  int 1                     # [val, 1]
+  int 1                     # [1]
+  pvar 0                    # [1, val]
   call_Integer:eq           # [val==1?]
   gofi match_fail_pop_0     # []
   goto @MATCHED             # []
@@ -71,8 +71,8 @@ expect: |
   Svar 3                  # [val]   $3=val
   Svar 4                  # [val]   $4{abc'}=val
   pop                     # []
-  pvar 4                  # [val']
-  int 1                   # [val', 1]
+  int 1                   # [1]
+  pvar 4                  # [1, val']
   call_Integer:eq         # [val'==1?]
   gofi match_fail_pop_0   # []
   pvar 4                  # [val']
@@ -170,8 +170,8 @@ expect: |
   Pfld :Triple t1           # [val, val.t1]
   Svar 1                    # [val, val.t1]   $1=val.t1
   pop                       # [val]
-  pvar 1                    # [val, val.t1]
-  int 1                     # [val, val.t1, 1]
+  int 1                     # [val, 1]
+  pvar 1                    # [val, 1, val.t1]
   call_Integer:gt           # [val, val.t1==1]
   gofi match_fail_pop_1     # [val]
   Pfld :Triple t2           # [val, val.t2]

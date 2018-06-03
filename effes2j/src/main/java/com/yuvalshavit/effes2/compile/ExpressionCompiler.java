@@ -199,8 +199,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     if (exprs.size() != 2) {
       throw new IllegalArgumentException("require exactly two expressions: " + exprs);
     }
-    apply(exprs.get(0));
     apply(exprs.get(1));
+    apply(exprs.get(0));
     op.run();
   }
 
