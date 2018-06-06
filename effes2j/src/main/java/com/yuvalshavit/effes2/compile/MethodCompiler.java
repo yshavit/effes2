@@ -6,6 +6,7 @@ import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
+import com.google.common.collect.Lists;
 import com.yuvalshavit.effes2.parse.EffesParser;
 
 public class MethodCompiler {
@@ -29,7 +30,7 @@ public class MethodCompiler {
       VarRef thisVar = instanceType == null
         ? null
         : scope.allocateLocal("<this>", false, (Name.QualifiedType) declarationScope);
-      argNames.forEach(name -> scope.allocateLocal(name, false));
+      Lists.reverse(argNames).forEach(name -> scope.allocateLocal(name, false));
       if (thisVar != null) {
         Name.QualifiedType instanceQualifiedName = (Name.QualifiedType) declarationScope;
         for (int i = 0, nFields = ccGen.typeInfo.fieldsCount(instanceQualifiedName); i < nFields; ++i) {

@@ -85,7 +85,7 @@ expect: |
   call : foo
   pop
 ---
-name: instance method, with args, no arv
+name: instance method, one arg, no arv
 input: 'foo(a)'
 instanceContextType: SomeType
 types:
@@ -101,6 +101,18 @@ expect: |
   pvar 0
   pvar 3
   call :SomeType foo
+---
+name: static method, three args, no arv
+input: 'foo(1, 2, 3)'
+staticMethods:
+  foo:
+    declaredArgs: 3
+    hasRv: false
+expect: |
+  int 3
+  int 2
+  int 1
+  call : foo
 ---
 name: while colon
 input: |

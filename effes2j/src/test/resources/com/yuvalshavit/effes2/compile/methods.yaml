@@ -18,9 +18,9 @@ input: |
 expect: |
   FUNC : myStatic 2 0 0
   str one
-  svar 0
-  str two
   svar 1
+  str two
+  svar 0
   str three
   svar 2
   rtrn
@@ -67,9 +67,9 @@ instanceContextType: TargetType
 expect: |
   FUNC :TargetType myStatic 2 0 0
   str one
-  svar 1
-  str two
   svar 2
+  str two
+  svar 1
   str three
   svar 3
   pvar 0
