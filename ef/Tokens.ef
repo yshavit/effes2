@@ -16,6 +16,7 @@ type Tokenizer(indentations, tokens):
         _handlePayload(line.group(2))
     _closeIndentations()
     tokens = Queue.reverse(tokens)
+    return tokens
 
   _handleIndentations(prefix):
     ::: prefix is String
@@ -40,7 +41,7 @@ type Tokenizer(indentations, tokens):
         break
       else:
         tokens = Queue.push(tokens, Dedent)
-    Queue.push(indentations, targetIndent)
+    indentations = Queue.push(indentations, targetIndent)
 
 
   _handlePayload(payload):
