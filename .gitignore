@@ -2,3 +2,4 @@
 effesvm-debug-state.txt
 *.ef.generated
 efct
+yourkit_profiles/

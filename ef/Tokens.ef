@@ -1,6 +1,7 @@
 type Indent
 type Dedent
 type Nl
+type Unknown(value)
 
 readTokens(input) ->:
   tokenizer = Tokenizer(Queue(0, Empty), Empty)
@@ -45,6 +46,7 @@ type Tokenizer(indentations, tokens):
 
 
   _handlePayload(payload):
+    tokens = Queue.push(tokens, Unknown(payload))
     ::: # TODO
     
   _closeIndentations():
