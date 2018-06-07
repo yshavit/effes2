@@ -501,8 +501,8 @@ public class EfPrinter {
         write('@');
       }
       write(ctx.IDENT_NAME());
-      if (ctx.SUCH_THAT() != null) {
-        write(":? ");
+      if (ctx.IF() != null) {
+        write(" if ");
         dispatch(ctx.expression());
       }
     }

@@ -131,7 +131,7 @@ public class MatcherCompiler {
 
     @Dispatched
     public void apply(EffesParser.MatcherJustNameContext input) {
-      // <op IS> [@]fooName [:? expr]
+      // <op IS> [@]fooName [if expr]
       // Always matches the type, but still need to do the binding and check the expression.
       bindVarIfNeeded(input.IDENT_NAME(), input.AT(), null);
       cc.out.pop();

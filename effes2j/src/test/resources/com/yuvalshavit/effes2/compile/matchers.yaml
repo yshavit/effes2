@@ -32,7 +32,7 @@ expect: |
 ---
 name: guarded name, keep unmatched
 options: { keepIfNotMatched: true }
-input: abc :? abc == 1
+input: abc if abc == 1
 expect: |
   Svar 0                    # [val]   $0=val
   Svar 1                    # [val]   $1{abc}=val
@@ -48,7 +48,7 @@ expect: |
 ---
 name: guarded name, pop unmatched
 options: { keepIfNotMatched: false }
-input: abc :? abc == 1
+input: abc if abc == 1
 expect: |
   Svar 0                    # [val]   $0{abc}=val
   pop                       # []
@@ -66,7 +66,7 @@ localVars:
   oneVar: {reg: 0}
   abc: {reg: 1}
   twoVar: {reg: 2}
-input: '@abc :? abc == 1'
+input: '@abc if abc == 1'
 expect: |
   Svar 3                  # [val]   $3=val
   Svar 4                  # [val]   $4{abc'}=val
@@ -154,7 +154,7 @@ expect: |
 ---
 name: complex
 options: { keepIfNotMatched: true }
-input: Triple(*, abc :? abc > 1, Pair("lit string", patty ~/\d+/))
+input: Triple(*, abc if abc > 1, Pair("lit string", patty ~/\d+/))
 types:
   Triple:
     fields: [t0, t1, t2]

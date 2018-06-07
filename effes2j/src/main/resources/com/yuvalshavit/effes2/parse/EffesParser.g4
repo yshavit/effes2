@@ -161,7 +161,7 @@ expressionMatcher:
 matcher:
   ASTERISK                                                            # MatcherAny
 | (AT ? IDENT_NAME)? matcherPattern                                   # MatcherWithPattern
-| AT ? IDENT_NAME (SUCH_THAT expression)?                             # MatcherJustName
+| AT ? IDENT_NAME (IF expression)?                                    # MatcherJustName
 ;
 
 matcherPattern:

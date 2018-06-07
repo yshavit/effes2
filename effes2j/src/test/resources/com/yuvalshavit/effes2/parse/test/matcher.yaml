@@ -5,7 +5,7 @@ expected:
   - someVar (IDENT_NAME)
 ---
 name: name with such-that
-input: someVar :? someCond
+input: someVar if someCond
 expected:
   MatcherJustName:
   - someVar (IDENT_NAME)
