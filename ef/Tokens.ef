@@ -52,4 +52,6 @@ type Tokenizer(indentations, tokens):
 
 main(args) ->:
   tokens = readTokens(Stdio.stdin)
+  while tokens is Queue(t, @tokens):
+    CharStreamOut.debug(t)
   return 0

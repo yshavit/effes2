@@ -120,7 +120,8 @@ public class Compiler {
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
       SingleTypeInfo typeInfo = new SingleTypeInfo(Name.Module.BUILT_IN, Collections.emptyList());
       typeInfos.put(Name.QualifiedType.forBuiltin(builtinType), typeInfo);
-      methodInfosByScope.put(Name.QualifiedType.forBuiltin(builtinType), builtinType.methods());
+      methodInfosByScope.put(Name.QualifiedType.forBuiltin(builtinType), builtinType.instanceMethods());
+      methodInfosByScope.put(new Name.Module(builtinType.typeName()), builtinType.staticMethods());
     }
     return new TypeInfoImpl(typeInfos, methodInfosByScope);
   }
