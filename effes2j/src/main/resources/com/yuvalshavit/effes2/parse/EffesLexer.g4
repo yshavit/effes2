@@ -93,6 +93,6 @@ REGEX: REGEX_CHAR+ ;
 REGEX_END: '/' -> mode(DEFAULT_MODE) ;
 
 fragment REGEX_CHAR:
-  ~[\r\n\\/]
-| ('\\' [tnrdDsSwWbBAGZzQE\\()[\]] )
+  ~[\r\n/\\]
+| ('\\' [tnrdDsSwWbBAGZz\\()[\]/.*+?|] )
 ;

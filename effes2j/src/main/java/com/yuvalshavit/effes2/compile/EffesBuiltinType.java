@@ -29,6 +29,7 @@ public enum EffesBuiltinType {
   REGEX_MATCH("RegexMatch", EffesNativeType.MATCH,
     build()
       .put("group", new BuiltinMethodInfo(1, true, EffesOps::matchIndexedGroup))
+      .put("tail", new BuiltinMethodInfo(0, true, EffesOps::matchTail))
       .build(),
     Collections.emptyMap()),
   STRING("String", EffesNativeType.STRING,

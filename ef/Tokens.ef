@@ -1,7 +1,49 @@
 type Indent
 type Dedent
 type Nl
+
+type KwBreak
+type KwContinue
+type KwElse
+type KwFor
+type KwImport
+type KwIf
+type KwIn
+type KwIs
+type KwNot
+type KwReturn
+type KwThis
+type KwType
+type KwWhile
+
+type KwArrow
+type KwAt
+type KwAsterisk
+type KwEq
+type KwGe
+type KwGt
+type KwLe
+type KwLt
+type KwNe
+type KwColon
+type KwComma
+type KwDash
+type KwDot
+type KwEquals
+type KwNoop
+type KwParenOpen
+type KwParenClose
+type KwPipe
+type KwPlus
+type KwQuestionMark
+type KwSlash
+
+type IdentType(value)
+type IdentName(value)
+
 type Unknown(value)
+
+type Pair(first, second)
 
 readTokens(input) ->:
   tokenizer = Tokenizer(Queue(0, Empty), Empty)
@@ -12,9 +54,9 @@ type Tokenizer(indentations, tokens):
   readTokens(input) ->:
     ::: input is CharStreamIn
     while input.readLine() is:
-      line ~/^(\s*)(.*)$/:
-        _handleIndentations(line.group(1))
-        _handlePayload(line.group(2))
+      line ~/\s*/:
+        _handleIndentations(line.group(0))
+        _handlePayload(line.tail())
     _closeIndentations()
     tokens = Queue.reverse(tokens)
     return tokens
@@ -46,8 +88,70 @@ type Tokenizer(indentations, tokens):
 
 
   _handlePayload(payload):
-    tokens = Queue.push(tokens, Unknown(payload))
-    ::: # TODO
+    if payload is:
+      m ~/\s+/:
+        payload = m.tail()
+    pair = if payload is:
+      ~/(?:#.*)?$/: Empty
+      m ~/"/: _handleQuotedString(m.tail())
+      m ~/~\//: _handleRegex(m.tail())
+      tail: _lexWord(tail)
+    if pair is:
+      Empty:
+        :::
+      Pair(word, rest):
+        tokens = Queue.push(tokens, word)
+        _handlePayload(rest)
+      *:
+        unknown = Unknown(pair)
+        tokens = Queue.push(tokens, unknown)
+
+  _handleQuotedString(payload) -> :
+    return payload
+
+  _handleRegex(payload) -> :
+    return payload
+
+  _lexWord(word) -> :
+    return if word is:
+      # Keywords
+      m ~/break/:     Pair(KwBreak, m.tail())
+      m ~/continue/:  Pair(KwContinue, m.tail())
+      m ~/else/:      Pair(KwElse, m.tail())
+      m ~/for/:       Pair(KwFor, m.tail())
+      m ~/import/:    Pair(KwImport, m.tail())
+      m ~/if/:        Pair(KwIf, m.tail())
+      m ~/in/:        Pair(KwIn, m.tail())
+      m ~/is/:        Pair(KwIs, m.tail())
+      m ~/not/:       Pair(KwNot, m.tail())
+      m ~/return/:    Pair(KwReturn, m.tail())
+      m ~/this/:      Pair(KwThis, m.tail())
+      m ~/type/:      Pair(KwType, m.tail())
+      m ~/while/:     Pair(KwWhile, m.tail())
+      m ~/->/:        Pair(KwArrow, m.tail())
+      m ~/@/:         Pair(KwAt, m.tail())
+      m ~/\*/:        Pair(KwAsterisk, m.tail())
+      m ~/==/:        Pair(KwEq, m.tail())
+      m ~/>=/:        Pair(KwGe, m.tail())
+      m ~/<=/:        Pair(KwLe, m.tail())
+      m ~/</:         Pair(KwLt, m.tail())
+      m ~/>/:         Pair(KwGt, m.tail())
+      m ~/!=/:        Pair(KwNe, m.tail())
+      m ~/:::/:       Pair(KwNoop, m.tail())
+      m ~/:/:         Pair(KwColon, m.tail())
+      m ~/,/:         Pair(KwComma, m.tail())
+      m ~/-/:         Pair(KwDash, m.tail())
+      m ~/\./:        Pair(KwDot, m.tail())
+      m ~/=/:         Pair(KwEquals, m.tail())
+      m ~/\(/:        Pair(KwParenOpen, m.tail())
+      m ~/\)/:        Pair(KwParenClose, m.tail())
+      m ~/\|/:        Pair(KwPipe, m.tail())
+      m ~/\+/:        Pair(KwPlus, m.tail())
+      m ~/\?/:        Pair(KwQuestionMark, m.tail())
+      m ~/\//:        Pair(KwSlash, m.tail())
+      m ~/_*[A-Z]\w*[a-z]\w*/:  Pair(IdentType(m.group(0)), m.tail())
+      m ~/_*[a-z]\w*/:          Pair(IdentName(m.group(0)), m.tail())
+      a:            a
     
   _closeIndentations():
     _handleIndentations("")
