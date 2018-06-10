@@ -167,5 +167,4 @@ matcher:
 matcherPattern:
   IDENT_TYPE (PAREN_OPEN matcher (COMMA matcher)* PAREN_CLOSE)?       # PatternType
 | REGEX_START REGEX? REGEX_END                                        # PatternRegex
-| QUOTED_STRING                                                       # PatternStringLiteral
 ;

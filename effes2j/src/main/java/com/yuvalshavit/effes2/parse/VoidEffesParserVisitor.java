@@ -215,10 +215,6 @@ public abstract class VoidEffesParserVisitor implements EffesParserVisitor<Void>
   protected abstract void seePatternRegex(EffesParser.PatternRegexContext ctx);
 
   @Override
-  final public Void visitPatternStringLiteral(EffesParser.PatternStringLiteralContext ctx) { seePatternStringLiteral(ctx); return null; }
-  protected abstract void seePatternStringLiteral(EffesParser.PatternStringLiteralContext ctx);
-
-  @Override
   public Void visit(ParseTree parseTree) {
     return null;
   }

@@ -133,28 +133,9 @@ expect: |
   pop                     # []
   goto @UNMATCHED         # []
 ---
-# Note that this is pretty much the same as the regex test,
-# but with the regex string being literal
-name: string literal pattern
-options: { keepIfNotMatched: false }
-input: '"foo\\bar"'   #literal "foo\bar". One level of quoted needed for Effes; yaml doesn't seem to need it.
-expect: |
-  #                         # [val]
-  typp String               # [val, valIsString]
-  gofi match_fail_pop_1     # [val]
-  str "\\Qfoo\\\\bar\\E"    # [val, pattern]
-  call_String:regex         # [match?]
-  typp Match                # [match?, isMatch]
-  gofi match_fail_pop_1     # [match?]
-  pop                       # []
-  goto @MATCHED             # []
-  labl match_fail_pop_1     # [val | match?]
-  pop                       # []
-  goto @UNMATCHED           # []
----
 name: complex
 options: { keepIfNotMatched: true }
-input: Triple(*, abc if abc > 1, Pair("lit string", patty ~/\d+/))
+input: Triple(*, abc if abc > 1, Pair(~/plain string$/, patty ~/\d+/))
 types:
   Triple:
     fields: [t0, t1, t2]
@@ -180,7 +161,7 @@ expect: |
   Pfld :Pair p0             # [val, val.t2, val.t2.p0]
   typp String               # [val, val.t2, val.t2.p0, p0IsString]
   gofi match_fail_pop_3     # [val, val.t2, val.t2.p0]
-  str "\\Qlit string\\E"    # [val, val.t2, val.t2.p0, patern]
+  str "plain string$"       # [val, val.t2, val.t2.p0, patern]
   call_String:regex         # [val, val.t2, match?]
   typp Match                # [val, val.t2, match?, isMatch]
   gofi match_fail_pop_3     # [val, val.t2, match?]

@@ -52,7 +52,6 @@ public class MatcherCompiler {
       Name.QualifiedType type = Dispatcher.dispatch(EffesParser.MatcherPatternContext.class, Name.QualifiedType.class)
         .when(EffesParser.PatternTypeContext.class, c -> compilerContext.type(c.IDENT_TYPE()))
         .when(EffesParser.PatternRegexContext.class, c -> Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH))
-        .when(EffesParser.PatternStringLiteralContext.class, c -> Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING))
         .on(pattern);
       VarRef atMatched = compilerContext.scope.tryLookUpInTopFrame(targetVar);
       if (atMatched == null) {
@@ -193,13 +192,6 @@ public class MatcherCompiler {
         matcherDispatch.apply(fieldMatchers.get(i));                              // [..., val]
       }
       cc.out.pop();
-      --depth;
-    }
-
-    @Dispatched
-    public void apply(EffesParser.PatternStringLiteralContext input) {
-      ++depth;
-      applyRegex(Pattern.quote(EvmStrings.quotedEfToString(input.QUOTED_STRING())));
       --depth;
     }
 

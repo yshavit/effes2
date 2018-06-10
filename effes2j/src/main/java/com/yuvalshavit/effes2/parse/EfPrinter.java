@@ -523,10 +523,5 @@ public class EfPrinter {
       handleIfNotNull(ctx.REGEX(), this::write);
       write('/');
     }
-
-    @Override
-    protected void seePatternStringLiteral(EffesParser.PatternStringLiteralContext ctx) {
-      write(ctx.QUOTED_STRING());
-    }
   }
 }
