@@ -81,6 +81,7 @@ type Tokenizer(indentations, tokens):
 
   _unwindTo(targetIndent):
     # See https://github.com/yshavit/antlr-denter/blob/master/core/src/main/java/com/yuvalshavit/antlr4/DenterHelper.java#L144
+    tokens = Queue.push(tokens, Nl)
     while indentations is Queue(prevIndent, @indentations):
       if targetIndent == prevIndent:
         break
@@ -213,3 +214,5 @@ main(args) ->:
   while tokens is Queue(t, @tokens):
     CharStreamOut.debug(t)
   return 0
+
+type ThisIsJustATestToMakeSureWeGetATrailingNewline
