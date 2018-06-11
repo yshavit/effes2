@@ -152,8 +152,7 @@ type Tokenizer(indentations, tokens):
         result.append(m.group(0))
         payload = m.tail()
       m ~/\//:
-        r = result.get()
-        return Pair(RegexLiteral(r), m.tail())
+        return Pair(RegexLiteral(result.get()), m.tail())
       ~/$/:
         return result # unexpected EOL
       m ~/\\[tnrdDsSwWbBAGZz\\()\[\]\/.*+?|]/:
