@@ -40,6 +40,9 @@ type KwSlash
 
 type IdentType(value)
 type IdentName(value)
+type IntLiteral(value)
+type StringLiteral(value)
+type RegexLiteral(value)
 
 type Unknown(value)
 
@@ -95,6 +98,7 @@ type Tokenizer(indentations, tokens):
       ~/(?:#.*)?$/: Empty
       m ~/"/: _handleQuotedString(m.tail())
       m ~/~\//: _handleRegex(m.tail())
+      m ~/0|[1-9](0-9)*/: Pair(IntLiteral(m.group(0)), m.tail())
       tail: _lexWord(tail)
     if pair is:
       Empty:
@@ -107,27 +111,73 @@ type Tokenizer(indentations, tokens):
         tokens = Queue.push(tokens, unknown)
 
   _handleQuotedString(payload) -> :
-    return payload
+    result = StringBuilder.create()
+    ::: result is StringBuilder
+    while payload is:
+      m ~/[^\n\r"\\]+/:
+        result.append(m.group(0))
+        payload = m.tail()
+      m ~/"/:
+        r = result.get()
+        return Pair(StringLiteral(r), m.tail())
+      ~/$/:
+        return result # unexpected EOL
+      m ~/\\t/:
+        result.append("\t")
+        payload = m.tail()
+      m ~/\\b/:
+        result.append("\b")
+        payload = m.tail()
+      m ~/\\n/:
+        result.append("\n")
+        payload = m.tail()
+      m ~/\\r/:
+        result.append("\r")
+        payload = m.tail()
+      m ~/\\f/:
+        result.append("\f")
+        payload = m.tail()
+      m ~/\\"/:
+        result.append("\"")
+        payload = m.tail()
+      m ~/\\\\/:
+        result.append("\\")
+        payload = m.tail()
 
   _handleRegex(payload) -> :
+    result = StringBuilder.create()
+    ::: result is StringBuilder
+    while payload is:
+      m ~/[^\n\r\/\\]+/:
+        result.append(m.group(0))
+        payload = m.tail()
+      m ~/\//:
+        r = result.get()
+        return Pair(RegexLiteral(r), m.tail())
+      ~/$/:
+        return result # unexpected EOL
+      m ~/\\[tnrdDsSwWbBAGZz\\()\[\]\/.*+?|]/:
+#m ~/\\[tnrdDsSwWbBAGZz\\()\[\]/:
+        result.append(m.group(0))
+        payload = m.tail()
     return payload
 
   _lexWord(word) -> :
     return if word is:
       # Keywords
-      m ~/break/:     Pair(KwBreak, m.tail())
-      m ~/continue/:  Pair(KwContinue, m.tail())
-      m ~/else/:      Pair(KwElse, m.tail())
-      m ~/for/:       Pair(KwFor, m.tail())
-      m ~/import/:    Pair(KwImport, m.tail())
-      m ~/if/:        Pair(KwIf, m.tail())
-      m ~/in/:        Pair(KwIn, m.tail())
-      m ~/is/:        Pair(KwIs, m.tail())
-      m ~/not/:       Pair(KwNot, m.tail())
-      m ~/return/:    Pair(KwReturn, m.tail())
-      m ~/this/:      Pair(KwThis, m.tail())
-      m ~/type/:      Pair(KwType, m.tail())
-      m ~/while/:     Pair(KwWhile, m.tail())
+      m ~/break\b/:     Pair(KwBreak, m.tail())
+      m ~/continue\b/:  Pair(KwContinue, m.tail())
+      m ~/else\b/:      Pair(KwElse, m.tail())
+      m ~/for\b/:       Pair(KwFor, m.tail())
+      m ~/import\b/:    Pair(KwImport, m.tail())
+      m ~/if\b/:        Pair(KwIf, m.tail())
+      m ~/in\b/:        Pair(KwIn, m.tail())
+      m ~/is\b/:        Pair(KwIs, m.tail())
+      m ~/not\b/:       Pair(KwNot, m.tail())
+      m ~/return\b/:    Pair(KwReturn, m.tail())
+      m ~/this\b/:      Pair(KwThis, m.tail())
+      m ~/type\b/:      Pair(KwType, m.tail())
+      m ~/while\b/:     Pair(KwWhile, m.tail())
       m ~/->/:        Pair(KwArrow, m.tail())
       m ~/@/:         Pair(KwAt, m.tail())
       m ~/\*/:        Pair(KwAsterisk, m.tail())

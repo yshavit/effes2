@@ -3,7 +3,6 @@ package com.yuvalshavit.effes2.compile;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.tree.TerminalNode;
 
@@ -201,6 +200,7 @@ public class MatcherCompiler {
     }
 
     public void applyRegex(String pattern) {
+      pattern = EvmStrings.unescapeRegex(pattern);
       //                                                  // [..., str]
       checkType(Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING));
       cc.out.strPush(EvmStrings.escape(pattern));         // [..., str, pattern]

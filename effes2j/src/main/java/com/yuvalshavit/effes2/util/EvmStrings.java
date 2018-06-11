@@ -10,6 +10,10 @@ public class EvmStrings {
 
   private EvmStrings() {}
 
+  public static String unescapeRegex(String input) {
+    return input.replaceAll("\\\\/", "/");
+  }
+
   public static String escape(String input) {
     if (!input.isEmpty() && input.chars().allMatch(codePoint -> codePoint != '#' && Character.isLetterOrDigit(codePoint))) {
       return input;

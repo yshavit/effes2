@@ -37,6 +37,14 @@ public enum EffesBuiltinType {
       .put("length", new BuiltinMethodInfo(0, true, EffesOps::stringLen))
       .build(),
     Collections.emptyMap()),
+  STRING_BUILDER("StringBuilder", EffesNativeType.STRING_BUILDER,
+    build()
+      .put("append", new BuiltinMethodInfo(1, false, EffesOps::stringBuilderAdd))
+      .put("get", new BuiltinMethodInfo(0, true, EffesOps::nativeToString))
+      .build(),
+    build()
+      .put("create", new BuiltinMethodInfo(0, true, EffesOps::sbld))
+      .build()),
   INTEGER("Integer", EffesNativeType.INTEGER, Collections.emptyMap(), Collections.emptyMap());
 
   EffesBuiltinType(String typeName, EffesNativeType evmType, Map<String, MethodInfo> instanceMethods, Map<String, MethodInfo> staticMethods) {

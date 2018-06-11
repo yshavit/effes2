@@ -29,7 +29,7 @@ tokens { INDENT, DEDENT }
 // literals
 QUOTED_STRING : DQUOTE ( ~["\r\n\\] | ESC_SEQ )* DQUOTE ;
 fragment DQUOTE         : '"' ;
-fragment ESC_SEQ        : '\\' [tbnrf'"\\] ;
+fragment ESC_SEQ        : '\\' [tbnrf"\\] ;
 INT : '0' | ([1-9] [0-9]*) ;
 
 //------------------------------------------------------------------------------------------

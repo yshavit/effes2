@@ -115,6 +115,24 @@ expect: |
   pop                     # []
   pvar 0                  # [val]
   goto @UNMATCHED         # [val]
+name: regex with forward slash, keep unmatched
+options: { keepIfNotMatched: true }
+input: '~/foo\/bar/'
+expect: |
+  #                       # [val]
+  Svar 0                  # [val]   $0=val
+  typp String             # [val, valIsStr}
+  gofi match_fail_pop_1   # [val]
+  str "foo/bar"           # [val, pattern]
+  call_String:regex       # [match?]
+  typp Match              # [match?, matchIsMatch]
+  gofi match_fail_pop_1   # [match?]
+  pop                     # []
+  goto @MATCHED           # []
+  labl match_fail_pop_1   # [val] or [match?]
+  pop                     # []
+  pvar 0                  # [val]
+  goto @UNMATCHED         # [val]
 ---
 name: regex type pattern, pop unmatched
 options: { keepIfNotMatched: false }
