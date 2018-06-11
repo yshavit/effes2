@@ -258,6 +258,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   private void compileElseStatement(EffesParser.ElseStatContext ctx, String ifNotLabel, String ifChainEndLabel) {
     if (ctx == null) {
+      cc.labelAssigner.place(ifNotLabel);
       return;
     }
     cc.out.gotoAbs(ifChainEndLabel); // previous block falls through to here, then jumps to end

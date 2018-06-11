@@ -58,8 +58,11 @@ type Tokenizer(indentations, tokens):
     ::: input is CharStreamIn
     while input.readLine() is:
       line ~/\s*/:
-        _handleIndentations(line.group(0))
-        _handlePayload(line.tail())
+        tail = line.tail()
+        ::: tail is String
+        if tail.length() > 0:
+          _handleIndentations(line.group(0))
+          _handlePayload(tail)
     _closeIndentations()
     tokens = Queue.reverse(tokens)
     return tokens

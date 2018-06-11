@@ -436,6 +436,7 @@ expect: |
   pvar 2            # [b]
   gofi elseIfNot    # []
   call : doB        # []
+  labl elseIfNot    # []
   labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
@@ -599,6 +600,7 @@ expect: |
   gofi ifNot
   pvar 0
   call :Dog bark
+  labl ifNot
   labl ifChainEnd
 ---
 name: if-matchers brings type info
