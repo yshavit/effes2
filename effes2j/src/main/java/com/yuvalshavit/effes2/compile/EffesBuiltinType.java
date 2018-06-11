@@ -40,7 +40,7 @@ public enum EffesBuiltinType {
   STRING_BUILDER("StringBuilder", EffesNativeType.STRING_BUILDER,
     build()
       .put("append", new BuiltinMethodInfo(1, false, EffesOps::stringBuilderAdd))
-      .put("get", new BuiltinMethodInfo(0, true, EffesOps::nativeToString))
+      .put("get", new BuiltinMethodInfo(0, true, EffesOps::stringBuilderGet))
       .build(),
     build()
       .put("create", new BuiltinMethodInfo(0, true, EffesOps::sbld))
