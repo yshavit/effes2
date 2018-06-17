@@ -79,7 +79,9 @@ public class Ef2Test {
       new String[0],
       io,
       500,
-      ctx -> new CodeCoverageDebugServer(ctx, CODE_COVERAGE_BASE_NAME));
+      ctx -> Arrays.asList(
+        new CodeCoverageDebugServer(ctx, CODE_COVERAGE_BASE_NAME),
+        EvmRunner.getRemoteDebugger(ctx)));
     assertEquals(exitCode, 0, "exit code");
     assertEquals(io.stdout.toString(), testCase.stdout, "stdout");
     assertEquals(io.stderr.toString(), testCase.stderr, "stdout");
