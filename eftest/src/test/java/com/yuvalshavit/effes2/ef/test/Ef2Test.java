@@ -20,6 +20,7 @@ import org.reflections.Reflections;
 import org.reflections.scanners.ResourcesScanner;
 import org.reflections.util.ClasspathHelper;
 import org.reflections.util.ConfigurationBuilder;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 import org.yaml.snakeyaml.Yaml;
@@ -27,18 +28,30 @@ import org.yaml.snakeyaml.Yaml;
 import com.google.common.base.CaseFormat;
 import com.google.common.io.Files;
 import com.yuvalshavit.effesvm.load.EffesModule;
-import com.yuvalshavit.effesvm.runtime.DebugServer;
 import com.yuvalshavit.effesvm.runtime.EffesInput;
 import com.yuvalshavit.effesvm.runtime.EffesIo;
 import com.yuvalshavit.effesvm.runtime.EffesOutput;
 import com.yuvalshavit.effesvm.runtime.EffesRuntimeException;
 import com.yuvalshavit.effesvm.runtime.EvmRunner;
+import com.yuvalshavit.effesvm.runtime.coverage.CodeCoverageDebugServer;
 
 public class Ef2Test {
 
   private static final String PACKAGE_NAME =Ef2Test.class.getPackage().getName();
   private static final ThreadLocal<Yaml> yaml = ThreadLocal.withInitial(Yaml::new);
   public static final Map<EffesModule.Id, List<String>> efctFiles = findInputFiles();
+  private static final String CODE_COVERAGE_BASE_NAME = "efct-test-coverage";
+
+  @BeforeClass
+  public static void resetCodeCoverage() {
+    String cumulativeFileName = CodeCoverageDebugServer.cumulativeFileNme(CODE_COVERAGE_BASE_NAME);
+    File cumulativeFile = new File(cumulativeFileName);
+    if (cumulativeFile.exists()) {
+      if (!cumulativeFile.delete()) {
+        throw new RuntimeException("couldn't delete " + cumulativeFileName);
+      }
+    }
+  }
 
   @DataProvider(name = "suite")
   public Object[][] loadTests() {
@@ -66,7 +79,7 @@ public class Ef2Test {
       new String[0],
       io,
       500,
-      x -> DebugServer.noop);
+      ctx -> new CodeCoverageDebugServer(ctx, CODE_COVERAGE_BASE_NAME));
     assertEquals(exitCode, 0, "exit code");
     assertEquals(io.stdout.toString(), testCase.stdout, "stdout");
     assertEquals(io.stderr.toString(), testCase.stderr, "stdout");
