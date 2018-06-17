@@ -1,0 +1,21 @@
+stdin: |
+  One
+    Two
+      Three
+    Four
+  Five
+stdout: |
+  Tokens:Nl
+  Tokens:IdentType(One)
+  Tokens:Indent
+  Tokens:IdentType(Two)
+  Tokens:Indent
+  Tokens:IdentType(Three)
+  Tokens:Nl
+  Tokens:Dedent
+  Tokens:IdentType(Four)
+  Tokens:Nl
+  Tokens:Dedent
+  Tokens:IdentType(Five)
+  Tokens:Nl
+

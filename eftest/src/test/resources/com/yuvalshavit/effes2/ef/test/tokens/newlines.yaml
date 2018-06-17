@@ -1,0 +1,12 @@
+stdin: |
+  One
+  Two
+  Three
+stdout: |
+  Tokens:Nl
+  Tokens:IdentType(One)
+  Tokens:Nl
+  Tokens:IdentType(Two)
+  Tokens:Nl
+  Tokens:IdentType(Three)
+  Tokens:Nl
