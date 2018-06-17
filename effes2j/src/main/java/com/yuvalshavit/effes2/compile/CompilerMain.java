@@ -19,11 +19,13 @@ import com.yuvalshavit.effes2.util.MiscUtil;
 
 public class CompilerMain {
   public static void main(String[] args) {
-    ErrorHandler errorHandler = new ErrorHandler();
-
-    // Create the compilation units
     File sourceDir = getDir("source", "", false);
     File outputDir = getDir("output", sourceDir.getAbsolutePath(), true);
+    compile(sourceDir, outputDir, args);
+  }
+
+  public static void compile(File sourceDir, File outputDir, String... args) {
+    ErrorHandler errorHandler = new ErrorHandler();
     if (args.length == 0) {
       File[] sourceFiles = sourceDir.listFiles(f -> f.isFile() && f.getName().endsWith(".ef"));
       if (sourceFiles == null) {

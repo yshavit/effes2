@@ -27,6 +27,7 @@ import org.yaml.snakeyaml.Yaml;
 
 import com.google.common.base.CaseFormat;
 import com.google.common.io.Files;
+import com.yuvalshavit.effes2.compile.CompilerMain;
 import com.yuvalshavit.effesvm.load.EffesModule;
 import com.yuvalshavit.effesvm.runtime.EffesInput;
 import com.yuvalshavit.effesvm.runtime.EffesIo;
@@ -39,7 +40,7 @@ public class Ef2Test {
 
   private static final String PACKAGE_NAME =Ef2Test.class.getPackage().getName();
   private static final ThreadLocal<Yaml> yaml = ThreadLocal.withInitial(Yaml::new);
-  public static final Map<EffesModule.Id, List<String>> efctFiles = findInputFiles();
+  private static Map<EffesModule.Id, List<String>> efctFiles;
   private static final String CODE_COVERAGE_BASE_NAME = "efct-test-coverage";
 
   @BeforeClass
@@ -51,6 +52,24 @@ public class Ef2Test {
         throw new RuntimeException("couldn't delete " + cumulativeFileName);
       }
     }
+  }
+
+  @BeforeClass
+  public static void recompile() {
+    File efDir = new File("../ef");
+    File efctDir = new File("../efct");
+    if (!efDir.isDirectory()) {
+      throw new RuntimeException("not a dir: " + efDir);
+    }
+    if (efctDir.exists()) {
+      if (!efctDir.isDirectory()) {
+        throw new RuntimeException("not a dir: " + efctDir);
+      }
+    } else if (!efctDir.mkdirs()) {
+      throw new RuntimeException("couldn't create dir: " + efctDir);
+    }
+    CompilerMain.compile(efDir, efctDir);
+    efctFiles = findInputFiles();
   }
 
   @DataProvider(name = "suite")
