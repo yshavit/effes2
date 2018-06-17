@@ -1,3 +1,0 @@
-#!/bin/bash
-cd "$(dirname "$0")"
-java -jar pytest/effesvm.jar -d 6667 &> .evm_debugger.log &
