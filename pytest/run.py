@@ -34,7 +34,7 @@ def find_results(desc_filter=None, tests_dir=TESTS_DIR):
     for test_p in sorted(glob.glob('%s**/*.yaml' % tests_dir_abs)):
         test_name = test_p[prefix_len:]
         test_name = os.path.splitext(test_name)[0]
-        print '\x1b[4m%s:\x1b[0m' % test_name
+        print('\x1b[4m%s:\x1b[0m' % test_name)
         with open(test_p) as test_f:
             case_results = []
             for case_no, case in enumerate(yaml.load_all(test_f)):
@@ -48,7 +48,7 @@ def find_results(desc_filter=None, tests_dir=TESTS_DIR):
                     if skipped:
                         sys.stdout.write('\x1b[2m')  # dim
                 if skipped:
-                    print ' \x1b[2m%s (skipped)\x1b[0m' % desc  # dim
+                    print(' \x1b[2m%s (skipped)\x1b[0m' % desc)  # dim
                 else:
                     sys.stdout.write(' %s:' % desc)
                     sys.stdout.flush()
@@ -59,9 +59,9 @@ def find_results(desc_filter=None, tests_dir=TESTS_DIR):
                     expected_files = case.get('result_files', {})
                     expected_files = fill_in_file_shorthand(expected_files, in_files)
                     if stdout == actual and expected_files == actual_files:
-                        print ' OK%s' % (', but with stderr' if actual_err else '')
+                        print(' OK%s' % (', but with stderr' if actual_err else ''))
                     else:
-                        print ' \x1b[1mFAIL\x1b[0m'  # bold
+                        print(' \x1b[1mFAIL\x1b[0m')  # bold
                     case_results.append((desc, stdout, actual, actual_err,
                                          expected_files, actual_files))
             if case_results:
@@ -96,14 +96,14 @@ def run_effes(entry_module, stdin, args, in_files):
                     sys.stderr.write(m.group(1))
         sys.stderr.write(')')
         sys.stderr.flush()
-    stdout, stderr = p.communicate(stdin)
+    stdout, stderr = p.communicate(stdin.encode('utf-8'))
     out_files = dir_to_object(working_dir)
     shutil.rmtree(working_dir)
     return stdout.strip(), stderr.strip(), out_files
 
 
 def create_files(cwd, files):
-    for name, contents in files.iteritems():
+    for name, contents in files.items():
         child_path = '%s/%s' % (cwd, name)
         if type(contents) is dict:
             os.mkdir(child_path)
@@ -131,7 +131,7 @@ def dir_to_object(cwd):
 def fill_in_file_shorthand(shorthand, template):
     '''for each (k, v) in shorthand, if the value is ['...'], then use
     the value from template instead.'''
-    for k, v in shorthand.iteritems():
+    for k, v in shorthand.items():
         if v == ['...']:
             if k in template:
                 shorthand[k] = template[k]
@@ -154,7 +154,7 @@ def results_to_files(results):
     def line_break(fh, header):
         fh.write('%s\n%s:\n' % ('-' * 20, header))
 
-    for test_p, case_results in results.iteritems():
+    for test_p, case_results in results.items():
         expected_d = clear_dir('%s/%s' % (EXPECTEDS_DIR, test_p))
         actual_d = clear_dir('%s/%s' % (ACTUALS_DIR, test_p))
         for r in case_results:
@@ -175,7 +175,7 @@ def results_to_files(results):
                  open('%s/%s' % (actual_d, desc), 'w') as actual_f:
                 if not matched_stdout:
                     expect_f.write(expected)
-                    actual_f.write(actual)
+                    actual_f.write(str( actual))
                 if not matched_files:
                     line_break(expect_f, 'files')
                     expect_f.write(yaml.dump(expected_files, default_style='|'))
@@ -183,7 +183,7 @@ def results_to_files(results):
                     actual_f.write(yaml.dump(actual_files, default_style='|'))
                 if actual_err:
                     line_break(actual_f, 'stderr')
-                    actual_f.write(actual_err)
+                    actual_f.write(str(actual_err))
 
 
 if __name__ == '__main__':
@@ -202,20 +202,22 @@ if __name__ == '__main__':
     results_to_files(results)
     # results is a map of test -> [(desc, expected, actual, actual_err)]
     errs = []
-    for file_res in results.itervalues():
+    for file_res in results.values():
         errs.extend(['e' for e in file_res if e[1] != e[2] or e[4] != e[5]])
 
-    case_errors = reduce(lambda a, b: a + b, map(len, errs), 0)
+    case_errors = 0
+    for e in errs:
+        case_errors += len(e)
     if case_errors:
-        test_errors = len(filter(bool, errs))
+        test_errors = len([e for e in errs if e])
         print
-        print '%d error%s in %d test file%s.' % (
+        print('%d error%s in %d test file%s.' % (
                 case_errors,
                 '' if case_errors == 1 else 's',
                 test_errors,
-                '' if test_errors == 1 else 's')
+                '' if test_errors == 1 else 's'))
         exit_code = 1
     else:
-        print 'No errors!'
+        print('No errors!')
         exit_code = 0
     exit(exit_code)
