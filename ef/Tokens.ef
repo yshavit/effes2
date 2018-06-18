@@ -130,7 +130,8 @@ type Tokenizer(indentations, tokens):
           False: StringLiteral(r)
         return Pair(result, m.tail())
       ~/$/:
-        return result # unexpected EOL
+        result.append("�")
+        return Pair(BadString(result.get()), "") # unexpected EOL
       m ~/\\t/:
         result.append("\t")
         payload = m.tail()

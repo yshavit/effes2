@@ -1,0 +1,6 @@
+stdin: |
+  "hello
+stdout: |
+  Tokens:Nl
+  Tokens:BadString(hello�)
+  Tokens:Nl
