@@ -1,0 +1,8 @@
+stdin: not 123
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:Not
+      tree: Tokens:IntLiteral
+        value: 123
+    tail: Queue:Queue
+      [0]: Tokens:Nl

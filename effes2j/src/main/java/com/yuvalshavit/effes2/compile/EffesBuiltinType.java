@@ -31,6 +31,12 @@ public enum EffesBuiltinType {
         ops.strPush("\\n");
         ops.sout();
       }))
+      .put("debugPretty", new BuiltinMethodInfo(1, false, ops -> {
+        ops.nativeToStringPretty();
+        ops.sout();
+        ops.strPush("\\n");
+        ops.sout();
+      }))
       .build()),
   REGEX_MATCH("RegexMatch", EffesNativeType.MATCH,
     build()

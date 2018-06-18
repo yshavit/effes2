@@ -190,6 +190,7 @@ public class MatcherCompiler {
         cc.out.PushField(type.evmDescriptor(cc.module), fieldName);               // [..., val, val.fieldN]
         matcherDispatch.apply(fieldMatchers.get(i));                              // [..., val]
       }
+      varBinderByType.accept(type);
       cc.out.pop();
       --depth;
     }

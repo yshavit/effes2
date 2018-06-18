@@ -1,9 +1,23 @@
-type ParseResult(tree, tail)
+type ParseSuccess(tree, tail)
+type ParseFailure
 type Not(tree)
 
 parseExpression(tokens) ->:
-  return Empty
-
+  if tokens is:
+    Queue(e IntLiteral(*), tail):
+      return ParseSuccess(e, tail)
+    Queue(e StringLiteral(*), tail):
+      return ParseSuccess(e, tail)
+    Queue(KwThis, tail):
+      return ParseSuccess(KwThis, tail)
+    Queue(KwNot, tail):
+      if parseExpression(tail) is:
+        ParseSuccess(negated, @tail):
+          return ParseSuccess(Not(negated), tail)
+        *:
+          return Not(ParseFailure)
+    *:
+      return ParseFailure
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)
@@ -12,5 +26,5 @@ main(args) ->:
   if args.get(0) is:
     ~/expression$/:
       result = parseExpression(tokens)
-  CharStreamOut.debug(result)
+  CharStreamOut.debugPretty(result)
   return 0
