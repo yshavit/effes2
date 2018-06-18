@@ -1,0 +1,26 @@
+stdin: |
+  -> @ * == >= > <= < != : , - . = ::: ( ) | + ? /
+stdout: |
+  Tokens:Nl
+  Tokens:KwArrow
+  Tokens:KwAt
+  Tokens:KwAsterisk
+  Tokens:KwEq
+  Tokens:KwGe
+  Tokens:KwGt
+  Tokens:KwLe
+  Tokens:KwLt
+  Tokens:KwNe
+  Tokens:KwColon
+  Tokens:KwComma
+  Tokens:KwDash
+  Tokens:KwDot
+  Tokens:KwEquals
+  Tokens:KwNoop
+  Tokens:KwParenOpen
+  Tokens:KwParenClose
+  Tokens:KwPipe
+  Tokens:KwPlus
+  Tokens:KwQuestionMark
+  Tokens:KwSlash
+  Tokens:Nl
