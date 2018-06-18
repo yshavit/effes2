@@ -4,18 +4,22 @@ type Not(tree)
 
 parseExpression(tokens) ->:
   if tokens is:
-    Queue(e IntLiteral(*), tail):
-      return ParseSuccess(e, tail)
-    Queue(e StringLiteral(*), tail):
-      return ParseSuccess(e, tail)
-    Queue(KwThis, tail):
-      return ParseSuccess(KwThis, tail)
-    Queue(KwNot, tail):
-      if parseExpression(tail) is:
-        ParseSuccess(negated, @tail):
-          return ParseSuccess(Not(negated), tail)
+    Queue(head, tail):
+      if head is:
+        e IntLiteral(*):
+          return ParseSuccess(e, tail)
+        e StringLiteral(*):
+          return ParseSuccess(e, tail)
+        KwThis:
+          return ParseSuccess(KwThis, tail)
+        KwNot:
+          if parseExpression(tail) is:
+            ParseSuccess(negated, @tail):
+              return ParseSuccess(Not(negated), tail)
+            *:
+              return Not(ParseFailure)
         *:
-          return Not(ParseFailure)
+          return ParseFailure
     *:
       return ParseFailure
 
