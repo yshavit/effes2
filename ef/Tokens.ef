@@ -42,6 +42,7 @@ type IdentType(value)
 type IdentName(value)
 type IntLiteral(value)
 type StringLiteral(value)
+type BadString(value)
 type RegexLiteral(value)
 
 type Unknown(value)
@@ -117,13 +118,17 @@ type Tokenizer(indentations, tokens):
   _handleQuotedString(payload) -> :
     result = StringBuilder.create()
     ::: result is StringBuilder
+    foundBad = False
     while payload is:
       m ~/[^\n\r"\\]+/:
         result.append(m.group(0))
         payload = m.tail()
       m ~/"/:
         r = result.get()
-        return Pair(StringLiteral(r), m.tail())
+        result = if foundBad is:
+          True: BadString(r)
+          False: StringLiteral(r)
+        return Pair(result, m.tail())
       ~/$/:
         return result # unexpected EOL
       m ~/\\t/:
@@ -147,6 +152,10 @@ type Tokenizer(indentations, tokens):
       m ~/\\\\/:
         result.append("\\")
         payload = m.tail()
+      m ~/\\./:
+        result.append("�")
+        payload = m.tail()
+        foundBad = True
 
   _handleRegex(payload) -> :
     result = StringBuilder.create()

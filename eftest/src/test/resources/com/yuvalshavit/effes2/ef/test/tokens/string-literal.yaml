@@ -1,0 +1,27 @@
+stdin: |
+  "hello there"
+  "hello\tthere"
+  "hello\bthere"
+  "hello\nthere"
+  "hello\rthere"
+  "hello\fthere"
+  "hello\"there"
+  "hello\\there"
+stdout: |
+  Tokens:Nl
+  Tokens:StringLiteral("hello there")
+  Tokens:Nl
+  Tokens:StringLiteral(hello\tthere)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\bthere)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\nthere)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\rthere)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\fthere)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\"there)
+  Tokens:Nl
+  Tokens:StringLiteral(hello\\there)
+  Tokens:Nl

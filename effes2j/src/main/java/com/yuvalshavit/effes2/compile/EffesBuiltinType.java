@@ -45,22 +45,40 @@ public enum EffesBuiltinType {
     build()
       .put("create", new BuiltinMethodInfo(0, true, EffesOps::sbld))
       .build()),
+  TRUE("True", EffesNativeType.TRUE, Collections.emptyMap(), Collections.emptyMap(), ops -> ops.bool("True")),
+  FALSE("False", EffesNativeType.FALSE, Collections.emptyMap(), Collections.emptyMap(), ops -> ops.bool("False")),
   INTEGER("Integer", EffesNativeType.INTEGER, Collections.emptyMap(), Collections.emptyMap());
 
-  EffesBuiltinType(String typeName, EffesNativeType evmType, Map<String, MethodInfo> instanceMethods, Map<String, MethodInfo> staticMethods) {
+  EffesBuiltinType(
+    String typeName,
+    EffesNativeType evmType,
+    Map<String, MethodInfo> instanceMethods,
+    Map<String, MethodInfo> staticMethods,
+    Consumer<EffesOps<?>> constructor)
+  {
     this.typeName = typeName;
     this.evmType = evmType;
     this.instanceMethods = instanceMethods;
     this.staticMethods = staticMethods;
+    this.constructor = constructor;
+  }
+
+  EffesBuiltinType(String typeName, EffesNativeType evmType, Map<String, MethodInfo> instanceMethods, Map<String, MethodInfo> staticMethods) {
+    this(typeName, evmType, instanceMethods, staticMethods, null);
   }
 
   private final String typeName;
   private final EffesNativeType evmType;
   private final Map<String, MethodInfo> instanceMethods;
   private final Map<String, MethodInfo> staticMethods;
+  private Consumer<EffesOps<?>> constructor;
 
   public String typeName() {
     return typeName;
+  }
+
+  public Consumer<EffesOps<?>> constructor() {
+    return constructor;
   }
 
   public EffesNativeType evmType() {

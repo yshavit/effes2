@@ -117,6 +117,7 @@ public class Compiler {
         .collect(Collectors.toMap(method -> method.methodName, Function.identity()));
       methodInfosByScope.put(module, methodInfos);
     }
+    // TODO refactor this so that the CompilerTestBase mocks can use it. Otherwise, builtin functions and type instantiation doesn't work
     for (EffesBuiltinType builtinType : EffesBuiltinType.values()) {
       SingleTypeInfo typeInfo = new SingleTypeInfo(Name.Module.BUILT_IN, Collections.emptyList());
       typeInfos.put(Name.QualifiedType.forBuiltin(builtinType), typeInfo);

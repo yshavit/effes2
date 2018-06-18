@@ -82,7 +82,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(input, String.format("expected %d argument%s, found %d", expectedArgs, expectedArgs == 1 ? "" : "s", args.size()));
     }
     Lists.reverse(args).forEach(this::apply);
-    cc.out.call(type.evmDescriptor(cc.module), type.getUnqualifiedType().getName());
+    type.instantiate(cc.module, cc.out);
   }
 
   @Dispatched
