@@ -1,0 +1,16 @@
+type ParseResult(tree, tail)
+type Not(tree)
+
+parseExpression(tokens) ->:
+  return Empty
+
+
+main(args) ->:
+  tokens = Tokens.readTokens(Stdio.stdin)
+  ::: args is Array
+  result = Empty
+  if args.get(0) is:
+    ~/expression$/:
+      result = parseExpression(tokens)
+  CharStreamOut.debug(result)
+  return 0

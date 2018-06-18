@@ -12,6 +12,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiConsumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -35,6 +41,9 @@ import com.yuvalshavit.effesvm.runtime.EffesOutput;
 import com.yuvalshavit.effesvm.runtime.EffesRuntimeException;
 import com.yuvalshavit.effesvm.runtime.EvmRunner;
 import com.yuvalshavit.effesvm.runtime.coverage.CodeCoverageDebugServer;
+
+import lombok.Getter;
+import lombok.Setter;
 
 public class Ef2Test {
 
@@ -78,10 +87,10 @@ public class Ef2Test {
       new ConfigurationBuilder()
       .setUrls(ClasspathHelper.forPackage(PACKAGE_NAME))
       .setScanners(new ResourcesScanner())
-      .filterInputsBy(r -> r != null && r.endsWith(".yaml")));
+      .filterInputsBy(r -> r != null && r.endsWith(".yaml") && !r.endsWith("_inherit.yaml")));
     return reflections.getResources(Pattern.compile(".*\\.yaml$"))
       .stream()
-      .map(Ef2Test::readCases).map(c -> new Object[] {c}).toArray(Object[][]::new);
+      .map(Ef2Test::readCase).map(c -> new Object[] {c}).toArray(Object[][]::new);
   }
 
   @Test
@@ -95,7 +104,7 @@ public class Ef2Test {
     int exitCode = EvmRunner.run(
       efctFiles,
       new EffesModule.Id(testCase.mainModule),
-      new String[0],
+      testCase.args,
       io,
       500,
       ctx -> Arrays.asList(
@@ -124,14 +133,15 @@ public class Ef2Test {
     ));
   }
 
-  private static Case readCases(String fileName) {
+  private static Case readCase(String fileName) {
     fileName = fileName.substring(PACKAGE_NAME.length() + 1);
     try (InputStream is = Ef2Test.class.getResourceAsStream(fileName)) {
       Case testCase = yaml.get().loadAs(is, Case.class);
-      String[] fileNameSplit = fileName.split("/", 2);
-      if (fileNameSplit.length != 2) {
+      String[] fileNameSplit = fileName.split("/");
+      if (fileNameSplit.length == 1) {
         throw new RuntimeException("expected a slash: " + fileName);
       }
+      inheritCases(testCase, Arrays.asList(fileNameSplit).subList(0, fileNameSplit.length - 1));
       testCase.mainModule = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.UPPER_CAMEL, fileNameSplit[0]);
       testCase.name = fileName.substring(0, fileName.length() - ".yaml".length());
       if (testCase.stdout == null) {
@@ -143,9 +153,36 @@ public class Ef2Test {
     }
   }
 
+  private static final Map<List<String>,Optional<Case>> inheritedCases = new ConcurrentHashMap<>();
+  private static void inheritCases(Case target, List<String> path) {
+    if (path.isEmpty()) {
+      return;
+    }
+    Optional<Case> inherited = inheritedCases.get(path);
+    if (inherited == null) {
+      String metaPath = path.stream().collect(Collectors.joining("/", "", "/_inherit.yaml"));
+      InputStream is = Ef2Test.class.getResourceAsStream(metaPath);
+      if (is == null) {
+        inherited = Optional.empty();
+      } else {
+        try (InputStream closeMe = is) {
+          inherited = Optional.of(yaml.get().loadAs(closeMe, Case.class));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+      }
+      inheritedCases.put(path, inherited);
+    }
+    inherited.ifPresent(target::add);
+    inheritCases(target, path.subList(0, path.size() - 1));
+  }
+
+  @Getter
+  @Setter
   public static class Case {
     public String name;
     public String mainModule;
+    public String[] args = new String[0];
     public String stdin = "";
     public String stdout;
     public String stderr = "";
@@ -153,6 +190,25 @@ public class Ef2Test {
     @Override
     public String toString() {
       return name;
+    }
+
+    public void add(Case other) {
+      add(other, Case::getName, Case::setName, Objects::isNull);
+      add(other, Case::getMainModule, Case::setMainModule, Objects::isNull);
+      add(other, Case::getArgs, Case::setArgs, arr -> arr.length == 0);
+      add(other, Case::getStdin, Case::setStdin, String::isEmpty);
+      add(other, Case::getStdout, Case::setStdout, Objects::isNull);
+      add(other, Case::getStderr, Case::setStderr, String::isEmpty);
+    }
+
+    private <T> void add(Case other, Function<Case,T> getter, BiConsumer<Case,T> setter, Predicate<T> isDefault) {
+      T otherField = getter.apply(other);
+      if (!isDefault.test(otherField)) {
+        T myField = getter.apply(this);
+        if (isDefault.test(myField)) {
+          setter.accept(this, otherField);
+        }
+      }
     }
   }
 

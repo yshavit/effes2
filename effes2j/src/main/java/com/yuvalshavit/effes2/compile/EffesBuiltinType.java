@@ -9,6 +9,12 @@ import com.yuvalshavit.effesvm.runtime.EffesNativeType;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public enum EffesBuiltinType {
+  ARRAY("Array", EffesNativeType.ARRAY,
+    build()
+      .put("get", new BuiltinMethodInfo(1, true, EffesOps::arrayGet))
+      .put("length", new BuiltinMethodInfo(0, true, EffesOps::arrayLen))
+      .build(),
+    Collections.emptyMap()),
   CHAR_STREAM_IN("CharStreamIn", EffesNativeType.STREAM_IN,
     build()
       .put("readLine", new BuiltinMethodInfo(0, true, EffesOps::readLine))
