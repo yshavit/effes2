@@ -229,5 +229,3 @@ main(args) ->:
   while tokens is Queue(t, @tokens):
     CharStreamOut.debug(t)
   return 0
-
-type ThisIsJustATestToMakeSureWeGetATrailingNewline
