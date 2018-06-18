@@ -1,0 +1,5 @@
+stdin: |
+  foo
+stdout: |
+  Tokens:IdentName(foo)
+  Tokens:Nl

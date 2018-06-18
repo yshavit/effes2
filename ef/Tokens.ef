@@ -66,7 +66,10 @@ type Tokenizer(indentations, tokens):
           _handlePayload(tail)
     _closeIndentations()
     tokens = Queue.reverse(tokens)
-    tokens = Queue.pop(tokens) # the first token is always a Nl. This pops it, since we don't need it.
+    if tokens is Queue(Nl, tail):
+      # The first token is always a Nl, unless the file starts with an indent. This is an implementation artifact, not
+      # anything intentional. Remove it.
+      tokens = tail 
 
   _handleIndentations(prefix):
     ::: prefix is String
