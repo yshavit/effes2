@@ -8,7 +8,6 @@ stdin: |
   "hello\"there"
   "hello\\there"
 stdout: |
-  Tokens:Nl
   Tokens:StringLiteral("hello there")
   Tokens:Nl
   Tokens:StringLiteral(hello\tthere)

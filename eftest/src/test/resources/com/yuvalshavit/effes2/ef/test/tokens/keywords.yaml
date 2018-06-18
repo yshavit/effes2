@@ -13,7 +13,6 @@ stdin: |
   type
   while
 stdout: |
-  Tokens:Nl
   Tokens:KwBreak
   Tokens:Nl
   Tokens:KwContinue

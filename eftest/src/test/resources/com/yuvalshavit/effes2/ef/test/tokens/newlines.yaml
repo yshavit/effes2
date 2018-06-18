@@ -3,7 +3,6 @@ stdin: |
   Two
   Three
 stdout: |
-  Tokens:Nl
   Tokens:IdentType(One)
   Tokens:Nl
   Tokens:IdentType(Two)

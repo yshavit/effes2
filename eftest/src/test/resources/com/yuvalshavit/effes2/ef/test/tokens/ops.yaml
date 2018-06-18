@@ -1,7 +1,6 @@
 stdin: |
   -> @ * == >= > <= < != : , - . = ::: ( ) | + ? /
 stdout: |
-  Tokens:Nl
   Tokens:KwArrow
   Tokens:KwAt
   Tokens:KwAsterisk

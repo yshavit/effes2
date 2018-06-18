@@ -5,7 +5,6 @@ stdin: |
     Four
   Five
 stdout: |
-  Tokens:Nl
   Tokens:IdentType(One)
   Tokens:Indent
   Tokens:IdentType(Two)

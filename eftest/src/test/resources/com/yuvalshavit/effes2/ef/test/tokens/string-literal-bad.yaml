@@ -1,6 +1,5 @@
 stdin: |
   "hello\-there"  # bad escape
 stdout: |
-  Tokens:Nl
   Tokens:BadString(hello�there)
   Tokens:Nl
