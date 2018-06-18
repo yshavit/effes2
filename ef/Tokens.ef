@@ -103,7 +103,7 @@ type Tokenizer(indentations, tokens):
       ~/(?:#.*)?$/: Empty
       m ~/"/: _handleQuotedString(m.tail())
       m ~/~\//: _handleRegex(m.tail())
-      m ~/0|[1-9](0-9)*/: Pair(IntLiteral(m.group(0)), m.tail())
+      m ~/0|[1-9][0-9]*/: Pair(IntLiteral(m.group(0)), m.tail())
       tail: _lexWord(tail)
     if pair is:
       Empty:

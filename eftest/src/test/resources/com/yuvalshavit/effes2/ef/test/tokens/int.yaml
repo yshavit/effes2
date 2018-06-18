@@ -1,0 +1,6 @@
+stdin: |
+  123
+stdout: |
+  Tokens:Nl
+  Tokens:IntLiteral(123)
+  Tokens:Nl
