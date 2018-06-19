@@ -56,9 +56,9 @@ _isFactorOp(op) ->:
     *: False
 
 _parseSimpleExpression(tokens) ->:
-  # Parsing "directly" -- that is, for rules that don't have to worry about order of operations.
-  # These are rules that are unambiguous. For instance, "123" is just an IntLiteral, and "not foo"
-  # is just a negation.
+  # Rules that don't have to worry about order of operations.
+  # These are rules that are unambiguous. For instance, "123" is just an IntLiteral, and foo(123)
+  # is unambiguously an invocation of foo with 123 as its arg.
   if tokens is:
     Queue(head, tail):
       if head is: # TODO should I inline these? "return if head is..."
