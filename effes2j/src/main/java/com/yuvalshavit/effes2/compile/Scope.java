@@ -127,6 +127,15 @@ public class Scope {
     return allocateLocal(symbolName, allowShadowing, (Name.QualifiedType) null);
   }
 
+  public void releaseLocal(String varName, VarRef varRef) {
+    Frame lookIn = frame;
+    for (; lookIn != null; lookIn = lookIn.parent) {
+      if (lookIn.symbols.get(varName) == varRef) {
+        lookIn.symbols.remove(varName);
+      }
+    }
+  }
+
   public VarRef tryLookUpInTopFrame(String symbolName) {
     return frame.symbols.get(symbolName);
   }

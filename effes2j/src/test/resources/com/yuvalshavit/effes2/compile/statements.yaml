@@ -633,3 +633,81 @@ expect: |
   call :Dog bark
   goto matchersEnd
   labl matchersEnd
+---
+name: single matcher with simple binding
+input: |
+  if foo(var) is:
+    Success(@var):
+      return var
+localVars:
+  var:
+    reg: 0
+    type: null
+types:
+  Success:
+    fields: [value]
+staticMethods:
+  foo:
+    declaredArgs: 1
+    hasRv: true
+expect: |
+  pvar 0                  # [var]
+  call : foo              # [fooRv]
+  typp :Success           # [fooRv, fooRvIsSuccess]
+  gofi match_fail_pop_1   # [fooRv]
+  Pfld :Success value     # [fooRv, fooRv.value]
+  Svar 1                  # [fooRv, fooRv.value]    $1=fooRv.value
+  pop                     # [fooRv]
+  pop                     # []
+  pvar 1                  # [fooRv.value]
+  svar 0                  # []                      $0=fooRv.value
+  goto whileMultiMatched  # []
+  labl match_fail_pop_1   # [fooRv]
+  pop                     # []
+  goto matchersEnd        # []
+  labl whileMultiMatched  # []
+  pvar 0                  # [value]
+  rtrn                    # <return>
+  labl matchersEnd        # []
+---
+name: single matcher with binding and guard
+input: |
+  if foo(var) is:
+    Success(@var if guard(var)):
+      return var
+localVars:
+  var:
+    reg: 0
+    type: null
+types:
+  Success:
+    fields: [value]
+staticMethods:
+  foo:
+    declaredArgs: 1
+    hasRv: true
+  guard:
+    declaredArgs: 1
+    hasRv: true
+expect: |
+  pvar 0                  # [value]
+  call : foo              # [fooRv]
+  typp :Success           # [fooRv, fooRvIsSuccess]
+  gofi match_fail_pop_1   # [fooRv]
+  Pfld :Success value     # [fooRv, fooRv.value]
+  Svar 1                  # [fooRv, fooRv.value]      $1=fooRv.value
+  pop                     # [fooRv]
+  pvar 1                  # [fooRv, fooRv.value]
+  call : guard            # [fooRv, guardRv]
+  gofi match_fail_pop_1   # [fooRv]
+  pop                     # []
+  pvar 1                  # [fooRv.value]
+  svar 0                  # []                        $0=value
+  goto whileMultiMatched  # []
+  labl match_fail_pop_1   # [fooRv]
+  pop                     # []
+  goto matchersEnd        # []
+  labl whileMultiMatched  # []
+  pvar 0                  # [fooRv.value]
+  rtrn                    # <return>
+  labl matchersEnd        # []

@@ -42,7 +42,7 @@ public class MatcherCompiler {
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
-    compiler.scratchVars.commit(compilerContext.out);
+    compiler.scratchVars.commit(compilerContext.out, compilerContext.scope);
     compilerContext.out.gotoAbs(labelIfMatched);
 
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
@@ -146,7 +146,7 @@ public class MatcherCompiler {
         if (varBindAt != null) {
           assert varBindAt.getSymbol().getType() == EffesLexer.AT : varBindAt; // make sure we really passed in an AT
           VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
-          scratchVars.add(varRef, eventualBind);
+          scratchVars.add(varName, varRef, eventualBind);
         }
         varRef.storeNoPop(cc.module, cc.out);
       }

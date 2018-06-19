@@ -13,6 +13,7 @@ import org.testng.annotations.Test;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.parse.ParseUtils;
 import com.yuvalshavit.effes2.parse.ToObjectPrinter;
+import com.yuvalshavit.effes2.util.FileBound;
 import com.yuvalshavit.effes2.util.ParseChecker;
 import com.yuvalshavit.effes2.util.ResourceReader;
 
@@ -30,8 +31,8 @@ public class ParseTest {
   }
 
   @Test(dataProvider = "test1")
-  public void parse(String fileName, TestCase testCase) throws Exception {
-    Function<EffesParser,ParserRuleContext> rule = ParseUtils.ruleByName(fileName);
+  public void parse(TestCase testCase) throws Exception {
+    Function<EffesParser,ParserRuleContext> rule = ParseUtils.ruleByName(testCase.fileName);
     ParseChecker.check(getClass().getSimpleName() + "." + testCase, testCase.input, rule, ast -> {
       ToObjectPrinter toObjectPrinter = new ToObjectPrinter();
       toObjectPrinter.walk(ast);
@@ -40,14 +41,20 @@ public class ParseTest {
     });
   }
 
-  static class TestCase {
+  static class TestCase implements FileBound {
     public String name;
     public String input;
     public Object expected;
+    private String fileName;
 
     @Override
     public String toString() {
       return name == null ? input : name;
+    }
+
+    @Override
+    public void setFile(String fileName) {
+      this.fileName = fileName;
     }
   }
 }

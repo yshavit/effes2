@@ -1,11 +1,57 @@
 type ParseSuccess(tree, tail)
 type ParseFailure
+
+type BinaryExpr(left, op, right)
 type Not(tree)
 
 parseExpression(tokens) ->:
+  return _parseTerms(tokens)
+
+_parseTerms(tokens) ->:
+  if _parseFactors(tokens) is:
+    ParseSuccess(term, @tokens):
+      while tokens is Queue(op if _isTermOp(op), @tokens):
+        if _parseFactors(tokens) is:
+          ParseSuccess(rhs, @tokens):
+            term = BinaryExpr(term, op, rhs)
+          err:
+            return err
+      return ParseSuccess(term, tokens)
+    err:
+      return err
+
+_parseFactors(tokens) ->:
+  if _parseSimpleExpression(tokens) is:
+    ParseSuccess(term, @tokens):
+      while tokens is Queue(op if _isFactorOp(op), @tokens):
+        if _parseSimpleExpression(tokens) is:
+          ParseSuccess(rhs, @tokens):
+            term = BinaryExpr(term, op, rhs)
+          err:
+            return err
+      return ParseSuccess(term, tokens)
+    err:
+      return err
+
+_isTermOp(op) ->:
+  return if op is:
+    KwPlus: True
+    KwDash: True
+    *: False
+
+_isFactorOp(op) ->:
+  return if op is:
+    KwAsterisk: True
+    KwSlash: True
+    *: False
+
+_parseSimpleExpression(tokens) ->:
+  # Parsing "directly" -- that is, for rules that don't have to worry about order of operations.
+  # These are rules that are unambiguous. For instance, "123" is just an IntLiteral, and "not foo"
+  # is just a negation.
   if tokens is:
     Queue(head, tail):
-      if head is:
+      if head is: # TODO should I inline these? "return if head is..."
         e IntLiteral(*):
           return ParseSuccess(e, tail)
         e StringLiteral(*):
@@ -22,6 +68,18 @@ parseExpression(tokens) ->:
           return ParseFailure
     *:
       return ParseFailure
+
+_isPlusOrMinus(tok) ->:
+  return if tok is:
+    KwPlus: True
+    KwDash: True
+    *: False
+
+_isMultOrDivide(tok) ->:
+  return if tok is:
+    KwAsterisk: True
+    KwSlash: True
+    *: False
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)

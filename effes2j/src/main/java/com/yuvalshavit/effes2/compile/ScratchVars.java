@@ -1,27 +1,37 @@
 package com.yuvalshavit.effes2.compile;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Consumer;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
+import lombok.Data;
+
 public class ScratchVars {
   private final Name.Module context;
-  private final List<Consumer<EffesOps<?>>> pending = new ArrayList<>();
+  private final Map<VarRef,Bind> scratchesToCommits = new HashMap<>();
 
   public ScratchVars(Name.Module context) {
     this.context = context;
   }
 
-  public void add(VarRef scratchVar, VarRef commitVar) {
-    pending.add(ops -> {
+  public void add(String scratchVarName, VarRef scratchVar, VarRef commitVar) {
+    if (scratchesToCommits.put(scratchVar, new Bind(scratchVarName, commitVar)) != null) {
+      throw new RuntimeException("scratch var registered multiple times");
+    }
+  }
+
+  public void commit(EffesOps<?> ops, Scope scope) {
+    scratchesToCommits.forEach((scratchVar, bind) -> {
       scratchVar.push(context, ops);
-      commitVar.store(context, ops);
+      bind.commitVar.store(context, ops);
+      scope.releaseLocal(bind.scratchVarName, scratchVar);
     });
   }
 
-  public void commit(EffesOps<?> ops) {
-    pending.forEach(action -> action.accept(ops));
+  @Data
+  private static class Bind {
+    private final String scratchVarName;
+    private final VarRef commitVar;
   }
 }

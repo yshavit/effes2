@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 
 import com.google.common.collect.Maps;
 import com.yuvalshavit.effes2.parse.EffesParser;
+import com.yuvalshavit.effes2.util.FileBound;
 import com.yuvalshavit.effes2.util.ParseChecker;
 import com.yuvalshavit.effes2.util.ResourceReader;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
@@ -49,9 +50,9 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
   }
 
   @Test(dataProvider = "test")
-  public void compile(String fileName, TestCase testCase) {
+  public void compile(TestCase testCase) {
     assertNotNull(testCase.input, "no test input!");
-    ParseChecker.check(fileName, testCase.input, rule, ast -> {
+    ParseChecker.check(testCase.toString(), testCase.input, rule, ast -> {
       StringBuilder sb = new StringBuilder();
       CompilerContextGenerator ccGen = compilerContextGenerator(testCase, sb, preload());
       CompilerContext compilerContext = compilerContext(testCase, ccGen);
@@ -68,7 +69,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     public Map<String,SerTypeInfo> types = Collections.emptyMap();
   }
 
-  public static class TestCase {
+  public static class TestCase implements FileBound {
     public String instanceContextType;
     public Map<String,SerTypeInfo> types = Collections.emptyMap();
     public Map<String,SerMethodInfo> staticMethods = Collections.emptyMap();
@@ -81,6 +82,11 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     @Override
     public String toString() {
       return name == null ? input : name;
+    }
+
+    @Override
+    public void setFile(String fileName) {
+      // nothing
     }
   }
 

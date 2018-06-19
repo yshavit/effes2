@@ -16,7 +16,7 @@ import com.google.common.io.ByteStreams;
 public class ResourceReader {
   private static final String ONLY_PARAM_KEY = "test.param";
   private static final String ONLY_PARAM_VALUE = System.getProperty(ONLY_PARAM_KEY);
-  private static final Predicate<TestCaseRead<?>> ONLY_PARAM_PREDICATE = tcr -> ONLY_PARAM_VALUE == null || ONLY_PARAM_VALUE.equals(tcr.payload.toString());
+  private static final Predicate<Object> ONLY_PARAM_PREDICATE = tcr -> ONLY_PARAM_VALUE == null || ONLY_PARAM_VALUE.equals(tcr.toString());
 
   private ResourceReader() {}
 
@@ -33,21 +33,25 @@ public class ResourceReader {
     }
   }
 
-  public static Object[][] testCases(Class<?> testClass, Class<?> readAs, String[] files) {
+  public static Object[][] testCases(Class<?> testClass, Class<? extends FileBound> readAs, String[] files) {
     return Stream.of(files)
       .filter(f -> f.endsWith(".yaml"))
       .sorted()
       .flatMap(f -> StreamSupport
         .stream(new Yaml().loadAll(read(testClass, f)).spliterator(), false)
         .filter(Objects::nonNull)
-        .map(o -> new TestCaseRead<>(f.replaceAll("\\.yaml$", ""), o)))
-      .map(read -> read.convert(readAs))
+        .map(o -> {
+          String fileName = f.replaceAll("\\.yaml$", "");
+          FileBound converted = ResourceReader.convert(o, readAs);
+          converted.setFile(fileName);
+          return converted;
+        }))
       .filter(ONLY_PARAM_PREDICATE)
-      .map(o -> new Object[] {o.fileName, o.payload})
+      .map(o -> new Object[] {o})
       .toArray(Object[][]::new);
   }
 
-  public static Object[][] testCases(Class<?> testClass, Class<?> readAs, String file, String... files) {
+  public static Object[][] testCases(Class<?> testClass, Class<? extends FileBound> readAs, String file, String... files) {
     return testCases(testClass, readAs, Stream.concat(Stream.of(file), Stream.of(files)).toArray(String[]::new));
   }
 
@@ -55,20 +59,5 @@ public class ResourceReader {
     Yaml mapper = new Yaml();
     String yaml = mapper.dump(from);
     return mapper.loadAs(yaml, to);
-  }
-
-  public static class TestCaseRead<T> {
-    public final String fileName;
-    public final T payload;
-
-    public TestCaseRead(String fileName, T payload) {
-      this.fileName = fileName;
-      this.payload = payload;
-    }
-
-    public <R> TestCaseRead<R> convert(Class<R> to) {
-      R converted = ResourceReader.convert(payload, to);
-      return new TestCaseRead<>(fileName, converted);
-    }
   }
 }
