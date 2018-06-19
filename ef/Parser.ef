@@ -5,7 +5,17 @@ type BinaryExpr(left, op, right)
 type Not(tree)
 
 parseExpression(tokens) ->:
-  return _parseTerms(tokens)
+  return _parseUnaryOp(tokens)
+
+_parseUnaryOp(tokens) ->:
+  if tokens is:
+    Queue(KwNot, @tokens):
+      return if _parseUnaryOp(tokens) is:
+        ParseSuccess(expression, @tokens): ParseSuccess(Not(expression), tokens)
+        err: err
+    *:
+      return _parseTerms(tokens)
+    
 
 _parseTerms(tokens) ->:
   if _parseFactors(tokens) is:
@@ -58,28 +68,10 @@ _parseSimpleExpression(tokens) ->:
           return ParseSuccess(e, tail)
         KwThis:
           return ParseSuccess(KwThis, tail)
-        KwNot:
-          if parseExpression(tail) is:
-            ParseSuccess(negated, @tail):
-              return ParseSuccess(Not(negated), tail)
-            *:
-              return Not(ParseFailure)
         *:
           return ParseFailure
     *:
       return ParseFailure
-
-_isPlusOrMinus(tok) ->:
-  return if tok is:
-    KwPlus: True
-    KwDash: True
-    *: False
-
-_isMultOrDivide(tok) ->:
-  return if tok is:
-    KwAsterisk: True
-    KwSlash: True
-    *: False
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)
