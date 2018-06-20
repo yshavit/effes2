@@ -3,6 +3,9 @@ type ParseFailure
 
 type BinaryExpr(left, op, right)
 type Not(tree)
+type MethodCall(typeName, methodName, argsInvocation)
+type ArgsInvocation(args)
+type IsA(expr, testType)
 
 parseExpression(tokens) ->:
   return _parseUnaryOp(tokens)
@@ -14,8 +17,20 @@ _parseUnaryOp(tokens) ->:
         ParseSuccess(expression, @tokens): ParseSuccess(Not(expression), tokens)
         err: err
     *:
-      return _parseTerms(tokens)
+      return _parseComparisons(tokens)
     
+_parseComparisons(tokens) ->:
+  if _parseTerms(tokens) is:
+    ParseSuccess(term, @tokens):
+      while tokens is Queue(op if _isCmpOp(op), @tokens):
+        if _parseTerms(tokens) is:
+          ParseSuccess(rhs, @tokens):
+            term = BinaryExpr(term, op, rhs)
+          err:
+            return err
+      return ParseSuccess(term, tokens)
+    err:
+      return err
 
 _parseTerms(tokens) ->:
   if _parseFactors(tokens) is:
@@ -31,10 +46,10 @@ _parseTerms(tokens) ->:
       return err
 
 _parseFactors(tokens) ->:
-  if _parseSimpleExpression(tokens) is:
+  if _parseIsExpr(tokens) is:
     ParseSuccess(term, @tokens):
       while tokens is Queue(op if _isFactorOp(op), @tokens):
-        if _parseSimpleExpression(tokens) is:
+        if _parseIsExpr(tokens) is:
           ParseSuccess(rhs, @tokens):
             term = BinaryExpr(term, op, rhs)
           err:
@@ -42,6 +57,22 @@ _parseFactors(tokens) ->:
       return ParseSuccess(term, tokens)
     err:
       return err
+
+_parseIsExpr(tokens) ->:
+    return if _parseSimpleExpression(tokens) is:
+      ParseSuccess(expr, Queue(KwIs, Queue(KwNot, Queue(IdentType(t), @tokens)))): ParseSuccess(Not(IsA(expr, t)), tokens)
+      ParseSuccess(expr, Queue(KwIs, Queue(IdentType(t), @tokens))): ParseSuccess(IsA(expr, t), tokens)
+      err: err
+
+_isCmpOp(op) ->:
+  return if op is:
+    KwEq: True
+    KwGe: True
+    KwGt: True
+    KwLe: True
+    KwLt: True
+    KwNe: True
+    *: False
 
 _isTermOp(op) ->:
   return if op is:
@@ -60,18 +91,53 @@ _parseSimpleExpression(tokens) ->:
   # These are rules that are unambiguous. For instance, "123" is just an IntLiteral, and foo(123)
   # is unambiguously an invocation of foo with 123 as its arg.
   if tokens is:
-    Queue(head, tail):
+    Queue(head, @tokens):
       if head is: # TODO should I inline these? "return if head is..."
         e IntLiteral(*):
-          return ParseSuccess(e, tail)
+          return ParseSuccess(e, tokens)
         e StringLiteral(*):
-          return ParseSuccess(e, tail)
+          return ParseSuccess(e, tokens)
         KwThis:
-          return ParseSuccess(KwThis, tail)
+          return ParseSuccess(KwThis, tokens)
+        IdentType(t):
+          if _argsInvocation(tokens) is:
+            ParseSuccess(args, @tokens):
+              call = MethodCall(t, t, args)
+              return ParseSuccess(call, tokens)
+            err:
+              return err
+        KwParenOpen:
+          if parseExpression(tokens) is:
+            ParseSuccess(e, Queue(KwParenClose, @tokens)):
+              return ParseSuccess(e, tokens)
+            err:
+              return err
         *:
           return ParseFailure
     *:
       return ParseFailure
+
+_argsInvocation(tokens) ->:
+  # TODO this method's indentation shows just how much we need exception
+  args = Empty
+  if tokens is:
+    Queue(KwParenOpen, @tokens):
+      if tokens is not Queue(KwParenClose, @tokens):
+        if parseExpression(tokens) is:
+          ParseSuccess(arg, @tokens):
+            args = Queue.push(args, arg)
+            while tokens is:
+              Queue(KwComma, @tokens):
+                if parseExpression(tokens) is:
+                  ParseSuccess(arg, @tokens):
+                    args = Queue.push(args, arg)
+                  err:
+                    return err
+              Queue(KwParenClose, @tokens):
+                break
+  args = Queue.reverse(args)
+  call = ArgsInvocation(args)
+  return ParseSuccess(call, tokens)
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)
