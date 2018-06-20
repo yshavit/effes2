@@ -3,9 +3,15 @@ type ParseFailure
 
 type BinaryExpr(left, op, right)
 type Not(tree)
-type MethodCall(typeName, methodName, argsInvocation)
+type Instantiation(typeName, args)
+type UnqualifiedMethodCall(name, args)
+type StaticMethodCall(typeName, methodName, args)
+type QualifiedMethodCall(target, name, args)
 type ArgsInvocation(args)
 type IsA(expr, testType)
+type PlainVar(name)
+type QualifiedVar(target, name)
+type StaticVar(typeName, varName)
 
 parseExpression(tokens) ->:
   return _parseUnaryOp(tokens)
@@ -98,14 +104,44 @@ _parseSimpleExpression(tokens) ->:
         e StringLiteral(*):
           return ParseSuccess(e, tokens)
         KwThis:
+          # First, look for "this.var" -- either an instance method or instance var
+          if tokens is Queue(KwDot, Queue(IdentName(n), @tokens)):
+            if _argsInvocation(tokens) is:
+              ParseSuccess(Empty, @tokens):
+                return ParseSuccess(QualifiedVar(KwThis, n), tokens)
+              ParseSuccess(args, @tokens):
+                return ParseSuccess(QualifiedMethodCall(KwThis, n, args), tokens)
+              *:
+                return ParseFailure
           return ParseSuccess(KwThis, tokens)
         IdentType(t):
+          # First, look for "Foo.var" -- either a static method or a static var
+          if tokens is Queue(KwDot, Queue(IdentName(n), @tokens)):
+            if _argsInvocation(tokens) is:
+              ParseSuccess(Empty, @tokens):
+                return ParseSuccess(StaticVar(t, n), tokens)
+              ParseSuccess(args, @tokens):
+                return ParseSuccess(StaticMethodCall(t, n, args), tokens)
+              *:
+                return ParseFailure
+          # Otherwise, look for "Foo(arg)" -- an instantiation
           if _argsInvocation(tokens) is:
             ParseSuccess(args, @tokens):
-              call = MethodCall(t, t, args)
+              if args is Empty:
+                args = ArgsInvocation(Empty) # "Foo" -> "Foo()", just to normalize it
+              call = Instantiation(t, args)
               return ParseSuccess(call, tokens)
             err:
               return err
+        IdentName(n):
+          # "var" -- so either a var or method invocation
+          if _argsInvocation(tokens) is:
+            ParseSuccess(Empty, @tokens):
+              return ParseSuccess(PlainVar(n), tokens)
+            ParseSuccess(args, @tokens):
+              return ParseSuccess(UnqualifiedMethodCall(n, args), tokens)
+            *:
+              return ParseFailure
         KwParenOpen:
           if parseExpression(tokens) is:
             ParseSuccess(e, Queue(KwParenClose, @tokens)):
@@ -119,9 +155,9 @@ _parseSimpleExpression(tokens) ->:
 
 _argsInvocation(tokens) ->:
   # TODO this method's indentation shows just how much we need exception
-  args = Empty
   if tokens is:
     Queue(KwParenOpen, @tokens):
+      args = Empty
       if tokens is not Queue(KwParenClose, @tokens):
         if parseExpression(tokens) is:
           ParseSuccess(arg, @tokens):
@@ -135,9 +171,11 @@ _argsInvocation(tokens) ->:
                     return err
               Queue(KwParenClose, @tokens):
                 break
-  args = Queue.reverse(args)
-  call = ArgsInvocation(args)
-  return ParseSuccess(call, tokens)
+      args = Queue.reverse(args)
+      call = ArgsInvocation(args)
+      return ParseSuccess(call, tokens)
+    *:
+      return ParseSuccess(Empty, tokens)
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)
