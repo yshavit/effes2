@@ -8,10 +8,16 @@ type UnqualifiedMethodCall(name, args)
 type StaticMethodCall(typeName, methodName, args)
 type QualifiedMethodCall(target, name, args)
 type ArgsInvocation(args)
-type IsA(expr, testType)
+type IsA(expr, matcher)
 type PlainVar(name)
 type QualifiedVar(target, name)
 type StaticVar(typeName, varName)
+
+type RebindVar(name) # for "@foo" in matchers
+type MatcherAny
+type MatcherJustName(bindTo, condition) # condition is "True" if no condition given
+type MatcherWithPattern(bindTo, pattern)
+type PatternType(typeName, args)
 
 parseExpression(tokens) ->:
   return _parseUnaryOp(tokens)
@@ -65,10 +71,19 @@ _parseFactors(tokens) ->:
       return err
 
 _parseIsExpr(tokens) ->:
-    return if _parseSimpleExpression(tokens) is:
-      ParseSuccess(expr, Queue(KwIs, Queue(KwNot, Queue(IdentType(t), @tokens)))): ParseSuccess(Not(IsA(expr, t)), tokens)
-      ParseSuccess(expr, Queue(KwIs, Queue(IdentType(t), @tokens))): ParseSuccess(IsA(expr, t), tokens)
-      err: err
+  if _parseSimpleExpression(tokens) is:
+    ParseSuccess(expr, Queue(KwIs, @tokens)):
+      negated = tokens is Queue(KwNot, @tokens)
+      if _parseMatcher(tokens) is:
+        ParseSuccess(matcher, @tokens):
+          result = IsA(expr, matcher)
+          if negated:
+            result = Not(result)
+          return ParseSuccess(result, tokens)
+        err:
+          return err
+    err:
+      return err
 
 _isCmpOp(op) ->:
   return if op is:
@@ -178,6 +193,62 @@ _argsInvocation(tokens) ->:
       return ParseSuccess(call, tokens)
     *:
       return ParseSuccess(Empty, tokens)
+
+_parseMatcher(tokens) ->:
+  if tokens is KwAsterisk:
+    return MatcherAny
+  if _parseBindTo(tokens) is:
+    ParseSuccess(bindTo, @tokens):
+      # Could be "var <matcherWithPattern>", or "var", or "var if cond"
+      if tokens is:
+        Queue(KwIf, @tokens):
+          return if parseExpression(tokens) is:
+            ParseSuccess(cond, @tokens): ParseSuccess(MatcherJustName(bindTo, cond), tokens)
+            err: err
+        *:
+          return if _parseMatcherPattern(tokens) is:
+            ParseSuccess(pattern, @tokens): ParseSuccess(MatcherWithPattern(bindTo, pattern), tokens)
+            *: ParseSuccess(MatcherJustName(bindTo, True), tokens)
+    *:
+      # It can't be a "foo" or "foo if cond", but it can still be a MatcherWithPattern.
+      if _parseMatcherPattern(tokens) is:
+        ParseSuccess(pattern, @tokens):
+          return ParseSuccess(MatcherWithPattern(Empty, pattern), tokens)
+        err:
+          return err
+
+_parseBindTo(tokens) ->:
+  return if tokens is:
+    Queue(KwAt, Queue(IdentName(n), @tokens)): ParseSuccess(RebindVar(n), tokens)
+    Queue(IdentName(n), @tokens): ParseSuccess(PlainVar(n), tokens)
+    err: err
+
+_parseMatcherPattern(tokens) ->:
+  if tokens is:
+    Queue(r RegexLiteral(*), @tokens):
+      return tokens
+    Queue(IdentType(t), @tokens):
+      if tokens is:
+        Queue(KwParenOpen, @tokens):
+          if _parseMatcher(tokens) is:
+            ParseSuccess(matcher, @tokens):
+              args = Queue(matcher, Empty)
+              while tokens is:
+                Queue(KwComma, @tokens):
+                  if _parseMatcher(tokens) is:
+                    ParseSuccess(nextMatcher, @tokens):
+                      args = Queue.push(args, nextMatcher)
+                    err:
+                      return err
+                Queue(KwParenClose, @tokens):
+                  return ParseSuccess(PatternType(t, args), tokens)
+            err:
+              return err
+        *:
+          return ParseSuccess(PatternType(t, Empty), tokens)
+    err:
+      return err
+
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)

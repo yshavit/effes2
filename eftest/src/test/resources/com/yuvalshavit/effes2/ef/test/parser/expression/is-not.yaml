@@ -5,6 +5,10 @@ stdout: |
       tree: Parser:IsA
         expr: Parser:PlainVar
           name: var
-        testType: Foo
+        matcher: Parser:MatcherWithPattern
+          bindTo: Queue:Empty
+          pattern: Parser:PatternType
+            typeName: Foo
+            args: Queue:Empty
     tail: Queue:Queue
       [0]: Tokens:Nl
