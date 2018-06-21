@@ -1,0 +1,9 @@
+stdin: this.foo()
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:QualifiedMethodCall
+      target: Tokens:KwThis
+      name: foo
+      args: Queue:Empty
+    tail: Queue:Queue
+      [0]: Tokens:Nl

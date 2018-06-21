@@ -1,0 +1,7 @@
+stdin: foo
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:PlainVar
+      name: foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

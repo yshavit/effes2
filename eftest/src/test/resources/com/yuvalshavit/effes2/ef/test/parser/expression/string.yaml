@@ -1,0 +1,7 @@
+stdin: '"hello world"'
+stdout: |
+  Parser:ParseSuccess
+    tree: Tokens:StringLiteral
+      value: "hello world"
+    tail: Queue:Queue
+      [0]: Tokens:Nl

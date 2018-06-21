@@ -27,14 +27,14 @@ _parseUnaryOp(tokens) ->:
     
 _parseComparisons(tokens) ->:
   if _parseTerms(tokens) is:
-    ParseSuccess(term, @tokens):
-      while tokens is Queue(op if _isCmpOp(op), @tokens):
-        if _parseTerms(tokens) is:
-          ParseSuccess(rhs, @tokens):
-            term = BinaryExpr(term, op, rhs)
-          err:
-            return err
-      return ParseSuccess(term, tokens)
+    orig ParseSuccess(lhs, @tokens):
+      if tokens is:
+        Queue(op if _isCmpOp(op), @tokens):
+          return if _parseTerms(tokens) is:
+            ParseSuccess(rhs, @tokens): ParseSuccess(BinaryExpr(lhs, op, rhs), tokens)
+            err: err
+        *:
+          return orig
     err:
       return err
 
@@ -109,7 +109,7 @@ _parseSimpleExpression(tokens) ->:
             if _argsInvocation(tokens) is:
               ParseSuccess(Empty, @tokens):
                 return ParseSuccess(QualifiedVar(KwThis, n), tokens)
-              ParseSuccess(args, @tokens):
+              ParseSuccess(ArgsInvocation(args), @tokens):
                 return ParseSuccess(QualifiedMethodCall(KwThis, n, args), tokens)
               *:
                 return ParseFailure
@@ -120,15 +120,14 @@ _parseSimpleExpression(tokens) ->:
             if _argsInvocation(tokens) is:
               ParseSuccess(Empty, @tokens):
                 return ParseSuccess(StaticVar(t, n), tokens)
-              ParseSuccess(args, @tokens):
+              ParseSuccess(ArgsInvocation(args), @tokens):
                 return ParseSuccess(StaticMethodCall(t, n, args), tokens)
               *:
                 return ParseFailure
           # Otherwise, look for "Foo(arg)" -- an instantiation
           if _argsInvocation(tokens) is:
             ParseSuccess(args, @tokens):
-              if args is Empty:
-                args = ArgsInvocation(Empty) # "Foo" -> "Foo()", just to normalize it
+              args ::: ArgsInvocation(@args)
               call = Instantiation(t, args)
               return ParseSuccess(call, tokens)
             err:
@@ -138,7 +137,7 @@ _parseSimpleExpression(tokens) ->:
           if _argsInvocation(tokens) is:
             ParseSuccess(Empty, @tokens):
               return ParseSuccess(PlainVar(n), tokens)
-            ParseSuccess(args, @tokens):
+            ParseSuccess(ArgsInvocation(args), @tokens):
               return ParseSuccess(UnqualifiedMethodCall(n, args), tokens)
             *:
               return ParseFailure
@@ -158,19 +157,22 @@ _argsInvocation(tokens) ->:
   if tokens is:
     Queue(KwParenOpen, @tokens):
       args = Empty
-      if tokens is not Queue(KwParenClose, @tokens):
-        if parseExpression(tokens) is:
-          ParseSuccess(arg, @tokens):
-            args = Queue.push(args, arg)
-            while tokens is:
-              Queue(KwComma, @tokens):
-                if parseExpression(tokens) is:
-                  ParseSuccess(arg, @tokens):
-                    args = Queue.push(args, arg)
-                  err:
-                    return err
-              Queue(KwParenClose, @tokens):
-                break
+      if tokens is:
+        Queue(KwParenClose, @tokens):
+          :::
+        *:
+          if parseExpression(tokens) is:
+            ParseSuccess(arg, @tokens):
+              args = Queue.push(args, arg)
+              while tokens is:
+                Queue(KwComma, @tokens):
+                  if parseExpression(tokens) is:
+                    ParseSuccess(arg, @tokens):
+                      args = Queue.push(args, arg)
+                    err:
+                      return err
+                Queue(KwParenClose, @tokens):
+                  break
       args = Queue.reverse(args)
       call = ArgsInvocation(args)
       return ParseSuccess(call, tokens)

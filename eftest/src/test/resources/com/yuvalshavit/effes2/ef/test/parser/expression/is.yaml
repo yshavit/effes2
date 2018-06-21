@@ -1,0 +1,9 @@
+stdin: var is Foo
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:IsA
+      expr: Parser:PlainVar
+        name: var
+      testType: Foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

@@ -1,0 +1,9 @@
+stdin: MyModule.foo()
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:StaticMethodCall
+      typeName: MyModule
+      methodName: foo
+      args: Queue:Empty
+    tail: Queue:Queue
+      [0]: Tokens:Nl

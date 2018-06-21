@@ -1,0 +1,10 @@
+stdin: var is not Foo
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:Not
+      tree: Parser:IsA
+        expr: Parser:PlainVar
+          name: var
+        testType: Foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

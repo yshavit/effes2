@@ -1,0 +1,15 @@
+stdin: this.foo(123, 456, 789)
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:QualifiedMethodCall
+      target: Tokens:KwThis
+      name: foo
+      args: Queue:Queue
+        [0]: Tokens:IntLiteral
+          value: 123
+        [1]: Tokens:IntLiteral
+          value: 456
+        [2]: Tokens:IntLiteral
+          value: 789
+    tail: Queue:Queue
+      [0]: Tokens:Nl

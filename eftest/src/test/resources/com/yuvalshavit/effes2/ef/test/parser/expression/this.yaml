@@ -1,0 +1,6 @@
+stdin: this
+stdout: |
+  Parser:ParseSuccess
+    tree: Tokens:KwThis
+    tail: Queue:Queue
+      [0]: Tokens:Nl

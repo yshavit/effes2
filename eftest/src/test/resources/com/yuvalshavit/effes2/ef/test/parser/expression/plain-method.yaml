@@ -1,0 +1,8 @@
+stdin: foo()
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:UnqualifiedMethodCall
+      name: foo
+      args: Queue:Empty
+    tail: Queue:Queue
+      [0]: Tokens:Nl

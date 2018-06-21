@@ -1,0 +1,7 @@
+stdin: (123)
+stdout: |
+  Parser:ParseSuccess
+    tree: Tokens:IntLiteral
+      value: 123
+    tail: Queue:Queue
+      [0]: Tokens:Nl

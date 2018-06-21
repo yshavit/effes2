@@ -1,0 +1,8 @@
+stdin: MyModule
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:Instantiation
+      typeName: MyModule
+      args: Queue:Empty
+    tail: Queue:Queue
+      [0]: Tokens:Nl

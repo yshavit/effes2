@@ -1,0 +1,8 @@
+stdin: MyModule.foo
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:StaticVar
+      typeName: MyModule
+      varName: foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

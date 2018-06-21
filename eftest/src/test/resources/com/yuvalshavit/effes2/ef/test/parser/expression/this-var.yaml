@@ -1,0 +1,8 @@
+stdin: this.foo
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:QualifiedVar
+      target: Tokens:KwThis
+      name: foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

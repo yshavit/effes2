@@ -1,0 +1,15 @@
+stdin: (100 + 200) * 300
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:BinaryExpr
+      left: Parser:BinaryExpr
+        left: Tokens:IntLiteral
+          value: 100
+        op: Tokens:KwPlus
+        right: Tokens:IntLiteral
+          value: 200
+      op: Tokens:KwAsterisk
+      right: Tokens:IntLiteral
+        value: 300
+    tail: Queue:Queue
+      [0]: Tokens:Nl

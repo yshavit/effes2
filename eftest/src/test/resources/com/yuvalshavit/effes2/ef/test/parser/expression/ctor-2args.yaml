@@ -1,0 +1,12 @@
+stdin: MyModule(123, 456)
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:Instantiation
+      typeName: MyModule
+      args: Queue:Queue
+        [0]: Tokens:IntLiteral
+          value: 123
+        [1]: Tokens:IntLiteral
+          value: 456
+    tail: Queue:Queue
+      [0]: Tokens:Nl
