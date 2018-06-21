@@ -1,0 +1,4 @@
+stdin: |
+  for a in arr:
+    foo(a)
+stdout: ''

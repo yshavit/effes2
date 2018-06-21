@@ -1,0 +1,5 @@
+stdin: |
+  a = if b is:
+    Foo: 123
+    *: 456
+stdout: ''

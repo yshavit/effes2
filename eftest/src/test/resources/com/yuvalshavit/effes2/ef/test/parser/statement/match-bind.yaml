@@ -1,0 +1,2 @@
+stdin: 'var ::: Foo(@bar)'
+stdout: ''

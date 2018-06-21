@@ -1,0 +1,7 @@
+stdin: |
+  if target is:
+    Foo:
+      handleFoo()
+    x:
+      handleOther(x)
+stdout: ''

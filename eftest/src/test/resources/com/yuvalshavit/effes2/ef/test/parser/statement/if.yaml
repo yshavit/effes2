@@ -1,0 +1,4 @@
+stdin: |
+  if cond:
+    doSometing()
+stdout: ''
