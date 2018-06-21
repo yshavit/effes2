@@ -1,0 +1,9 @@
+stdin: var
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:MatcherJustName
+      bindTo: Parser:PlainVar
+        name: var
+      condition: True
+    tail: Queue:Queue
+      [0]: Tokens:Nl

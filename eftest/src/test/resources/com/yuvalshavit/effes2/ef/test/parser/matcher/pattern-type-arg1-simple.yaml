@@ -1,0 +1,14 @@
+stdin: Foo(value)
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:MatcherWithPattern
+      bindTo: Queue:Empty
+      pattern: Parser:PatternType
+        typeName: Foo
+        args: Queue:Queue
+          [0]: Parser:MatcherJustName
+            bindTo: Parser:PlainVar
+              name: value
+            condition: True
+    tail: Queue:Queue
+      [0]: Tokens:Nl

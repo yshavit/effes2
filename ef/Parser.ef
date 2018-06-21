@@ -195,8 +195,8 @@ _argsInvocation(tokens) ->:
       return ParseSuccess(Empty, tokens)
 
 _parseMatcher(tokens) ->:
-  if tokens is KwAsterisk:
-    return MatcherAny
+  if tokens is Queue(KwAsterisk, @tokens):
+    return ParseSuccess(KwAsterisk, tokens)
   if _parseBindTo(tokens) is:
     ParseSuccess(bindTo, @tokens):
       # Could be "var <matcherWithPattern>", or "var", or "var if cond"
@@ -226,7 +226,7 @@ _parseBindTo(tokens) ->:
 _parseMatcherPattern(tokens) ->:
   if tokens is:
     Queue(r RegexLiteral(*), @tokens):
-      return tokens
+      return ParseSuccess(r, tokens)
     Queue(IdentType(t), @tokens):
       if tokens is:
         Queue(KwParenOpen, @tokens):
@@ -241,6 +241,7 @@ _parseMatcherPattern(tokens) ->:
                     err:
                       return err
                 Queue(KwParenClose, @tokens):
+                  args = Queue.reverse(args)
                   return ParseSuccess(PatternType(t, args), tokens)
             err:
               return err
@@ -257,5 +258,7 @@ main(args) ->:
   if args.get(0) is:
     ~/expression$/:
       result = parseExpression(tokens)
+    ~/matcher$/:
+      result = _parseMatcher(tokens)
   CharStreamOut.debugPretty(result)
   return 0

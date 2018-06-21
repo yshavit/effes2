@@ -1,0 +1,24 @@
+stdin: Foo(Bar(@var), Bazz)
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:MatcherWithPattern
+      bindTo: Queue:Empty
+      pattern: Parser:PatternType
+        typeName: Foo
+        args: Queue:Queue
+          [0]: Parser:MatcherWithPattern
+            bindTo: Queue:Empty
+            pattern: Parser:PatternType
+              typeName: Bar
+              args: Queue:Queue
+                [0]: Parser:MatcherJustName
+                  bindTo: Parser:RebindVar
+                    name: var
+                  condition: True
+          [1]: Parser:MatcherWithPattern
+            bindTo: Queue:Empty
+            pattern: Parser:PatternType
+              typeName: Bazz
+              args: Queue:Empty
+    tail: Queue:Queue
+      [0]: Tokens:Nl

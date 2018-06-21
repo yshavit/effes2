@@ -1,0 +1,13 @@
+stdin: '@var if foo(var)'
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:MatcherJustName
+      bindTo: Parser:RebindVar
+        name: var
+      condition: Parser:UnqualifiedMethodCall
+        name: foo
+        args: Queue:Queue
+          [0]: Parser:PlainVar
+            name: var
+    tail: Queue:Queue
+      [0]: Tokens:Nl

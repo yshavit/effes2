@@ -1,0 +1,6 @@
+stdin: '*'
+stdout: |
+  Parser:ParseSuccess
+    tree: Tokens:KwAsterisk
+    tail: Queue:Queue
+      [0]: Tokens:Nl

@@ -1,0 +1,9 @@
+stdin: ~/foo/
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:MatcherWithPattern
+      bindTo: Queue:Empty
+      pattern: Tokens:RegexLiteral
+        value: foo
+    tail: Queue:Queue
+      [0]: Tokens:Nl

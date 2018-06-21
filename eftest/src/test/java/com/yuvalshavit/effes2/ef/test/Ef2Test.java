@@ -148,8 +148,8 @@ public class Ef2Test {
         throw new RuntimeException("no stdout specified for " + fileName);
       }
       return testCase;
-    } catch (IOException e) {
-      throw new RuntimeException(e);
+    } catch (Exception e) {
+      throw new RuntimeException("while reading " + fileName, e);
     }
   }
 
