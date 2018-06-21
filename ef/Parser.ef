@@ -113,7 +113,7 @@ _parseSimpleExpression(tokens) ->:
   # is unambiguously an invocation of foo with 123 as its arg.
   if tokens is:
     Queue(head, @tokens):
-      if head is: # TODO should I inline these? "return if head is..."
+      if head is:
         e IntLiteral(*):
           return ParseSuccess(e, tokens)
         e StringLiteral(*):
