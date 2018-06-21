@@ -112,44 +112,40 @@ _parseSimpleExpression(tokens) ->:
   # These are rules that are unambiguous. For instance, "123" is just an IntLiteral, and foo(123)
   # is unambiguously an invocation of foo with 123 as its arg.
   if tokens is:
-    Queue(head, @tokens):
-      if head is:
-        e IntLiteral(*):
-          return ParseSuccess(e, tokens)
-        e StringLiteral(*):
-          return ParseSuccess(e, tokens)
-        KwThis:
-          # First, look for "this.var" -- either an instance method or instance var
-          if tokens is Queue(KwDot, Queue(IdentName(n), @tokens)):
-            return if _argsInvocation(tokens) is:
-              ParseSuccess(Empty, @tokens): ParseSuccess(QualifiedVar(KwThis, n), tokens)
-              ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(QualifiedMethodCall(KwThis, n, args), tokens)
-              *: ParseFailure
-          return ParseSuccess(KwThis, tokens)
-        IdentType(t):
-          # First, look for "Foo.var" -- either a static method or a static var
-          if tokens is Queue(KwDot, Queue(IdentName(n), @tokens)):
-            return if _argsInvocation(tokens) is:
-              ParseSuccess(Empty, @tokens): ParseSuccess(StaticVar(t, n), tokens)
-              ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(StaticMethodCall(t, n, args), tokens)
-              *: ParseFailure
-          # Otherwise, look for "Foo(arg)" -- an instantiation
-          return if _argsInvocation(tokens) is:
-            ParseSuccess(Empty, @tokens): ParseSuccess(Instantiation(t, Empty), tokens)
-            ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(Instantiation(t, args), tokens)
-            err: err
-        IdentName(n):
-          # "var" -- so either a var or method invocation
-          return if _argsInvocation(tokens) is:
-            ParseSuccess(Empty, @tokens): ParseSuccess(PlainVar(n), tokens)
-            ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(UnqualifiedMethodCall(n, args), tokens)
-            *: ParseFailure
-        KwParenOpen:
-          return if parseExpression(tokens) is:
-            ParseSuccess(e, Queue(KwParenClose, @tokens)): ParseSuccess(e, tokens)
-            err: err
-        *:
-          return ParseFailure
+    Queue(e IntLiteral(*), @tokens):
+      return ParseSuccess(e, tokens)
+    Queue(e StringLiteral(*), @tokens):
+      return ParseSuccess(e, tokens)
+    Queue(KwThis, Queue(KwDot, Queue(IdentName(n), @tokens))):
+      # First, look for "this.var" -- either an instance method or instance var
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(Empty, @tokens): ParseSuccess(QualifiedVar(KwThis, n), tokens)
+        ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(QualifiedMethodCall(KwThis, n, args), tokens)
+        *: ParseFailure
+    Queue(KwThis, @tokens):
+      return ParseSuccess(KwThis, tokens)
+    Queue(IdentType(t), Queue(KwDot, Queue(IdentName(n), @tokens))):
+      # First, look for "Foo.var" -- either a static method or a static var
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(Empty, @tokens): ParseSuccess(StaticVar(t, n), tokens)
+        ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(StaticMethodCall(t, n, args), tokens)
+        *: ParseFailure
+    Queue(IdentType(t), @tokens):
+      # Otherwise, look for "Foo(arg)" -- an instantiation
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(Empty, @tokens): ParseSuccess(Instantiation(t, Empty), tokens)
+        ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(Instantiation(t, args), tokens)
+        err: err
+    Queue(IdentName(n), @tokens):
+      # "var" -- so either a var or method invocation
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(Empty, @tokens): ParseSuccess(PlainVar(n), tokens)
+        ParseSuccess(ArgsInvocation(args), @tokens): ParseSuccess(UnqualifiedMethodCall(n, args), tokens)
+        *: ParseFailure
+    Queue(KwParenOpen, @tokens):
+      return if parseExpression(tokens) is:
+        ParseSuccess(e, Queue(KwParenClose, @tokens)): ParseSuccess(e, tokens)
+        err: err
     *:
       return ParseFailure
 
