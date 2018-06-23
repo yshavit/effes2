@@ -1,5 +1,27 @@
 stdin: |
-  a = if b is:
+  a = if b(c) is:
     Foo: 123
     *: 456
-stdout: ''
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:AssignMultiline
+      assignTo:
+        Parser:PlainVar
+          name: a
+      matchAgainst:
+        Parser:UnqualifiedMethodCall
+          name: b
+          args: Queue:Queue
+            [0]: Parser:PlainVar
+              name: c
+      matchers: Queue:Queue
+        [0]: pattern: Parser:PatternType
+               typeName: Foo
+               args: Queue:Empty
+             expression: Tokens:IntLiteral
+               value: 123
+        [1]: pattern: Tokens:KwAsterisk
+             expression: Tokens:IntLiteral
+               value: 456
+    tail: Queue:Queue
+      [0]: Tokens:Nl

@@ -1,2 +1,12 @@
 stdin: foo = 123
-stdout: ''
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:Assign
+      assignTo:
+        Parser:PlainVar
+          name: foo
+      expression:
+        Tokens:IntLiteral
+          value: 123
+    tail: Queue:Queue
+      [0]: Tokens:Nl
