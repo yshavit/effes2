@@ -19,6 +19,16 @@ type MatcherJustName(bindTo, condition) # condition is "True" if no condition gi
 type MatcherWithPattern(bindTo, pattern)
 type PatternType(typeName, args)
 
+type Body(statements)
+
+type TypeAssert(varName, typeName)
+type VarDeclare(varName)
+type IfSimpleStatement(condition, body)
+type SimpleIfElseBody(thenBody, elseBody)
+type IfMatchersStatement(target, matchers)
+
+
+
 parseExpression(tokens) ->:
   return _parseUnaryOp(tokens)
 
@@ -150,6 +160,10 @@ _parseSimpleExpression(tokens) ->:
       return ParseFailure
 
 _argsInvocation(tokens) ->:
+  # Returns:
+  # - ParseSuccess(Empty, tail) if there was no method invocation
+  # - ParseSuccess(ArgsInvocation, tail) if there was one (ArgsInvocation.args may be Empty)
+  # - ParseFailure on parse failure
   # TODO this method's indentation shows just how much we need exception
   if tokens is:
     Queue(KwParenOpen, @tokens):
@@ -232,6 +246,85 @@ _parseMatcherPattern(tokens) ->:
     err:
       return err
 
+_parseStatement(tokens) ->:
+  if tokens is:
+    Queue(KwNoop, Queue(Nl, @tokens)):
+      return ParseSuccess(KwNoop, tokens)
+    Queue(KwNoop, Queue(IdentName(n), Queue(KwIs, Queue(IdentType(t), Queue(Nl, @tokens))))):
+      return ParseSuccess(TypeAssert(n, t), tokens)
+    Queue(IdentName(n), Queue(KwEquals, Queue(KwQuestionMark, Queue(Nl, @tokens)))):
+      return ParseSuccess(VarDeclare(n), tokens)
+    Queue(KwIf, @tokens):
+      if parseExpression(tokens) is:
+        ParseSuccess(cond, Queue(KwColon, @tokens)):
+          return if _ifStatementSimpleBody(tokens) is:
+            ParseSuccess(body, @tokens): ParseSuccess(IfSimpleStatement(cond, body), tokens)
+            err: err
+        ParseSuccess(target, Queue(KwIs, Queue(KwColon, Queue(Indent, @tokens)))):
+          return if _ifStatementMatchers(tokens) is:
+            ParseSuccess(matchers, @tokens): ParseSuccess(IfMatchersStatement(target, matchers), tokens)
+            err: err
+        err:
+          return err
+    Queue(IdentType(t), Queue(KwDot, Queue(IdentName(n), @tokens))):
+      # Static method
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(ArgsInvocation(args), Queue(Nl, @tokens)): StaticMethodCall(t, n, args)
+        *: ParseFailure
+    Queue(IdentName(n), @tokens):
+      # Unqualified method
+      return if _argsInvocation(tokens) is:
+        ParseSuccess(ArgsInvocation(args), Queue(Nl, @tokens)): ParseSuccess(UnqualifiedMethodCall(n, args), tokens)
+        *: ParseFailure
+
+
+    *:
+      return ParseFailure
+
+_ifStatementSimpleBody(tokens) ->:
+  if _parseBlock(tokens) is:
+    ParseSuccess(thenBlock, @tokens):
+      if tokens is:
+        Queue(KwElse, Queue(KwColon, @tokens)):
+          return if _parseBlock(tokens) is:
+            ParseSuccess(elseBody, @tokens): ParseSuccess(SimpleIfElseBody(thenBlock, elseBody), tokens)
+            err: err
+        Queue(KwElse, Queue(KwIf, @tokens)):
+          if parseExpression(tokens) is:
+            ParseSuccess(elseCond, tokens):
+              if tokens is:
+                Queue(KwColon, @tokens):
+                  return if _ifStatementSimpleBody(tokens) is:
+                    ParseSuccess(elseIf, @tokens): ParseSuccess(SimpleIfElseBody(thenBlock, IfSimpleStatement(elseCond, elseIf)), tokens)
+                    err: err
+        *:
+          return ParseSuccess(SimpleIfElseBody(thenBlock, Empty), tokens)
+    err:
+     return err
+                    
+_ifStatementMatchers(tokens) ->:
+  return ParseFailure # TODO
+
+
+_parseBlock(tokens) ->:
+  if tokens is:
+    Queue(Indent, @tokens):
+      :::
+    *:
+      return ParseFailure
+  statements = Empty
+  while tokens is:
+    Empty:
+      return ParseFailure # shouldn't even happen, since we'll always have a dedent out
+    Queue(Dedent, @tokens):
+      statements = Queue.reverse(statements)
+      return ParseSuccess(Body(statements), tokens)
+    *:
+      if _parseStatement(tokens) is:
+        ParseSuccess(statement, @tokens):
+          statements = Queue.push(statements, statement)
+        err:
+          return err
 
 main(args) ->:
   tokens = Tokens.readTokens(Stdio.stdin)
@@ -242,5 +335,7 @@ main(args) ->:
       result = parseExpression(tokens)
     ~/matcher$/:
       result = _parseMatcher(tokens)
+    ~/statement$/:
+      result = _parseStatement(tokens)
   CharStreamOut.debugPretty(result)
   return 0

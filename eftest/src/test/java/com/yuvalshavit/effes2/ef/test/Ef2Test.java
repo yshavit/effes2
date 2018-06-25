@@ -93,7 +93,7 @@ public class Ef2Test {
       .map(Ef2Test::readCase).map(c -> new Object[] {c}).toArray(Object[][]::new);
   }
 
-  @Test
+
   public void canReadYaml() {
     loadTests();
   }

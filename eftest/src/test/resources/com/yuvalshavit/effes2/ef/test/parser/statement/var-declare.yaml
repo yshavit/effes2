@@ -1,6 +1,6 @@
 stdin: foo = ?
 stdout: |
   Parser:ParseSuccess
-    tree: TODO
-    tail: Queue:Queue
-      [0]: Tokens:Nl
+    tree: Parser:VarDeclare
+      varName: foo
+    tail: Queue:Empty

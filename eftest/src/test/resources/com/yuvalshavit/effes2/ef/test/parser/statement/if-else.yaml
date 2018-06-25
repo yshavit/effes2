@@ -1,6 +1,8 @@
 stdin: |
   if cond:
     doSometing()
+  else:
+    doAnother()
 stdout: ''
 stdout: |
   Parser:ParseSuccess
@@ -13,5 +15,9 @@ stdout: |
             [0]: Parser:UnqualifiedMethodCall
               name: doSometing
               args: Queue:Empty
-        elseBody: Queue:Empty
+        elseBody: Parser:Body
+          statements: Queue:Queue
+            [0]: Parser:UnqualifiedMethodCall
+              name: doAnother
+              args: Queue:Empty
     tail: Queue:Empty

@@ -1,0 +1,39 @@
+stdin: |
+  if cond:
+    doSometing()
+  else if anotherCond():
+    doAnother()
+    thenCelebrate()
+  else:
+    doLastOption()
+stdout: ''
+stdout: |
+  Parser:ParseSuccess
+    tree: Parser:IfSimpleStatement
+      condition: Parser:PlainVar
+        name: cond
+      body: Parser:SimpleIfElseBody
+        thenBody: Parser:Body
+          statements: Queue:Queue
+            [0]: Parser:UnqualifiedMethodCall
+              name: doSometing
+              args: Queue:Empty
+        elseBody: Parser:IfSimpleStatement
+          condition: Parser:UnqualifiedMethodCall
+            name: anotherCond
+            args: Queue:Empty
+          body: Parser:SimpleIfElseBody
+            thenBody: Parser:Body
+              statements: Queue:Queue
+                [0]: Parser:UnqualifiedMethodCall
+                  name: doAnother
+                  args: Queue:Empty
+                [1]: Parser:UnqualifiedMethodCall
+                  name: thenCelebrate
+                  args: Queue:Empty
+            elseBody: Parser:Body
+              statements: Queue:Queue
+                [0]: Parser:UnqualifiedMethodCall
+                  name: doLastOption
+                  args: Queue:Empty
+    tail: Queue:Empty

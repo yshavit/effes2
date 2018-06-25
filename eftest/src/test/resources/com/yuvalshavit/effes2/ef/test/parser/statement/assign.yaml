@@ -8,5 +8,4 @@ stdout: |
       expression:
         Tokens:IntLiteral
           value: 123
-    tail: Queue:Queue
-      [0]: Tokens:Nl
+    tail: Queue:Empty

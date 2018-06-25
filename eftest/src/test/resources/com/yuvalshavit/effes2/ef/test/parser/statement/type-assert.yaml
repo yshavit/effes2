@@ -1,6 +1,7 @@
 stdin: '::: var is Foo'
 stdout: |
   Parser:ParseSuccess
-    tree: TODO
-    tail: Queue:Queue
-      [0]: Tokens:Nl
+    tree: Parser:TypeAssert
+      varName: var
+      typeName: Foo
+    tail: Queue:Empty

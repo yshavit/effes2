@@ -23,5 +23,4 @@ stdout: |
         [1]: pattern: Tokens:KwAsterisk
              expression: Tokens:IntLiteral
                value: 456
-    tail: Queue:Queue
-      [0]: Tokens:Nl
+    tail: Queue:Empty

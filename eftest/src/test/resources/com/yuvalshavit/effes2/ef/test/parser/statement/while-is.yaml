@@ -7,5 +7,4 @@ stdin: |
 stdout: |
   Parser:ParseSuccess
     tree: TODO
-    tail: Queue:Queue
-      [0]: Tokens:Nl
+    tail: Queue:Empty
