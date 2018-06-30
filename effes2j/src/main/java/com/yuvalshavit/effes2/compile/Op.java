@@ -4,18 +4,20 @@ import static java.util.Objects.requireNonNull;
 
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
+
+import org.antlr.v4.runtime.Token;
 
 import com.yuvalshavit.effesvm.ops.OperationFactory;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public class Op {
+  private final Token token;
   private final String toString;
 
-  private Op(String opCode, List<String> arguments) {
+  private Op(Token token, String opCode, List<String> arguments) {
+    this.token = token;
     int len = opCode.length() + 1;
     for (String arg : arguments) {
       len += (arg.length() + 1);
@@ -33,11 +35,10 @@ public class Op {
     return toString;
   }
 
-  public static <R> EffesOps<R> factory(Consumer<? super Op> handler, Function<? super Op, ? extends R> andThen) {
+  public static EffesOps<Token> factory(Consumer<? super Op> handler) {
     requireNonNull(handler);
-    requireNonNull(andThen);
     @SuppressWarnings({"unchecked", "rawtypes"})
-    EffesOps<R> instance = (EffesOps<R>) Proxy.newProxyInstance(Op.class.getClassLoader(), new Class[] {EffesOps.class}, ((proxy, method, args) -> {
+    EffesOps<Token> instance = (EffesOps<Token>) Proxy.newProxyInstance(Op.class.getClassLoader(), new Class[] {EffesOps.class}, ((proxy, method, args) -> {
       if (method.getDeclaringClass() == Object.class && method.getName().equals("toString")) {
         return handler.toString();
       }
@@ -46,24 +47,22 @@ public class Op {
         throw new RuntimeException("not an " + OperationFactory.class.getSimpleName());
       }
       String opName = requireNonNull(opFactory.value());
+      Token token;
       List<String> opArgs;
       if (args == null) {
-        opArgs = Collections.emptyList();
+        throw new IllegalArgumentException("no args provided");
       } else {
-        String[] stringArgs = new String[args.length];
-        for (int i = 0; i < args.length; i++) {
-          stringArgs[i] = (String) requireNonNull(args[i]); // this shouldn't throw, but if it does, it's what we want it to do
+        token = (Token) args[0];
+        String[] stringArgs = new String[args.length - 1];
+        for (int i = 1; i < args.length; i++) {
+          stringArgs[i - 1] = (String) requireNonNull(args[i]); // this shouldn't throw, but if it does, it's what we want it to do
         }
         opArgs = Arrays.asList(stringArgs);
       }
-      Op op = new Op(opName, opArgs);
+      Op op = new Op(token, opName, opArgs);
       handler.accept(op);
-      return andThen.apply(op);
+      return null;
     }));
     return instance;
-  }
-
-  public static EffesOps<Void> factory(Consumer<? super Op> handler) {
-    return factory(handler, op -> null);
   }
 }

@@ -14,7 +14,7 @@ import com.yuvalshavit.effesvm.runtime.EffesOps;
 class CompilerContext {
   final Scope scope;
   final LabelAssigner labelAssigner;
-  final EffesOps<Void> out;
+  final EffesOps<Token> out;
   final TypeInfo typeInfo;
   final Name.Module module;
   private final VarRef instanceVar;
@@ -22,7 +22,7 @@ class CompilerContext {
   public CompilerContext(
     Scope scope,
     LabelAssigner labelAssigner,
-    EffesOps<Void> out,
+    EffesOps<Token> out,
     TypeInfo typeInfo,
     Name.Module module,
     VarRef instanceVar)

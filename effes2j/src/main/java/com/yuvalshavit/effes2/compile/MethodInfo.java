@@ -2,6 +2,8 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.Objects;
 
+import org.antlr.v4.runtime.Token;
+
 public abstract class MethodInfo {
   private final int nDeclaredArgs;
   private final boolean hasReturnValue;
@@ -45,5 +47,5 @@ public abstract class MethodInfo {
     return Objects.hash(nDeclaredArgs, hasReturnValue);
   }
 
-  public abstract void invoke(CompilerContext cc);
+  public abstract void invoke(Token token, CompilerContext cc);
 }

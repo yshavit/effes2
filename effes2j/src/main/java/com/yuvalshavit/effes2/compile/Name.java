@@ -1,6 +1,8 @@
 package com.yuvalshavit.effes2.compile;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+
+import org.antlr.v4.runtime.Token;
 
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
@@ -45,7 +47,7 @@ public class Name {
     private final Module module;
     private final UnqualifiedType unqualifiedType;
     private final String evmDescriptor;
-    private final Consumer<EffesOps<?>> constructor;
+    private final BiConsumer<EffesOps<Token>,Token> constructor;
 
     public QualifiedType(Module module, UnqualifiedType unqualifiedType) {
       this(module, unqualifiedType, null, null);
@@ -55,11 +57,11 @@ public class Name {
       return new QualifiedType(Module.BUILT_IN, new UnqualifiedType(type.typeName()), type.evmType().getEvmType(), type.constructor());
     }
 
-    public void instantiate(Module context, EffesOps<?> out) {
+    public void instantiate(Token token, Module context, EffesOps<Token> out) {
       if (constructor == null) {
-        out.call(evmDescriptor(context), getUnqualifiedType().getName());
+        out.call(token, evmDescriptor(context), getUnqualifiedType().getName());
       } else {
-        constructor.accept(out);
+        constructor.accept(out, token);
       }
     }
 

@@ -4,6 +4,8 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
 
+import org.antlr.v4.runtime.Token;
+
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.util.Dispatcher;
 import com.yuvalshavit.effes2.util.EvmStrings;
@@ -40,37 +42,39 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
-      cc.out.copy();
-      cc.out.arrayLen();
-      iterLen.store(cc.module, cc.out);
-      cc.out.pushInt("0");
-      iterIdx.store(cc.module, cc.out);
+      cc.out.copy(iterateOver.start);
+      Token inToken = ctx.IN().getSymbol();
+      cc.out.arrayLen(inToken);
+      iterLen.store(inToken, cc.module, cc.out);
+      cc.out.pushInt(inToken, "0");
+      iterIdx.store(inToken, cc.module, cc.out);
       // Now the loop. At the top of each iteration, the stack's top contains the iterateOver value.
       String loopTopLabel = cc.labelAssigner.allocate("loopTop");
       String loopDoneLabel = cc.labelAssigner.allocate("loopDone");
       breakLabels.push(new BreakLabels(loopDoneLabel, loopTopLabel));
-      cc.labelAssigner.place(loopTopLabel);
+      Token loopTop = ctx.COLON().getSymbol();
+      cc.labelAssigner.place(loopTop, loopTopLabel);
       // if arr.len >= idx goto done
-      iterLen.push(cc.module, cc.out);
-      iterIdx.push(cc.module, cc.out);
-      cc.out.ge();
-      cc.out.gotoIfNot(loopDoneLabel);
+      iterLen.push(loopTop, cc.module, cc.out);
+      iterIdx.push(loopTop, cc.module, cc.out);
+      cc.out.ge(loopTop);
+      cc.out.gotoIfNot(loopTop, loopDoneLabel);
       // otherwise: var, body, increment, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
-      cc.out.copy();
-      iterIdx.push(cc.module, cc.out);
-      cc.out.arrayGet();
-      iterVar.store(cc.module, cc.out);
+      cc.out.copy(loopTop);
+      iterIdx.push(loopTop, cc.module, cc.out);
+      cc.out.arrayGet(loopTop);
+      iterVar.store(loopTop, cc.module, cc.out);
       compileBlock(body);
-      iterIdx.push(cc.module, cc.out);
-      cc.out.pushInt("1");
-      cc.out.iAdd();
-      iterIdx.store(cc.module, cc.out);
-      cc.out.gotoAbs(loopTopLabel);
+      iterIdx.push(inToken, cc.module, cc.out);
+      cc.out.pushInt(inToken, "1");
+      cc.out.iAdd(inToken);
+      iterIdx.store(inToken, cc.module, cc.out);
+      cc.out.gotoAbs(inToken, loopTopLabel);
       // end the loop
-      cc.labelAssigner.place(loopDoneLabel);
+      cc.labelAssigner.place(ctx.stop, loopDoneLabel);
       breakLabels.pop();
     });
-    cc.out.pop(); // the array being indexed
+    cc.out.pop(ctx.stop); // the array being indexed
   }
 
   @Dispatched
@@ -80,7 +84,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       : null;
     VarRef var = getVarForAssign(ctx.qualifiedIdentName(), type);
     cc.scope.inNewScope(() -> expressionCompiler.apply(ctx.expression()));
-    var.store(cc.module, cc.out);
+    var.store(ctx.stop, cc.module, cc.out);
   }
 
   @Dispatched
@@ -98,11 +102,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         EffesParser.ExpressionContext condition = ctx.expression();
         cc.scope.inNewScope(() -> {
           expressionCompiler.apply(condition);
-            cc.out.gotoIfNot(ifNotLabel);
+            cc.out.gotoIfNot(c.COLON().getSymbol(), ifNotLabel);
             compileBlock(c.block());
           });
-        compileElseStatement(c.elseStat(), ifNotLabel, ifChainEndLabel);
-        cc.labelAssigner.place(ifChainEndLabel);
+        compileElseStatement(c.elseStat(), c.stop, ifNotLabel, ifChainEndLabel);
+        cc.labelAssigner.place(ctx.stop, ifChainEndLabel);
       })
       .when(EffesParser.IfMatchMultiContext.class, c-> {
         cc.scope.inNewScope(() -> {
@@ -110,7 +114,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           expressionCompiler.apply(condition);
           String endLabel = cc.labelAssigner.allocate("matchersEnd");
           compileBlockMatchers(c.blockMatchers(), endLabel, endLabel, ExpressionCompiler.tryGetLocalVar(condition));
-          cc.labelAssigner.place(endLabel);
+          cc.labelAssigner.place(ctx.stop, endLabel);
         });
       })
       .on(ctx.statementIfConditionAndBody());
@@ -128,7 +132,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     boolean hasRv = expressionCompiler.compileMethodInvocation(targetCtx, argsInvocation);
 
     if (hasRv) {
-      cc.out.pop();
+      cc.out.pop(ctx.stop);
     }
   }
 
@@ -138,15 +142,16 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     String loopEndLabel = cc.labelAssigner.allocate("whileLoopEnd");
     breakLabels.push(new BreakLabels(loopEndLabel, loopTopLabel));
     cc.scope.inNewScope(() -> {
-      cc.labelAssigner.place(loopTopLabel);
+      cc.labelAssigner.place(ctx.start, loopTopLabel);
       EffesParser.ExpressionContext condition = ctx.expression();
       String conditionVar = ExpressionCompiler.tryGetLocalVar(condition);
       expressionCompiler.apply(condition); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
       Dispatcher.dispatchConsumer(EffesParser.StatementWhileConditionAndBodyContext.class)
         .when(EffesParser.WhileBodySimpleContext.class, c -> {
-          cc.out.gotoIfNot(loopEndLabel);
+          Token gotoToken = c.COLON().getSymbol();
+          cc.out.gotoIfNot(gotoToken, loopEndLabel);
           if (!compileBlock(c.block())) {
-            cc.out.gotoAbs(loopTopLabel);
+            cc.out.gotoAbs(gotoToken, loopTopLabel);
           }
         })
         .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {
@@ -154,7 +159,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         })
         .on(ctx.statementWhileConditionAndBody());
     });
-    cc.labelAssigner.place(loopEndLabel);
+    cc.labelAssigner.place(ctx.stop, loopEndLabel);
   }
 
   @Dispatched
@@ -176,7 +181,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     EffesParser.ExpressionContext targetExpression = ctx.expression();
     expressionCompiler.apply(targetExpression);
     cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), endLabel, endLabel, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
-    cc.labelAssigner.place(endLabel);
+    cc.labelAssigner.place(ctx.stop, endLabel);
   }
 
   /**
@@ -199,14 +204,14 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         if (label == null) {
           throw new CompilationException(ctx, "no break target available");
         }
-        cc.out.gotoAbs(label.labelForBreak);
+        cc.out.gotoAbs(c.start, label.labelForBreak);
       })
       .when(EffesParser.BlockStopContinueContext.class, c -> {
         BreakLabels label = breakLabels.peek();
         if (label == null) {
           throw new CompilationException(ctx, "no continue target available");
         }
-        cc.out.gotoAbs(label.labelForContinue);
+        cc.out.gotoAbs(c.start, label.labelForContinue);
       })
       .when(EffesParser.BlockStopReturnContext.class, c -> {
         if (c.expression() != null) {
@@ -214,9 +219,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         } else if (c.expressionMultiline() != null) {
           VarRef rv = cc.scope.allocateAnonymous(null);
           compileExpressionMultiline(c.expressionMultiline(), rv);
-          rv.push(cc.module, cc.out);
+          rv.push(c.expressionMultiline().start, cc.module, cc.out);
         }
-        cc.out.rtrn();
+        cc.out.rtrn(c.RETURN().getSymbol());
       })
       .whenNull(() -> {})
       .on(blockStop);
@@ -236,7 +241,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       EffesParser.BlockMatcherContext blockMatcherContext = iterator.next();
       // First, set up the labels. We'll drop our label, and then compute the next one.
       if (nextMatcherLabel != null) {
-        cc.labelAssigner.place(nextMatcherLabel);
+        cc.labelAssigner.place(blockMatcherContext.start, nextMatcherLabel);
       }
       if (iterator.hasNext()) {
         nextMatcherLabel = cc.labelAssigner.allocate("whileMultiTry");
@@ -248,34 +253,34 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       cc.scope.inNewScope(() -> {
         String matchedLabel = cc.labelAssigner.allocate("whileMultiMatched");
         MatcherCompiler.compile(blockMatcherContext.matcher(), matchedLabel, nextMatcherLabelClosure, iterator.hasNext(), cc, targetVar);
-        cc.out.label(matchedLabel);
+        cc.out.label(blockMatcherContext.matcher().start, matchedLabel);
         if (!compileBlock(blockMatcherContext.block())) {
-          cc.out.gotoAbs(gotoAfterMatchLabel);
+          cc.out.gotoAbs(blockMatcherContext.block().stop, gotoAfterMatchLabel);
         }
       });
     }
   }
 
-  private void compileElseStatement(EffesParser.ElseStatContext ctx, String ifNotLabel, String ifChainEndLabel) {
+  private void compileElseStatement(EffesParser.ElseStatContext ctx, Token ifEndToken, String ifNotLabel, String ifChainEndLabel) {
     if (ctx == null) {
-      cc.labelAssigner.place(ifNotLabel);
+      cc.labelAssigner.place(ifEndToken, ifNotLabel);
       return;
     }
-    cc.out.gotoAbs(ifChainEndLabel); // previous block falls through to here, then jumps to end
+    cc.out.gotoAbs(ctx.start, ifChainEndLabel); // previous block falls through to here, then jumps to end
     Dispatcher.dispatchConsumer(EffesParser.ElseStatContext.class)
       .when(EffesParser.IfElifContext.class, c -> {
         String nextIfNotLabel = cc.labelAssigner.allocate("elseIfNot");
-        cc.labelAssigner.place(ifNotLabel);
+        cc.labelAssigner.place(ctx.start, ifNotLabel);
         // See apply(StatIfContext) above for why we set up the scope this way
         cc.scope.inNewScope(() -> {
           expressionCompiler.apply(c.expression());
-          cc.out.gotoIfNot(nextIfNotLabel);
+          cc.out.gotoIfNot(c.COLON().getSymbol(), nextIfNotLabel);
           compileBlock(c.block());
         });
-        compileElseStatement(c.elseStat(), nextIfNotLabel, ifChainEndLabel);
+        compileElseStatement(c.elseStat(), c.stop, nextIfNotLabel, ifChainEndLabel);
       })
       .when(EffesParser.IfElseContext.class, c -> {
-        cc.labelAssigner.place(ifNotLabel);
+        cc.labelAssigner.place(c.start, ifNotLabel);
         compileBlock(c.block());
       })
       .whenNull(() -> { })
@@ -295,26 +300,26 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     for (Iterator<EffesParser.ExpressionMatcherContext> iter = ctx.expressionMatchers().expressionMatcher().iterator(); iter.hasNext(); ) {
       EffesParser.ExpressionMatcherContext exprMatcher = iter.next();
       if (nextMatcherLabel != null) {
-        cc.labelAssigner.place(nextMatcherLabel);
+        cc.labelAssigner.place(exprMatcher.start, nextMatcherLabel);
       }
       nextMatcherLabel = cc.labelAssigner.allocate("exprMultiTry");
       String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
         String ifMatched = cc.labelAssigner.allocate("exprMultiMatched");
         MatcherCompiler.compile(exprMatcher.matcher(), ifMatched, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
-        cc.out.label(ifMatched);
+        cc.out.label(exprMatcher.expression().start, ifMatched);
         expressionCompiler.apply(exprMatcher.expression());
-        toVar.store(cc.module, cc.out);
-        cc.out.gotoAbs(matchersDoneLabel);
+        toVar.store(ctx.stop, cc.module, cc.out);
+        cc.out.gotoAbs(ctx.stop, matchersDoneLabel);
       });
     }
     assert nextMatcherLabel != null : ctx.getText();
     // nextMatcherLabel is the goto after failure for the last expression. There's no reasonable behavior in that case, so just fail.
     // The [expr] would have been popped off the stack now, because keepIfNoMatch is false for the last exprMatcher
-    cc.labelAssigner.place(nextMatcherLabel);
-    cc.out.fail(EvmStrings.escape("no alternatives matched"));
+    cc.labelAssigner.place(ctx.stop, nextMatcherLabel);
+    cc.out.fail(ctx.stop, EvmStrings.escape("no alternatives matched"));
     // And finally, drop the "done" label so the previous expressions have somewhere to go to.
-    cc.labelAssigner.place(matchersDoneLabel);
+    cc.labelAssigner.place(ctx.stop, matchersDoneLabel);
   }
 
   private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx, Name.QualifiedType inferredType) {

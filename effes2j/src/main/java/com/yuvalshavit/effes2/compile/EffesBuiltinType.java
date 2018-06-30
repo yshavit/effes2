@@ -2,7 +2,9 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
+
+import org.antlr.v4.runtime.Token;
 
 import com.google.common.collect.ImmutableMap;
 import com.yuvalshavit.effesvm.runtime.EffesNativeType;
@@ -25,17 +27,17 @@ public enum EffesBuiltinType {
       .put("print", new BuiltinMethodInfo(1, false, EffesOps::sout))
       .build(),
     build()
-      .put("debug", new BuiltinMethodInfo(1, false, ops -> {
-        ops.nativeToString();
-        ops.sout();
-        ops.strPush("\\n");
-        ops.sout();
+      .put("debug", new BuiltinMethodInfo(1, false, (ops, tok) -> {
+        ops.nativeToString(tok);
+        ops.sout(tok);
+        ops.strPush(tok, "\\n");
+        ops.sout(tok);
       }))
-      .put("debugPretty", new BuiltinMethodInfo(1, false, ops -> {
-        ops.nativeToStringPretty();
-        ops.sout();
-        ops.strPush("\\n");
-        ops.sout();
+      .put("debugPretty", new BuiltinMethodInfo(1, false, (ops, tok)-> {
+        ops.nativeToStringPretty(tok);
+        ops.sout(tok);
+        ops.strPush(tok, "\\n");
+        ops.sout(tok);
       }))
       .build()),
   REGEX_MATCH("RegexMatch", EffesNativeType.MATCH,
@@ -57,8 +59,8 @@ public enum EffesBuiltinType {
     build()
       .put("create", new BuiltinMethodInfo(0, true, EffesOps::sbld))
       .build()),
-  TRUE("True", EffesNativeType.TRUE, Collections.emptyMap(), Collections.emptyMap(), ops -> ops.bool("True")),
-  FALSE("False", EffesNativeType.FALSE, Collections.emptyMap(), Collections.emptyMap(), ops -> ops.bool("False")),
+  TRUE("True", EffesNativeType.TRUE, Collections.emptyMap(), Collections.emptyMap(), (ops, tok) -> ops.bool(tok, "True")),
+  FALSE("False", EffesNativeType.FALSE, Collections.emptyMap(), Collections.emptyMap(), (ops, tok) -> ops.bool(tok, "False")),
   INTEGER("Integer", EffesNativeType.INTEGER, Collections.emptyMap(), Collections.emptyMap());
 
   EffesBuiltinType(
@@ -66,7 +68,7 @@ public enum EffesBuiltinType {
     EffesNativeType evmType,
     Map<String, MethodInfo> instanceMethods,
     Map<String, MethodInfo> staticMethods,
-    Consumer<EffesOps<?>> constructor)
+    BiConsumer<EffesOps<Token>,Token> constructor)
   {
     this.typeName = typeName;
     this.evmType = evmType;
@@ -83,13 +85,13 @@ public enum EffesBuiltinType {
   private final EffesNativeType evmType;
   private final Map<String, MethodInfo> instanceMethods;
   private final Map<String, MethodInfo> staticMethods;
-  private Consumer<EffesOps<?>> constructor;
+  private final BiConsumer<EffesOps<Token>,Token> constructor;
 
   public String typeName() {
     return typeName;
   }
 
-  public Consumer<EffesOps<?>> constructor() {
+  public BiConsumer<EffesOps<Token>,Token> constructor() {
     return constructor;
   }
 
@@ -110,16 +112,16 @@ public enum EffesBuiltinType {
   }
 
   private static class BuiltinMethodInfo extends MethodInfo {
-    private final Consumer<EffesOps<?>> invocation;
+    private final BiConsumer<EffesOps<Token>,Token> invocation;
 
-    public BuiltinMethodInfo(int nDeclaredArgs, boolean hasReturnValue, Consumer<EffesOps<?>> invocation) {
+    public BuiltinMethodInfo(int nDeclaredArgs, boolean hasReturnValue, BiConsumer<EffesOps<Token>,Token> invocation) {
       super(nDeclaredArgs, hasReturnValue);
       this.invocation = invocation;
     }
 
     @Override
-    public void invoke(CompilerContext cc) {
-      invocation.accept(cc.out);
+    public void invoke(Token token, CompilerContext cc) {
+      invocation.accept(cc.out, token);
     }
   }
 }

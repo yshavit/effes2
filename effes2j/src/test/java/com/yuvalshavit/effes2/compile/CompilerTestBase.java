@@ -16,6 +16,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.Token;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -118,7 +119,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
       });
     }
     TypeInfo typeInfo = createTypeInfo(testTypes, testCase.staticMethods);
-    EffesOps<Void> outOps = TUtils.opsToString(out);
+    EffesOps<Token> outOps = TUtils.opsToString(out);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
     return new CompilerContextGenerator(MODULE, outOps, efctDecls, typeInfo);
   }

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.yuvalshavit.effes2.parse.EffesLexer;
@@ -33,7 +34,7 @@ public class MatcherCompiler {
     VarRef keepIfNoMatchRef;
     if (keepIfNoMatch) {
       keepIfNoMatchRef = compilerContext.scope.allocateAnonymous(null);
-      keepIfNoMatchRef.storeNoPop(compilerContext.module, compilerContext.out);
+      keepIfNoMatchRef.storeNoPop(matcherContext.start, compilerContext.module, compilerContext.out);
     } else {
       keepIfNoMatchRef = null;
     }
@@ -42,8 +43,9 @@ public class MatcherCompiler {
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
-    compiler.scratchVars.commit(compilerContext.out, compilerContext.scope);
-    compilerContext.out.gotoAbs(labelIfMatched);
+    Token lastToken = matcherContext.stop;
+    compiler.scratchVars.commit(lastToken, compilerContext.out, compilerContext.scope);
+    compilerContext.out.gotoAbs(lastToken, labelIfMatched);
 
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.
@@ -69,16 +71,16 @@ public class MatcherCompiler {
       for (int i = compiler.popAndFailTargets.size() - 1; i >= 0; --i) {
         String target = compiler.popAndFailTargets.get(i);
         if (target != null) {
-          compiler.cc.out.label(target);
+          compiler.cc.out.label(lastToken, target);
         }
         if (i > 0) {
-          compiler.cc.out.pop();
+          compiler.cc.out.pop(lastToken);
         }
       }
       if (keepIfNoMatchRef != null) {
-        keepIfNoMatchRef.push(compilerContext.module, compilerContext.out);
+        keepIfNoMatchRef.push(lastToken, compilerContext.module, compilerContext.out);
       }
-      compiler.cc.out.gotoAbs(labelNoMatch);
+      compiler.cc.out.gotoAbs(lastToken, labelNoMatch);
     }
   }
 
@@ -118,7 +120,7 @@ public class MatcherCompiler {
     @Dispatched
     public void apply(EffesParser.MatcherAnyContext input) {
       // <op IS> *
-      cc.out.pop(); // Always matches, so just need to pop the LHS
+      cc.out.pop(input.stop); // Always matches, so just need to pop the LHS
     }
 
     @Dispatched
@@ -132,10 +134,10 @@ public class MatcherCompiler {
       // <op IS> [@]fooName [if expr]
       // Always matches the type, but still need to do the binding and check the expression.
       bindVarIfNeeded(input.IDENT_NAME(), input.AT(), null);
-      cc.out.pop();
+      cc.out.pop(input.IDENT_NAME().getSymbol());
       if (input.expression() != null) {
         new ExpressionCompiler(cc).apply(input.expression());
-        cc.out.gotoIfNot(getPopAndFailLabel());
+        cc.out.gotoIfNot(input.stop, getPopAndFailLabel());
       }
     }
 
@@ -148,7 +150,7 @@ public class MatcherCompiler {
           VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
           scratchVars.add(varName, varRef, eventualBind);
         }
-        varRef.storeNoPop(cc.module, cc.out);
+        varRef.storeNoPop(varBind.getSymbol(), cc.module, cc.out);
       }
     }
   }
@@ -168,7 +170,8 @@ public class MatcherCompiler {
     @Dispatched
     public void apply(EffesParser.PatternRegexContext input) {
       ++depth;
-      applyRegex((input.REGEX().getSymbol().getText()));
+      Token regex = input.REGEX().getSymbol();
+      applyRegex(regex, regex.getText());
       --depth;
     }
 
@@ -176,8 +179,9 @@ public class MatcherCompiler {
     public void apply(EffesParser.PatternTypeContext input) {
       ++depth;
       //                                                                          // [..., val]
-      Name.QualifiedType type = cc.type(input.IDENT_TYPE());
-      checkType(type);
+      TerminalNode typeNode = input.IDENT_TYPE();
+      Name.QualifiedType type = cc.type(typeNode);
+      checkType(typeNode.getSymbol(), type);
       List<EffesParser.MatcherContext> fieldMatchers = input.matcher();
       int nFields = cc.typeInfo.fieldsCount(type);
       if (nFields != fieldMatchers.size()) {
@@ -186,29 +190,30 @@ public class MatcherCompiler {
           String.format("incorrect number of field matchers for %s (expected %d, found %d)", type, nFields, fieldMatchers.size()));
       }
       for (int i = 0; i < nFields; ++i) {
+        EffesParser.MatcherContext fieldMatcher = fieldMatchers.get(i);
         String fieldName = cc.typeInfo.fieldName(type, i);
-        cc.out.PushField(type.evmDescriptor(cc.module), fieldName);               // [..., val, val.fieldN]
-        matcherDispatch.apply(fieldMatchers.get(i));                              // [..., val]
+        cc.out.PushField(fieldMatcher.start, type.evmDescriptor(cc.module), fieldName);  // [..., val, val.fieldN]
+        matcherDispatch.apply(fieldMatcher);                                             // [..., val]
       }
       varBinderByType.accept(type);
-      cc.out.pop();
+      cc.out.pop(input.stop);
       --depth;
     }
 
-    public void checkType(Name.QualifiedType type) {
-      cc.out.typp(type.evmDescriptor(cc.module));
-      cc.out.gotoIfNot(getPopAndFailLabel());
+    private void checkType(Token token, Name.QualifiedType type) {
+      cc.out.typp(token, type.evmDescriptor(cc.module));
+      cc.out.gotoIfNot(token, getPopAndFailLabel());
     }
 
-    public void applyRegex(String pattern) {
+    private void applyRegex(Token token, String pattern) {
       pattern = EvmStrings.unescapeRegex(pattern);
       //                                                  // [..., str]
-      checkType(Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING));
-      cc.out.strPush(EvmStrings.escape(pattern));         // [..., str, pattern]
-      cc.out.stringRegex();                               // [..., match?]
-      checkType(Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH));
+      checkType(token, Name.QualifiedType.forBuiltin(EffesBuiltinType.STRING));
+      cc.out.strPush(token, EvmStrings.escape(pattern));  // [..., str, pattern]
+      cc.out.stringRegex(token);                          // [..., match?]
+      checkType(token, Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH));
       varBinderByType.accept(Name.QualifiedType.forBuiltin(EffesBuiltinType.REGEX_MATCH));
-      cc.out.pop();                                       // [...]
+      cc.out.pop(token);                                  // [...]
     }
   }
 }

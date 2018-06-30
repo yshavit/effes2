@@ -40,7 +40,7 @@ public class MethodCompiler {
       }
       CompilerContext context = new CompilerContext(scope, new LabelAssigner(ccGen.ops), ccGen.ops, ccGen.typeInfo, ccGen.module, thisVar);
       if (!new StatementCompiler(context).compileBlock(ctx.block())) {
-        ccGen.ops.rtrn(); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
+        ccGen.ops.rtrn(ctx.stop); // this may be unreachable in some cases (e.g. "if c then return a, else return b"), but it's never harmful
       }
     });
     ccGen.declarations.endMethodDeclaration();

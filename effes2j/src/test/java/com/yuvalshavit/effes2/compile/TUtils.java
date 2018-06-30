@@ -2,12 +2,14 @@ package com.yuvalshavit.effes2.compile;
 
 import java.util.function.Consumer;
 
+import org.antlr.v4.runtime.Token;
+
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 public final class TUtils {
   private TUtils() {}
 
-  static EffesOps<Void> opsToString(StringBuilder sb) {
+  static EffesOps<Token> opsToString(StringBuilder sb) {
     return Op.factory(new Consumer<Op>() {
       @Override
       public void accept(Op op) {

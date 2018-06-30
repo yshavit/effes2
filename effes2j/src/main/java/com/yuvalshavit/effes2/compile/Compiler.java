@@ -15,6 +15,8 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import org.antlr.v4.runtime.Token;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.yuvalshavit.effes2.parse.EffesParser;
 import com.yuvalshavit.effes2.parse.ParseUtils;
@@ -31,7 +33,7 @@ public class Compiler {
     TypeInfo typeInfo = scanForTypes(errors, parsed);
     parsed.forEach((moduleName, fileContext) -> {
       try (Writer writer = writers.apply(moduleName)) {
-        EffesOps<Void> ops = Op.factory(op -> {
+        EffesOps<Token> ops = Op.factory(op -> {
           try {
             writer.append(op.toString());
             writer.append('\n');
@@ -169,8 +171,8 @@ public class Compiler {
     }
 
     @Override
-    public void invoke(CompilerContext cc) {
-      cc.out.call(targetType.evmDescriptor(cc.module), methodName);
+    public void invoke(Token token, CompilerContext cc) {
+      cc.out.call(token, targetType.evmDescriptor(cc.module), methodName);
     }
   }
 

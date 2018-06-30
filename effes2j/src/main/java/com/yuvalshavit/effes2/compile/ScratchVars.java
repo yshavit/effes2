@@ -3,6 +3,8 @@ package com.yuvalshavit.effes2.compile;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.antlr.v4.runtime.Token;
+
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
 import lombok.Data;
@@ -21,10 +23,10 @@ public class ScratchVars {
     }
   }
 
-  public void commit(EffesOps<?> ops, Scope scope) {
+  public void commit(Token token, EffesOps<Token> ops, Scope scope) {
     scratchesToCommits.forEach((scratchVar, bind) -> {
-      scratchVar.push(context, ops);
-      bind.commitVar.store(context, ops);
+      scratchVar.push(token, context, ops);
+      bind.commitVar.store(token, context, ops);
       scope.releaseLocal(bind.scratchVarName, scratchVar);
     });
   }

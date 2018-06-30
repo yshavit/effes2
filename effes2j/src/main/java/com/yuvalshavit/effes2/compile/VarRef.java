@@ -1,5 +1,7 @@
 package com.yuvalshavit.effes2.compile;
 
+import org.antlr.v4.runtime.Token;
+
 import com.google.common.base.Objects;
 import com.yuvalshavit.effesvm.runtime.EffesOps;
 
@@ -14,9 +16,9 @@ public abstract class VarRef {
     return type;
   }
 
-  public abstract void push(Name.Module context, EffesOps<?> ops);
-  public abstract void store(Name.Module context, EffesOps<?> ops);
-  public abstract void storeNoPop(Name.Module context, EffesOps<?> ops);
+  public abstract void push(Token token, Name.Module context, EffesOps<Token> ops);
+  public abstract void store(Token token, Name.Module context, EffesOps<Token> ops);
+  public abstract void storeNoPop(Token token, Name.Module context, EffesOps<Token> ops);
   public abstract VarRef withType(Name.QualifiedType type);
 
   public static class LocalVar extends VarRef {
@@ -39,18 +41,18 @@ public abstract class VarRef {
     }
 
     @Override
-    public void push(Name.Module context, EffesOps<?> ops) {
-      ops.pvar(regStr);
+    public void push(Token token, Name.Module context, EffesOps<Token> ops) {
+      ops.pvar(token, regStr);
     }
 
     @Override
-    public void store(Name.Module context, EffesOps<?> ops) {
-      ops.svar(regStr);
+    public void store(Token token, Name.Module context, EffesOps<Token> ops) {
+      ops.svar(token, regStr);
     }
 
     @Override
-    public void storeNoPop(Name.Module context, EffesOps<?> ops) {
-      ops.Svar(regStr);
+    public void storeNoPop(Token token, Name.Module context, EffesOps<Token> ops) {
+      ops.Svar(token, regStr);
     }
 
     @Override
@@ -75,21 +77,21 @@ public abstract class VarRef {
     }
 
     @Override
-    public void push(Name.Module context, EffesOps<?> ops) {
-      instance.push(context, ops);
-      ops.pushField(instance.getType().evmDescriptor(context), fieldName);
+    public void push(Token token, Name.Module context, EffesOps<Token> ops) {
+      instance.push(token, context, ops);
+      ops.pushField(token, instance.getType().evmDescriptor(context), fieldName);
     }
 
     @Override
-    public void store(Name.Module context, EffesOps<?> ops) {
-      instance.push(context, ops);
-      ops.storeField(instance.getType().evmDescriptor(context), fieldName);
+    public void store(Token token, Name.Module context, EffesOps<Token> ops) {
+      instance.push(token, context, ops);
+      ops.storeField(token, instance.getType().evmDescriptor(context), fieldName);
     }
 
     @Override
-    public void storeNoPop(Name.Module context, EffesOps<?> ops) {
-      ops.copy();
-      store(context, ops);
+    public void storeNoPop(Token token, Name.Module context, EffesOps<Token> ops) {
+      ops.copy(token);
+      store(token, context, ops);
     }
   }
 }

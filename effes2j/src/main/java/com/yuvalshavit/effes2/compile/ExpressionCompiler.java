@@ -3,7 +3,9 @@ package com.yuvalshavit.effes2.compile;
 import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
+import org.antlr.v4.runtime.Token;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 import com.google.common.collect.Lists;
@@ -24,7 +26,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprCmpContext input) {
-    final Runnable op;
+    final Consumer<Token> op;
     switch (input.cmp().getChild(TerminalNode.class, 0).getSymbol().getText()) {
       case "<":
         op = cc.out::lt;
@@ -52,20 +54,20 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprThisContext input) {
-    pvar(THIS);
+    pvar(input.stop, THIS);
   }
 
   @Dispatched
   public void apply(EffesParser.ExprStringLiteralContext input) {
     TerminalNode terminalNode = input.QUOTED_STRING();
     String quotedString = getQuotedString(terminalNode);
-    cc.out.strPush(EvmStrings.escape(quotedString));
+    cc.out.strPush(terminalNode.getSymbol(), EvmStrings.escape(quotedString));
   }
 
   @Dispatched
   public void apply(EffesParser.ExprNegationContext input) {
     apply(input.expression());
-    cc.out.negate();
+    cc.out.negate(input.stop);
   }
 
   @Dispatched
@@ -82,7 +84,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       throw new CompilationException(input, String.format("expected %d argument%s, found %d", expectedArgs, expectedArgs == 1 ? "" : "s", args.size()));
     }
     Lists.reverse(args).forEach(this::apply);
-    type.instantiate(cc.module, cc.out);
+    type.instantiate(input.stop, cc.module, cc.out);
   }
 
   @Dispatched
@@ -99,7 +101,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
     EffesParser.QualifiedIdentNameStartContext qualifiedStart = qualifiedName.qualifiedIdentNameStart();
     EffesParser.QualifiedIdentNameMiddleContext qualifiedMiddle = qualifiedName.qualifiedIdentNameMiddle();
-    String fieldName = qualifiedName.IDENT_NAME().getSymbol().getText();
+    Token fieldNameTok = qualifiedName.IDENT_NAME().getSymbol();
+    String fieldName = fieldNameTok.getText();
     if (qualifiedStart == null) {
       // we're not in a case like "FooModule.staticField". Instead, we're in just "foo" or "foo.bar".
       // If it's "foo.bar", check whether we know the "foo" type, and whether "bar" is a field on that type.
@@ -113,12 +116,13 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
         if (!cc.typeInfo.hasField(localVarType, fieldName)) {
           throw new CompilationException(qualifiedMiddle, String.format("no field \"%s\" on type \"%s\"", fieldName, localVarType));
         }
-        localVar.push(cc.module, cc.out);
-        cc.out.pushField(localVarType.evmDescriptor(cc.module), fieldName);
+        localVar.push(fieldNameTok, cc.module, cc.out);
+        cc.out.pushField(fieldNameTok, localVarType.evmDescriptor(cc.module), fieldName);
       } else {
         TerminalNode finalName = qualifiedName.IDENT_NAME();
-        String symbolName = finalName.getSymbol().getText();
-        pvar(symbolName);
+        Token finalNameToken = finalName.getSymbol();
+        String symbolName = finalNameToken.getText();
+        pvar(finalNameToken, symbolName);
       }
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentThisContext) {
       VarRef thisVar = cc.getInstanceContextVar(qualifiedStart.getStart(), qualifiedStart.getStop());
@@ -126,7 +130,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       if (!cc.typeInfo.hasField(thisVarType, fieldName)) {
         throw new CompilationException(qualifiedMiddle, "no field \"" + fieldName + "\" on type " + thisVarType);
       }
-      cc.out.pushField(thisVarType.evmDescriptor(cc.module), fieldName);
+      cc.out.pushField(fieldNameTok, thisVarType.evmDescriptor(cc.module), fieldName);
     } else if (qualifiedStart instanceof EffesParser.QualifiedIdentTypeContext) {
       EffesParser.QualifiedIdentTypeContext moduleNameCtx = (EffesParser.QualifiedIdentTypeContext) qualifiedStart;
       String moduleName = moduleNameCtx.IDENT_TYPE().getSymbol().getText();
@@ -135,7 +139,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       }
       switch (fieldName) {
         case "stdin":
-          cc.out.stdin();
+          cc.out.stdin(fieldNameTok);
           break;
         case "stdout":
 //          cc.out.stdout();
@@ -156,7 +160,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
 
   @Dispatched
   public void apply(EffesParser.ExprIntLiteralContext input) {
-    cc.out.pushInt(input.INT().getSymbol().getText());
+    Token tok = input.INT().getSymbol();
+    cc.out.pushInt(tok, tok.getText());
   }
 
   @Dispatched
@@ -168,12 +173,13 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     String isATrue = cc.labelAssigner.allocate("isA_true");
     String isADone = cc.labelAssigner.allocate("isA_done");
     MatcherCompiler.compile(input.matcher(), isATrue, isAFalse, false, cc, tryGetLocalVar(expression));
-    cc.labelAssigner.place(isATrue);
-    bool(ifMatchedValue); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
-    cc.out.gotoAbs(isADone);
-    cc.labelAssigner.place(isAFalse);
-    bool(!ifMatchedValue);
-    cc.labelAssigner.place(isADone);
+    Token tok = input.stop;
+    cc.labelAssigner.place(tok, isATrue);
+    bool(tok, ifMatchedValue); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
+    cc.out.gotoAbs(tok, isADone);
+    cc.labelAssigner.place(tok, isAFalse);
+    bool(tok, !ifMatchedValue);
+    cc.labelAssigner.place(tok, isADone);
   }
 
   @Dispatched
@@ -195,16 +201,16 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     return EvmStrings.unEscape(withinQuotes);
   }
 
-  private void binaryExpr(List<EffesParser.ExpressionContext> exprs, Runnable op) {
+  private void binaryExpr(List<EffesParser.ExpressionContext> exprs, Consumer<Token> op) {
     if (exprs.size() != 2) {
       throw new IllegalArgumentException("require exactly two expressions: " + exprs);
     }
     apply(exprs.get(1));
     apply(exprs.get(0));
-    op.run();
+    op.accept(exprs.get(0).stop);
   }
 
-  private void pvar(String symbolName) {
+  private void pvar(Token tok, String symbolName) {
     VarRef var = cc.scope.tryLookUp(symbolName);
     if (var == null) {
       VarRef thisVar = cc.tryGetInstanceContextVar();
@@ -215,10 +221,10 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
       if (!cc.typeInfo.hasField(thisType, symbolName)) {
         throw new NoSuchElementException("no local or instance variable named " + symbolName);
       }
-      thisVar.push(cc.module, cc.out);
-      cc.out.pushField(thisType.evmDescriptor(cc.module), symbolName);
+      thisVar.push(tok, cc.module, cc.out);
+      cc.out.pushField(tok, thisType.evmDescriptor(cc.module), symbolName);
     } else {
-      var.push(cc.module, cc.out);
+      var.push(tok, cc.module, cc.out);
     }
   }
 
@@ -241,7 +247,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           throw new CompilationException(targetCtx, "can't have multi-part qualified methods");
         }
         VarRef instanceVar = cc.getInstanceContextVar(targetCtx.getStart(), argsInvocation.getStop());
-        instanceVar.push(cc.module, cc.out);
+        instanceVar.push(argsInvocation.stop, cc.module, cc.out);
         return instanceVar.getType();
       })
       .whenNull(() -> {
@@ -252,7 +258,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
             result = cc.module;
           } else {
             result = instanceVar.getType();
-            instanceVar.push(cc.module, cc.out);
+            instanceVar.push(targetCtx.stop, cc.module, cc.out);
           }
         } else {
           String varName = targetNameMidCtx.IDENT_NAME().getText();
@@ -261,7 +267,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
             throw new CompilationException(targetCtx, "no local var named " + varName);
           }
           result = targetVar.getType();
-          targetVar.push(cc.module, cc.out);
+          targetVar.push(targetCtx.stop, cc.module, cc.out);
         }
         return result;
       })
@@ -288,7 +294,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    methodInfo.invoke(cc);
+    methodInfo.invoke(argsInvocation.stop, cc);
     return methodInfo.hasReturnValue();
   }
 
@@ -312,8 +318,8 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     return targetVar;
   }
 
-  private void bool(boolean value) {
+  private void bool(Token tok, boolean value) {
     String valueString = value ? "True" : "False";
-    cc.out.bool(valueString);
+    cc.out.bool(tok, valueString);
   }
 }
