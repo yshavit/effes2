@@ -34,7 +34,9 @@ public class Compiler {
     parsed.forEach((moduleName, fileContext) -> {
       try (Writer writer = writers.apply(moduleName)) {
         EffesOps<Token> ops = Op.factory(op -> {
+          Token tok = op.token();
           try {
+            writer.append(String.format("%d:%d ", tok.getLine(), tok.getCharPositionInLine()));
             writer.append(op.toString());
             writer.append('\n');
           } catch (IOException e) {

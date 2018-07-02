@@ -30,6 +30,10 @@ public class Op {
     toString = sb.toString();
   }
 
+  public Token token() {
+    return token;
+  }
+
   @Override
   public String toString() {
     return toString;
