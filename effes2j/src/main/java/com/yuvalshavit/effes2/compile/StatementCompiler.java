@@ -114,8 +114,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           EffesParser.ExpressionContext condition = ctx.expression();
           expressionCompiler.apply(condition);
           String endLabel = cc.labelAssigner.allocate("matchersEnd");
-          compileBlockMatchers(c.blockMatchers(), endLabel, endLabel, ExpressionCompiler.tryGetLocalVar(condition));
-          cc.labelAssigner.place(ctx.stop, endLabel);
+          compileBlockMatchers(ctx.IF().getSymbol(), c.blockMatchers(), endLabel, endLabel, ExpressionCompiler.tryGetLocalVar(condition));
+          cc.labelAssigner.place(ctx.IF().getSymbol(), endLabel);
         });
       })
       .on(ctx.statementIfConditionAndBody());
@@ -133,7 +133,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     boolean hasRv = expressionCompiler.compileMethodInvocation(targetCtx, argsInvocation);
 
     if (hasRv) {
-      cc.out.pop(ctx.stop);
+      cc.out.pop(ExpressionCompiler.debugSymbolTokenForMethodInvocation(targetCtx));
     }
   }
 
@@ -156,11 +156,11 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           }
         })
         .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {
-          compileBlockMatchers(c.blockMatchers(), loopTopLabel, loopEndLabel, conditionVar);
+          compileBlockMatchers(ctx.WHILE().getSymbol(), c.blockMatchers(), loopTopLabel, loopEndLabel, conditionVar);
         })
         .on(ctx.statementWhileConditionAndBody());
     });
-    cc.labelAssigner.place(ctx.stop, loopEndLabel);
+    cc.labelAssigner.place(ctx.WHILE().getSymbol(), loopEndLabel);
   }
 
   @Dispatched
@@ -229,7 +229,13 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     return blockStop != null;
   }
 
-  private void compileBlockMatchers(EffesParser.BlockMatchersContext ctx, String gotoAfterMatchLabel, String gotoAfterNoMatchesLabel, String targetVar) {
+  private void compileBlockMatchers(
+    Token endDebugSymbol,
+    EffesParser.BlockMatchersContext ctx,
+    String gotoAfterMatchLabel,
+    String gotoAfterNoMatchesLabel,
+    String targetVar)
+  {
     // When this bit starts, the assumption is that the top of the stack contains just one element (that we care about): the value to be matched.
     // When this bit ends, that element will be cleared.
     //
@@ -245,7 +251,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         cc.labelAssigner.place(blockMatcherContext.start, nextMatcherLabel);
       }
       if (iterator.hasNext()) {
-        nextMatcherLabel = cc.labelAssigner.allocate("whileMultiTry");
+        nextMatcherLabel = cc.labelAssigner.allocate("whileMultiTryNext");
       } else {
         nextMatcherLabel = gotoAfterNoMatchesLabel;
       }
@@ -257,7 +263,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         MatcherCompiler.compile(blockMatcherContext.matcher(), matchedLabel, nextMatcherLabelClosure, colon, iterator.hasNext(), cc, targetVar);
         cc.out.label(blockMatcherContext.matcher().start, matchedLabel);
         if (!compileBlock(blockMatcherContext.block())) {
-          cc.out.gotoAbs(blockMatcherContext.block().stop, gotoAfterMatchLabel);
+          cc.out.gotoAbs(endDebugSymbol, gotoAfterMatchLabel);
         }
       });
     }

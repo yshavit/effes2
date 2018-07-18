@@ -228,6 +228,11 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     }
   }
 
+  public static Token debugSymbolTokenForMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx) {
+    TerminalNode methodNameNode = targetCtx.IDENT_NAME();
+    return methodNameNode.getSymbol();
+  }
+
   public boolean compileMethodInvocation(EffesParser.QualifiedIdentNameContext targetCtx, EffesParser.ArgsInvocationContext argsInvocation) {
     // First the target instance, if any.
     EffesParser.QualifiedIdentNameStartContext targetNameStartCtx = targetCtx.qualifiedIdentNameStart();
@@ -294,7 +299,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
           argsInvocation.expression().size()));
     }
 
-    methodInfo.invoke(argsInvocation.stop, cc);
+    methodInfo.invoke(debugSymbolTokenForMethodInvocation(targetCtx), cc);
     return methodInfo.hasReturnValue();
   }
 
