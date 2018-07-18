@@ -420,6 +420,7 @@ expect: |
   labl ifChainEnd         # []
 ---
 name: 'if-else if'
+# 123456789¹123456789²123456789³123
 input: |
   if a:
     doA()
@@ -432,16 +433,16 @@ staticMethods:
     doA: { declaredArgs: 0, hasRv: false }
     doB: { declaredArgs: 0, hasRv: false }
 expect: |
-  pvar 1            # [a]
-  gofi ifNot        # []
-  call : doA        # []
-  goto ifChainEnd   # []
-  labl ifNot        # []
-  pvar 2            # [b]
-  gofi elseIfNot    # []
-  call : doB        # []
-  labl elseIfNot    # []
-  labl ifChainEnd   # []
+  1:4 pvar 1            # [a]
+  3:9 gofi ifNot        # []
+  2:3 call : doA        # []
+  5:1 goto ifChainEnd   # []
+  3:9 labl ifNot        # []
+  3:9 pvar 2            # [b]
+  5:1 gofi elseIfNot    # []
+  4:3 call : doB        # []
+  5:1 labl elseIfNot    # []
+  5:1 labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
 input: |

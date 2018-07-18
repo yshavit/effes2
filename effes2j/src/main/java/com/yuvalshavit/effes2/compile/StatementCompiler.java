@@ -96,19 +96,21 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         String ifNotLabel = cc.labelAssigner.allocate("ifNot");
         // Easy approach for now: always drop the ifChainEndLabel, even if we could have done without it. Not worrying about the extra GOTO
         String ifChainEndLabel = cc.labelAssigner.allocate("ifChainEnd");
+        Token ifChainEndToken = ctx.stop;
         // Each expression+block is in its own scope. That way, for instance:
         //   if foo is One(val):
         //     youCanUse(val)
         //   else
         //     valIsNotAvailableHere()
         EffesParser.ExpressionContext condition = ctx.expression();
+        Token ifNotDebugToken = elseNextToken(c.elseStat(), ifChainEndToken);
         cc.scope.inNewScope(() -> {
           expressionCompiler.apply(condition);
-            cc.out.gotoIfNot(c.COLON().getSymbol(), ifNotLabel);
-            compileBlock(c.block());
+          cc.out.gotoIfNot(ifNotDebugToken, ifNotLabel);
+          compileBlock(c.block());
           });
-        compileElseStatement(c.elseStat(), c.stop, ifNotLabel, ifChainEndLabel);
-        cc.labelAssigner.place(ctx.stop, ifChainEndLabel);
+        compileElseStatement(c.elseStat(), ifNotDebugToken, ifNotLabel, ifChainEndLabel, ifChainEndToken);
+        cc.labelAssigner.place(ifChainEndToken, ifChainEndLabel);
       })
       .when(EffesParser.IfMatchMultiContext.class, c-> {
         cc.scope.inNewScope(() -> {
@@ -120,6 +122,14 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
         });
       })
       .on(ctx.statementIfConditionAndBody());
+  }
+
+  private static Token elseNextToken(EffesParser.ElseStatContext ctx, Token chainEndToken) {
+    return Dispatcher.dispatch(EffesParser.ElseStatContext.class, Token.class)
+      .when(EffesParser.IfElifContext.class, elseC1 -> elseC1.expression().start)
+      .when(EffesParser.IfElseContext.class, elseC -> elseC.block().statement(0).start)
+      .whenNull(() -> chainEndToken)
+      .on(ctx);
   }
 
   @Dispatched
@@ -270,26 +280,27 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     }
   }
 
-  private void compileElseStatement(EffesParser.ElseStatContext ctx, Token ifEndToken, String ifNotLabel, String ifChainEndLabel) {
+  private void compileElseStatement(EffesParser.ElseStatContext ctx, Token ifNotToken, String ifNotLabel, String ifChainEndLabel, Token ifChainEndToken) {
     if (ctx == null) {
-      cc.labelAssigner.place(ifEndToken, ifNotLabel);
+      cc.labelAssigner.place(ifNotToken, ifNotLabel);
       return;
     }
-    cc.out.gotoAbs(ctx.start, ifChainEndLabel); // previous block falls through to here, then jumps to end
+    cc.out.gotoAbs(ifChainEndToken, ifChainEndLabel); // previous block falls through to here, then jumps to end
     Dispatcher.dispatchConsumer(EffesParser.ElseStatContext.class)
       .when(EffesParser.IfElifContext.class, c -> {
         String nextIfNotLabel = cc.labelAssigner.allocate("elseIfNot");
-        cc.labelAssigner.place(ctx.start, ifNotLabel);
+        Token nextIfNotToken = elseNextToken(c.elseStat(), ifChainEndToken);
+        cc.labelAssigner.place(ifNotToken, ifNotLabel);
         // See apply(StatIfContext) above for why we set up the scope this way
         cc.scope.inNewScope(() -> {
           expressionCompiler.apply(c.expression());
-          cc.out.gotoIfNot(c.COLON().getSymbol(), nextIfNotLabel);
+          cc.out.gotoIfNot(nextIfNotToken, nextIfNotLabel);
           compileBlock(c.block());
         });
-        compileElseStatement(c.elseStat(), c.stop, nextIfNotLabel, ifChainEndLabel);
+        compileElseStatement(c.elseStat(), nextIfNotToken, nextIfNotLabel, ifChainEndLabel, ifChainEndToken);
       })
       .when(EffesParser.IfElseContext.class, c -> {
-        cc.labelAssigner.place(c.start, ifNotLabel);
+        cc.labelAssigner.place(ifNotToken, ifNotLabel);
         compileBlock(c.block());
       })
       .whenNull(() -> { })
