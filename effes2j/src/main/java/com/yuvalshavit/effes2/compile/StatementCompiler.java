@@ -26,8 +26,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatAssignMultilineContext ctx) {
-    VarRef toVar = getVarForAssign(ctx.qualifiedIdentName(), null);
-    cc.scope.inNewScope(() -> compileExpressionMultiline(ctx.expressionMultiline(), toVar));
+    EffesParser.QualifiedIdentNameContext name = ctx.qualifiedIdentName();
+    VarRef toVar = getVarForAssign(name, null);
+    cc.scope.inNewScope(() -> compileExpressionMultiline(ctx.expressionMultiline(), toVar, name.start));
   }
 
   @Dispatched
@@ -84,7 +85,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       : null;
     VarRef var = getVarForAssign(ctx.qualifiedIdentName(), type);
     cc.scope.inNewScope(() -> expressionCompiler.apply(ctx.expression()));
-    var.store(ctx.stop, cc.module, cc.out);
+    var.store(ctx.qualifiedIdentName().start, cc.module, cc.out);
   }
 
   @Dispatched
@@ -180,7 +181,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
     String endLabel = cc.labelAssigner.allocate("statMatcherEnd");
     EffesParser.ExpressionContext targetExpression = ctx.expression();
     expressionCompiler.apply(targetExpression);
-    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), endLabel, endLabel, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
+    cc.scope.inNewScope(() -> MatcherCompiler.compile(ctx.matcher(), endLabel, endLabel, ctx.stop, false, cc, ExpressionCompiler.tryGetLocalVar(targetExpression)));
     cc.labelAssigner.place(ctx.stop, endLabel);
   }
 
@@ -218,7 +219,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
           expressionCompiler.apply(c.expression());
         } else if (c.expressionMultiline() != null) {
           VarRef rv = cc.scope.allocateAnonymous(null);
-          compileExpressionMultiline(c.expressionMultiline(), rv);
+          compileExpressionMultiline(c.expressionMultiline(), rv, c.RETURN().getSymbol());
           rv.push(c.expressionMultiline().start, cc.module, cc.out);
         }
         cc.out.rtrn(c.RETURN().getSymbol());
@@ -252,7 +253,8 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       final String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
         String matchedLabel = cc.labelAssigner.allocate("whileMultiMatched");
-        MatcherCompiler.compile(blockMatcherContext.matcher(), matchedLabel, nextMatcherLabelClosure, iterator.hasNext(), cc, targetVar);
+        Token colon = blockMatcherContext.COLON().getSymbol();
+        MatcherCompiler.compile(blockMatcherContext.matcher(), matchedLabel, nextMatcherLabelClosure, colon, iterator.hasNext(), cc, targetVar);
         cc.out.label(blockMatcherContext.matcher().start, matchedLabel);
         if (!compileBlock(blockMatcherContext.block())) {
           cc.out.gotoAbs(blockMatcherContext.block().stop, gotoAfterMatchLabel);
@@ -287,7 +289,7 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       .on(ctx);
   }
 
-  private void compileExpressionMultiline(EffesParser.ExpressionMultilineContext ctx, VarRef toVar) {
+  private void compileExpressionMultiline(EffesParser.ExpressionMultilineContext ctx, VarRef toVar, Token assignmentTokenForDebugSymbol) {
     // coming in, stack is []
     // going out, stack will be [], and toVar will be written to
 
@@ -302,24 +304,25 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       if (nextMatcherLabel != null) {
         cc.labelAssigner.place(exprMatcher.start, nextMatcherLabel);
       }
-      nextMatcherLabel = cc.labelAssigner.allocate("exprMultiTry");
+      nextMatcherLabel = cc.labelAssigner.allocate("exprMultiTryNext");
       String nextMatcherLabelClosure = nextMatcherLabel;
       cc.scope.inNewScope(() -> {
         String ifMatched = cc.labelAssigner.allocate("exprMultiMatched");
-        MatcherCompiler.compile(exprMatcher.matcher(), ifMatched, nextMatcherLabelClosure, iter.hasNext(), cc, targetVar);
+        Token colon = exprMatcher.COLON().getSymbol();
+        MatcherCompiler.compile(exprMatcher.matcher(), ifMatched, nextMatcherLabelClosure, colon, iter.hasNext(), cc, targetVar);
         cc.out.label(exprMatcher.expression().start, ifMatched);
         expressionCompiler.apply(exprMatcher.expression());
-        toVar.store(ctx.stop, cc.module, cc.out);
-        cc.out.gotoAbs(ctx.stop, matchersDoneLabel);
+        toVar.store(assignmentTokenForDebugSymbol, cc.module, cc.out);
+        cc.out.gotoAbs(assignmentTokenForDebugSymbol, matchersDoneLabel);
       });
     }
     assert nextMatcherLabel != null : ctx.getText();
     // nextMatcherLabel is the goto after failure for the last expression. There's no reasonable behavior in that case, so just fail.
     // The [expr] would have been popped off the stack now, because keepIfNoMatch is false for the last exprMatcher
-    cc.labelAssigner.place(ctx.stop, nextMatcherLabel);
-    cc.out.fail(ctx.stop, EvmStrings.escape("no alternatives matched"));
+    cc.labelAssigner.place(assignmentTokenForDebugSymbol, nextMatcherLabel);
+    cc.out.fail(assignmentTokenForDebugSymbol, EvmStrings.escape("no alternatives matched"));
     // And finally, drop the "done" label so the previous expressions have somewhere to go to.
-    cc.labelAssigner.place(ctx.stop, matchersDoneLabel);
+    cc.labelAssigner.place(assignmentTokenForDebugSymbol, matchersDoneLabel);
   }
 
   private VarRef getVarForAssign(EffesParser.QualifiedIdentNameContext ctx, Name.QualifiedType inferredType) {

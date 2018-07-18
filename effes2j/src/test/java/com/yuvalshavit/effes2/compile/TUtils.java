@@ -1,5 +1,6 @@
 package com.yuvalshavit.effes2.compile;
 
+import java.util.Formatter;
 import java.util.function.Consumer;
 
 import org.antlr.v4.runtime.Token;
@@ -11,13 +12,15 @@ public final class TUtils {
 
   static EffesOps<Token> opsToString(StringBuilder sb) {
     return Op.factory(new Consumer<Op>() {
+      private final Formatter formatter = new Formatter(sb);
       @Override
       public void accept(Op op) {
-        sb.append(op).append('\n');
+        formatter.format("%d:%d %s\n", op.token().getLine(), op.token().getCharPositionInLine() + 1, op); // +1 to 1-index it
       }
 
       @Override
       public String toString() {
+        formatter.flush();
         return sb.toString();
       }
     });

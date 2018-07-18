@@ -27,6 +27,7 @@ public class MatcherCompiler {
     EffesParser.MatcherContext matcherContext,
     String labelIfMatched,
     String labelNoMatch,
+    Token tokenForGotos,
     boolean keepIfNoMatch,
     CompilerContext compilerContext,
     String targetVar)
@@ -43,9 +44,8 @@ public class MatcherCompiler {
     MatcherImpl matcherImpl = compiler.new MatcherImpl();
     matcherImpl.apply(matcherContext);
     // The above would have written all of the gotos for failure. Now write the success case.
-    Token lastToken = matcherContext.stop;
-    compiler.scratchVars.commit(lastToken, compilerContext.out, compilerContext.scope);
-    compilerContext.out.gotoAbs(lastToken, labelIfMatched);
+    compiler.scratchVars.commit(tokenForGotos, compilerContext.out, compilerContext.scope);
+    compilerContext.out.gotoAbs(tokenForGotos, labelIfMatched);
 
     if (targetVar != null && matcherContext instanceof EffesParser.MatcherWithPatternContext) {
       // This is something like "foo is Bar", where we want to re-type the "foo" variable as Bar.
@@ -71,16 +71,16 @@ public class MatcherCompiler {
       for (int i = compiler.popAndFailTargets.size() - 1; i >= 0; --i) {
         String target = compiler.popAndFailTargets.get(i);
         if (target != null) {
-          compiler.cc.out.label(lastToken, target);
+          compiler.cc.out.label(tokenForGotos, target);
         }
         if (i > 0) {
-          compiler.cc.out.pop(lastToken);
+          compiler.cc.out.pop(tokenForGotos);
         }
       }
       if (keepIfNoMatchRef != null) {
-        keepIfNoMatchRef.push(lastToken, compilerContext.module, compilerContext.out);
+        keepIfNoMatchRef.push(tokenForGotos, compilerContext.module, compilerContext.out);
       }
-      compiler.cc.out.gotoAbs(lastToken, labelNoMatch);
+      compiler.cc.out.gotoAbs(tokenForGotos, labelNoMatch);
     }
   }
 

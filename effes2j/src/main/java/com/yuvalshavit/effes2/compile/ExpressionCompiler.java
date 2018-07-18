@@ -172,7 +172,7 @@ public class ExpressionCompiler extends CompileDispatcher<EffesParser.Expression
     String isAFalse = cc.labelAssigner.allocate("isA_false");
     String isATrue = cc.labelAssigner.allocate("isA_true");
     String isADone = cc.labelAssigner.allocate("isA_done");
-    MatcherCompiler.compile(input.matcher(), isATrue, isAFalse, false, cc, tryGetLocalVar(expression));
+    MatcherCompiler.compile(input.matcher(), isATrue, isAFalse, input.stop, false, cc, tryGetLocalVar(expression));
     Token tok = input.stop;
     cc.labelAssigner.place(tok, isATrue);
     bool(tok, ifMatchedValue); // since MatcherCompiler.compile's labelIfMatched is null, a match falls through to here
