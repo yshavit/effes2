@@ -33,49 +33,50 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
 
   @Dispatched
   public void apply(EffesParser.StatForContext ctx) {
-    String iterVarname = ctx.IDENT_NAME().getSymbol().getText();
+    Token iterVarToken = ctx.IDENT_NAME().getSymbol();
     EffesParser.ExpressionContext iterateOver = ctx.expression();
     EffesParser.BlockContext body = ctx.block();
+    Token forToken = ctx.FOR().getSymbol();
+    Token endToken = ctx.COLON().getSymbol();
+
     cc.scope.inNewScope(() -> {
-      VarRef iterVar = cc.scope.allocateLocal(iterVarname, false);
+      VarRef iterVar = cc.scope.allocateLocal(iterVarToken.getText(), false);
       VarRef iterLen = cc.scope.allocateAnonymous(Name.QualifiedType.forBuiltin(EffesBuiltinType.INTEGER));
       VarRef iterIdx = cc.scope.allocateAnonymous(Name.QualifiedType.forBuiltin(EffesBuiltinType.INTEGER));
 
       // Evaluate the iterateOver expression and get its length. Then initialize the idx var
       expressionCompiler.apply(iterateOver);
       cc.out.copy(iterateOver.start);
-      Token inToken = ctx.IN().getSymbol();
-      cc.out.arrayLen(inToken);
-      iterLen.store(inToken, cc.module, cc.out);
-      cc.out.pushInt(inToken, "0");
-      iterIdx.store(inToken, cc.module, cc.out);
+      cc.out.arrayLen(forToken);
+      iterLen.store(forToken, cc.module, cc.out);
+      cc.out.pushInt(forToken, "0");
+      iterIdx.store(forToken, cc.module, cc.out);
       // Now the loop. At the top of each iteration, the stack's top contains the iterateOver value.
       String loopTopLabel = cc.labelAssigner.allocate("loopTop");
       String loopDoneLabel = cc.labelAssigner.allocate("loopDone");
       breakLabels.push(new BreakLabels(loopDoneLabel, loopTopLabel));
-      Token loopTop = ctx.COLON().getSymbol();
-      cc.labelAssigner.place(loopTop, loopTopLabel);
+      cc.labelAssigner.place(forToken, loopTopLabel);
       // if arr.len >= idx goto done
-      iterLen.push(loopTop, cc.module, cc.out);
-      iterIdx.push(loopTop, cc.module, cc.out);
-      cc.out.ge(loopTop);
-      cc.out.gotoIfNot(loopTop, loopDoneLabel);
+      iterLen.push(forToken, cc.module, cc.out);
+      iterIdx.push(forToken, cc.module, cc.out);
+      cc.out.ge(forToken);
+      cc.out.gotoIfNot(forToken, loopDoneLabel);
       // otherwise: var, body, increment, and then back to the top. Remember, as of now, the stack's top is the iterateOver value
-      cc.out.copy(loopTop);
-      iterIdx.push(loopTop, cc.module, cc.out);
-      cc.out.arrayGet(loopTop);
-      iterVar.store(loopTop, cc.module, cc.out);
+      cc.out.copy(forToken);
+      iterIdx.push(forToken, cc.module, cc.out);
+      cc.out.arrayGet(forToken);
+      iterVar.store(iterVarToken, cc.module, cc.out);
       compileBlock(body);
-      iterIdx.push(inToken, cc.module, cc.out);
-      cc.out.pushInt(inToken, "1");
-      cc.out.iAdd(inToken);
-      iterIdx.store(inToken, cc.module, cc.out);
-      cc.out.gotoAbs(inToken, loopTopLabel);
+      iterIdx.push(forToken, cc.module, cc.out);
+      cc.out.pushInt(forToken, "1");
+      cc.out.iAdd(forToken);
+      iterIdx.store(forToken, cc.module, cc.out);
+      cc.out.gotoAbs(forToken, loopTopLabel);
       // end the loop
-      cc.labelAssigner.place(ctx.stop, loopDoneLabel);
+      cc.labelAssigner.place(endToken, loopDoneLabel);
       breakLabels.pop();
     });
-    cc.out.pop(ctx.stop); // the array being indexed
+    cc.out.pop(endToken); // the array being indexed
   }
 
   @Dispatched

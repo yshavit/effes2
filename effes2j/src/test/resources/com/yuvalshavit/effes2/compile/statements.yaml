@@ -359,6 +359,7 @@ expect: |
   1:17 goto statMatcherEnd     # []
   1:17 labl statMatcherEnd     # []
 ---
+# 123456789¹123456789²123456789³123
 input: |
   for a in foo():
     workWith(a)
@@ -370,30 +371,30 @@ staticMethods:
     declaredArgs: 0
     hasRv: true
 expect: |
-  call : foo              # [foos]
-  copy                    # [foos, foos]
-  call_Array:len          # [foos, foos.len]
-  svar 1                  # [foos]            $1=foos.len
-  int 0                   # [foos, 0]
-  svar 2                  # [foos]            $2=idx
-  labl loopTop            # [foos]
-  pvar 1                  # [foos, foos.len]
-  pvar 2                  # [foos, foos.len, idx]
-  call_Integer:ge         # [foos, idx>=foos.len]
-  gofi loopDone           # [foos]
-  copy                    # [foos, foos]
-  pvar 2                  # [foos, foos, idx]
-  call_Array:get          # [foos, foos@idx]
-  svar 0                  # [foos]            $0=foos@idx
-  pvar 0                  # [foos, foos@idx]
-  call : workWith         # [foos]
-  pvar 2                  # [foos, idx]
-  int 1                   # [foos, idx, 1]
-  call_Integer:add        # [foos, idx+1]
-  svar 2                  # [foos]
-  goto loopTop            # [foos]
-  labl loopDone           # [foos]
-  pop                     # []
+  1:10 call : foo              # [foos]
+  1:10 copy                    # [foos, foos]
+  1:1  call_Array:len          # [foos, foos.len]
+  1:1  svar 1                  # [foos]            $1=foos.len
+  1:1  int 0                   # [foos, 0]
+  1:1  svar 2                  # [foos]            $2=idx
+  1:1  labl loopTop            # [foos]
+  1:1  pvar 1                  # [foos, foos.len]
+  1:1  pvar 2                  # [foos, foos.len, idx]
+  1:1  call_Integer:ge         # [foos, idx>=foos.len]
+  1:1  gofi loopDone           # [foos]
+  1:1  copy                    # [foos, foos]
+  1:1  pvar 2                  # [foos, foos, idx]
+  1:1  call_Array:get          # [foos, foos@idx]
+  1:5 svar 0                   # [foos]            $0=foos@idx
+  2:12 pvar 0                  # [foos, foos@idx]
+  2:3  call : workWith         # [foos]
+  1:1  pvar 2                  # [foos, idx]
+  1:1  int 1                   # [foos, idx, 1]
+  1:1  call_Integer:add        # [foos, idx+1]
+  1:1  svar 2                  # [foos]
+  1:1  goto loopTop            # [foos]
+  1:15 labl loopDone           # [foos]
+  1:15 pop                     # []
 ---
 input: abc = ?
 expect: ''  # just establishes the var
