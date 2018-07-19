@@ -14,12 +14,15 @@ import lombok.Data;
 public final class TUtils {
   private TUtils() {}
 
-  static EffesOps<Token> opsToString(StringBuilder sb) {
+  static EffesOps<Token> opsToString(StringBuilder sb, boolean debugSymbols) {
     return Op.factory(new Consumer<Op>() {
       private final Formatter formatter = new Formatter(sb);
       @Override
       public void accept(Op op) {
-        formatter.format("%d:%d %s\n", op.token().getLine(), op.token().getCharPositionInLine() + 1, op); // +1 to 1-index it
+        if (debugSymbols) {
+          formatter.format("%d:%d ", op.token().getLine(), op.token().getCharPositionInLine() + 1); // +1 to 1-index it
+        }
+        formatter.format("%s\n", op);
       }
 
       @Override

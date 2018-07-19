@@ -72,6 +72,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
   public static class TestCase implements FileBound {
     public String instanceContextType;
+    public boolean debugSymbols = true;
     public Map<String,SerTypeInfo> types = Collections.emptyMap();
     public Map<String,SerMethodInfo> staticMethods = Collections.emptyMap();
     public String input;
@@ -119,7 +120,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
       });
     }
     TypeInfo typeInfo = createTypeInfo(testTypes, testCase.staticMethods);
-    EffesOps<Token> outOps = TUtils.opsToString(out);
+    EffesOps<Token> outOps = TUtils.opsToString(out, testCase.debugSymbols);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
     return new CompilerContextGenerator(MODULE, outOps, efctDecls, typeInfo);
   }

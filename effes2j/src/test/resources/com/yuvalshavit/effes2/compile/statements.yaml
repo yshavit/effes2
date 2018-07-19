@@ -99,9 +99,9 @@ localVars:
   a:
     reg: 3
 expect: |
-  pvar 0
-  pvar 3
-  call :SomeType foo
+  1:1 pvar 0
+  1:5 pvar 3
+  1:1 call :SomeType foo
 ---
 name: static method, three args, no arv
 input: 'foo(1, 2, 3)'
@@ -400,6 +400,7 @@ input: abc = ?
 expect: ''  # just establishes the var
 ---
 name: 'if-else'
+# 123456789
 input: |
   if a:
     doA()
@@ -411,13 +412,13 @@ staticMethods:
   doA: { declaredArgs: 0, hasRv: false }
   doB: { declaredArgs: 0, hasRv: false }
 expect: |
-  pvar 1                  # [a]
-  gofi ifNot              # []
-  call : doA              # []
-  goto ifChainEnd         # []
-  labl ifNot              # []
-  call : doB              # []
-  labl ifChainEnd         # []
+  1:4 pvar 1                  # [a]
+  4:3 gofi ifNot              # []
+  2:3 call : doA              # []
+  5:1 goto ifChainEnd         # []
+  4:3 labl ifNot              # []
+  4:3 call : doB              # []
+  5:1 labl ifChainEnd         # []
 ---
 name: 'if-else if'
 # 123456789¹123456789²123456789³123
@@ -445,6 +446,7 @@ expect: |
   5:1 labl ifChainEnd   # []
 ---
 name: 'if-else if-else chain'
+debugSymbols: false
 input: |
   if a:
     doA()
@@ -516,14 +518,15 @@ localVars:
   a:
     reg: 1
 expect: |
-  labl whileLoopTop  # []
-  pvar 1             # [a]
-  gofi whileLoopEnd  # []
-  str "single value" # [str]
-  rtrn               # returned
-  labl whileLoopEnd  # []
+  1:1  labl whileLoopTop  # []
+  1:7  pvar 1             # [a]
+  1:8  gofi whileLoopEnd  # []
+  2:10 str "single value" # [str]
+  2:3  rtrn               # returned
+  1:1  labl whileLoopEnd  # []
 ---
 name: return with value multiline
+# 123456789¹123456789²123456789³123
 input: |
   while a:
     return if b is:
@@ -538,43 +541,44 @@ localVars:
   b:
     reg: 3
 expect: |
-  labl whileLoopTop
-  pvar 2
-  gofi whileLoopEnd
-  pvar 3
-  Svar 5
-  typp :One
-  gofi match_fail_pop_1
-  pop
-  goto exprMultiMatched
-  labl match_fail_pop_1
-  pop
-  pvar 5
-  goto exprMultiTryNext
-  labl exprMultiMatched
-  str one
-  svar 4
-  goto exprMultiDone
-  labl exprMultiTryNext
-  typp :Two
-  gofi match_fail_pop_1:1
-  pop
-  goto exprMultiMatched:1
-  labl match_fail_pop_1:1
-  pop
-  goto exprMultiTryNext:1
-  labl exprMultiMatched:1
-  str two
-  svar 4
-  goto exprMultiDone
-  labl exprMultiTryNext:1
-  fail "no alternatives matched"
-  labl exprMultiDone
-  pvar 4
-  rtrn
-  labl whileLoopEnd
+  1:1  labl whileLoopTop
+  1:7  pvar 2
+  1:8  gofi whileLoopEnd
+  2:13 pvar 3
+  3:5  Svar 5
+  3:5  typp :One
+  3:5  gofi match_fail_pop_1
+  3:5  pop
+  3:8  goto exprMultiMatched
+  3:8  labl match_fail_pop_1
+  3:8  pop
+  3:8  pvar 5
+  3:8  goto exprMultiTryNext
+  3:10 labl exprMultiMatched
+  3:10 str one
+  2:3  svar 4
+  2:3  goto exprMultiDone
+  4:5  labl exprMultiTryNext
+  4:5  typp :Two
+  4:5  gofi match_fail_pop_1:1
+  4:5  pop
+  4:8  goto exprMultiMatched:1
+  4:8  labl match_fail_pop_1:1
+  4:8  pop
+  4:8  goto exprMultiTryNext:1
+  4:10 labl exprMultiMatched:1
+  4:10 str two
+  2:3  svar 4
+  2:3  goto exprMultiDone
+  2:3  labl exprMultiTryNext:1
+  2:3  fail "no alternatives matched"
+  2:3  labl exprMultiDone
+  2:10 pvar 4
+  2:3  rtrn
+  1:1  labl whileLoopEnd
 ---
 name: if-is brings type info
+debugSymbols: false
 input: |
   if a is Dog:
     a.bark()
@@ -611,6 +615,7 @@ expect: |
   labl ifChainEnd
 ---
 name: if-matchers brings type info
+debugSymbols: false
 input: |
   if a is:
     Dog:
@@ -678,6 +683,7 @@ expect: |
   labl matchersEnd        # []
 ---
 name: single matcher with binding and guard
+# 123456789¹123456789²123456789³123
 input: |
   if foo(var) is:
     Success(@var if guard(var)):
@@ -697,24 +703,24 @@ staticMethods:
     declaredArgs: 1
     hasRv: true
 expect: |
-  pvar 0                  # [value]
-  call : foo              # [fooRv]
-  typp :Success           # [fooRv, fooRvIsSuccess]
-  gofi match_fail_pop_1   # [fooRv]
-  Pfld :Success value     # [fooRv, fooRv.value]
-  Svar 1                  # [fooRv, fooRv.value]      $1=fooRv.value
-  pop                     # [fooRv]
-  pvar 1                  # [fooRv, fooRv.value]
-  call : guard            # [fooRv, guardRv]
-  gofi match_fail_pop_1   # [fooRv]
-  pop                     # []
-  pvar 1                  # [fooRv.value]
-  svar 0                  # []                        $0=value
-  goto whileMultiMatched  # []
-  labl match_fail_pop_1   # [fooRv]
-  pop                     # []
-  goto matchersEnd        # []
-  labl whileMultiMatched  # []
-  pvar 0                  # [fooRv.value]
-  rtrn                    # <return>
-  labl matchersEnd        # []
+  1:8  pvar 0                  # [value]
+  1:4  call : foo              # [fooRv]
+  2:3  typp :Success           # [fooRv, fooRvIsSuccess]
+  2:3  gofi match_fail_pop_1   # [fooRv]
+  2:11 Pfld :Success value     # [fooRv, fooRv.value]
+  2:11 Svar 1                  # [fooRv, fooRv.value]      $1=fooRv.value
+  2:11 pop                     # [fooRv]
+  2:25 pvar 1                  # [fooRv, fooRv.value]
+  2:19 call : guard            # [fooRv, guardRv]
+  2:28 gofi match_fail_pop_1   # [fooRv]
+  2:29 pop                     # []
+  2:30 pvar 1                  # [fooRv.value]
+  2:30 svar 0                  # []                        $0=value
+  2:30 goto whileMultiMatched  # []
+  2:30 labl match_fail_pop_1   # [fooRv]
+  2:30 pop                     # []
+  2:30 goto matchersEnd        # []
+  2:3  labl whileMultiMatched  # []
+  3:12 pvar 0                  # [fooRv.value]
+  3:5  rtrn                    # <return>
+  1:1  labl matchersEnd        # []

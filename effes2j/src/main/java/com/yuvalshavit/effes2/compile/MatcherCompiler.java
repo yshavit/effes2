@@ -134,7 +134,7 @@ public class MatcherCompiler {
       // <op IS> [@]fooName [if expr]
       // Always matches the type, but still need to do the binding and check the expression.
       bindVarIfNeeded(input.IDENT_NAME(), input.AT(), null);
-      cc.out.pop(input.IDENT_NAME().getSymbol());
+      cc.out.pop(debugTokenForVar(input.IDENT_NAME(), input.AT()));
       if (input.expression() != null) {
         new ExpressionCompiler(cc).apply(input.expression());
         cc.out.gotoIfNot(input.stop, getPopAndFailLabel());
@@ -150,8 +150,12 @@ public class MatcherCompiler {
           VarRef eventualBind = cc.scope.lookUpInParentScope(varName);
           scratchVars.add(varName, varRef, eventualBind);
         }
-        varRef.storeNoPop(varBind.getSymbol(), cc.module, cc.out);
+        varRef.storeNoPop(debugTokenForVar(varBind, varBindAt), cc.module, cc.out);
       }
+    }
+
+    private Token debugTokenForVar(TerminalNode varName, TerminalNode varNameAt) {
+      return varNameAt == null ? varName.getSymbol() : varNameAt.getSymbol();
     }
   }
 
