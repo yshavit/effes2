@@ -160,10 +160,9 @@ public class StatementCompiler extends CompileDispatcher<EffesParser.StatementCo
       expressionCompiler.apply(condition); // inside this scope, in case it's a "while foo is One(bar)" statement. We want the bar available here.
       Dispatcher.dispatchConsumer(EffesParser.StatementWhileConditionAndBodyContext.class)
         .when(EffesParser.WhileBodySimpleContext.class, c -> {
-          Token gotoToken = c.COLON().getSymbol();
-          cc.out.gotoIfNot(gotoToken, loopEndLabel);
+          cc.out.gotoIfNot(c.COLON().getSymbol(), loopEndLabel);
           if (!compileBlock(c.block())) {
-            cc.out.gotoAbs(gotoToken, loopTopLabel);
+            cc.out.gotoAbs(condition.start, loopTopLabel);
           }
         })
         .when(EffesParser.WhileBodyMultiMatchersContext.class, c -> {

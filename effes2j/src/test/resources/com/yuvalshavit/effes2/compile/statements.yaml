@@ -83,8 +83,8 @@ staticMethods:
     declaredArgs: 0
     hasRv: true
 expect: |
-  call : foo
-  pop
+  1:1 call : foo
+  1:1 pop
 ---
 name: instance method, one arg, no arv
 input: 'foo(a)'
@@ -104,16 +104,17 @@ expect: |
   1:1 call :SomeType foo
 ---
 name: static method, three args, no arv
+#       123456789¹123456789²123456789³123
 input: 'foo(1, 2, 3)'
 staticMethods:
   foo:
     declaredArgs: 3
     hasRv: false
 expect: |
-  int 3
-  int 2
-  int 1
-  call : foo
+  1:11 int 3
+  1:8 int 2
+  1:5 int 1
+  1:1 call : foo
 ---
 name: while colon
 input: |
@@ -127,14 +128,15 @@ staticMethods:
     declaredArgs: 0
     hasRv: false
 expect: |
-  labl whileLoopTop
-  call : condition
-  gofi whileLoopEnd
-  call : doSomething
-  goto whileLoopTop
-  labl whileLoopEnd
+  1:1  labl whileLoopTop
+  1:7  call : condition
+  1:18 gofi whileLoopEnd
+  2:3  call : doSomething
+  1:7  goto whileLoopTop
+  1:1  labl whileLoopEnd
 ---
 name: while is
+debugSymbols: false
 input: |
   while thing is:
     String:
@@ -174,11 +176,11 @@ expect: |
   labl match_fail_pop_1             # [thing]
   pop                               # []
   pvar 2                            # [thing]
-  goto whileMultiTry                # [thing]
+  goto whileMultiTryNext            # [thing]
   labl whileMultiMatched            # []
   call : doStringThing              # []
   goto whileLoopTop                 # []
-  labl whileMultiTry                # [thing]
+  labl whileMultiTryNext            # [thing]
   Svar 2                            # [thing]   $2=thing
   typp :Int                         # [thing, thingIsInt]
   gofi match_fail_pop_1:1           # (etc etc..)
@@ -187,11 +189,11 @@ expect: |
   labl match_fail_pop_1:1
   pop
   pvar 2
-  goto whileMultiTry:1
+  goto whileMultiTryNext:1
   labl whileMultiMatched:1
   call : doIntThing
   goto whileLoopTop
-  labl whileMultiTry:1
+  labl whileMultiTryNext:1
   Svar 2
   typp :Foo
   gofi match_fail_pop_1:2
@@ -200,10 +202,10 @@ expect: |
   labl match_fail_pop_1:2
   pop
   pvar 2
-  goto whileMultiTry:2
+  goto whileMultiTryNext:2
   labl whileMultiMatched:2
   goto whileLoopEnd
-  labl whileMultiTry:2
+  labl whileMultiTryNext:2
   Svar 2
   typp :Bar
   gofi match_fail_pop_1:3
@@ -212,10 +214,10 @@ expect: |
   labl match_fail_pop_1:3
   pop
   pvar 2
-  goto whileMultiTry:3
+  goto whileMultiTryNext:3
   labl whileMultiMatched:3
   rtrn
-  labl whileMultiTry:3
+  labl whileMultiTryNext:3
   typp :Baz
   gofi match_fail_pop_1:4
   pop
@@ -317,7 +319,7 @@ expect: |
   12:11 pop                                  # []
   4:7 goto matchersEnd                       # []
   4:7 labl matchersEnd                       # []
-  3:27 goto whileLoopTop:1                   # []
+  3:11 goto whileLoopTop:1                   # []
   3:5 labl whileLoopEnd:1                    # []
   1:1 goto whileLoopTop                      # []          (top of inner loop, though we can't actually reach this op)
   13:3 labl whileMultiTryNext                # [cond]      (all the way from the outer loop)
@@ -647,6 +649,7 @@ expect: |
   labl matchersEnd
 ---
 name: single matcher with simple binding
+debugSymbols: false
 input: |
   if foo(var) is:
     Success(@var):
