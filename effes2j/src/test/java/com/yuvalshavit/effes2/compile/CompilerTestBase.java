@@ -62,6 +62,10 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     });
   }
 
+  protected boolean includeDebugSymbolsByDefault() {
+    return false;
+  }
+
   protected Preload preload() {
     return null;
   }
@@ -72,7 +76,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
 
   public static class TestCase implements FileBound {
     public String instanceContextType;
-    public boolean debugSymbols = true;
+    public Boolean debugSymbols;
     public Map<String,SerTypeInfo> types = Collections.emptyMap();
     public Map<String,SerMethodInfo> staticMethods = Collections.emptyMap();
     public String input;
@@ -107,7 +111,7 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
     public Boolean hasRv;
   }
 
-  private static CompilerContextGenerator compilerContextGenerator(TestCase testCase, StringBuilder out, Preload preload) {
+  private CompilerContextGenerator compilerContextGenerator(TestCase testCase, StringBuilder out, Preload preload) {
     Map<Name.QualifiedType,SerTypeInfo> testTypes = new HashMap<>(testCase.types.size());
     testCase.types.forEach((k, v) -> testTypes.put(new Name.QualifiedType(MODULE, new Name.UnqualifiedType(k)), v));
     if (preload != null) {
@@ -120,7 +124,8 @@ public abstract class CompilerTestBase<T extends ParserRuleContext> {
       });
     }
     TypeInfo typeInfo = createTypeInfo(testTypes, testCase.staticMethods);
-    EffesOps<Token> outOps = TUtils.opsToString(out, testCase.debugSymbols);
+    boolean includeDebugSymbols = testCase.debugSymbols == null ? includeDebugSymbolsByDefault() : testCase.debugSymbols;
+    EffesOps<Token> outOps = TUtils.opsToString(out, includeDebugSymbols);
     CompilerContext.EfctDeclarations efctDecls = CompilerContext.efctDeclarationsFor(out);
     return new CompilerContextGenerator(MODULE, outOps, efctDecls, typeInfo);
   }

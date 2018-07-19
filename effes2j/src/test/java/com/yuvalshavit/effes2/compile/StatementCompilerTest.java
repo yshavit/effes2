@@ -14,4 +14,9 @@ public class StatementCompilerTest extends CompilerTestBase<EffesParser.Statemen
   protected void compile(CompilerContextGenerator ccGen, CompilerContext compilerContext, EffesParser.StatementContext rule, Map<String,?> options) {
     new StatementCompiler(compilerContext).apply(rule);
   }
+
+  @Override
+  protected boolean includeDebugSymbolsByDefault() {
+    return true;
+  }
 }
