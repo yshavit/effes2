@@ -40,7 +40,7 @@ public final class TUtils {
     Trim collapseSpacesAfterDebugSymbols = new Trim(Pattern.compile("^(\\d+:\\d+) {2,}", Pattern.MULTILINE), "$1 ");
     Trim removeComments = new Trim(Pattern.compile(" *#.*$", Pattern.MULTILINE), "");
     Trim removeBlankLines = new Trim(Pattern.compile("^\n*",  Pattern.MULTILINE), "");
-    Trim nlUnicodeToNewline = new Trim(Pattern.compile("␤$", Pattern.MULTILINE), "\n");
+    Trim nlUnicodeToNewline = new Trim(Pattern.compile("^␤$", Pattern.MULTILINE), "");
     return collapseSpacesAfterDebugSymbols
       .andThen(removeComments)
       .andThen(removeBlankLines)
