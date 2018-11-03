@@ -1,13 +1,8 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-EVM_HOME="${EVM_HOME-../../effesvm_j/effesvm_j/target}"
-if [[ ! -d "$EVM_HOME" ]]; then
-  echo "EVM_HOME not set or is not a directory: $EVM_HOME" >&2
-  exit 1
-fi
-effes_jar=$EVM_HOME/effesvm_j-1.0-SNAPSHOT-jar-with-dependencies.jar
-if [[ ! -f "$effes_jar" ]]; then
-  echo "Couldn't find EVM jar at $effes_jar" 1>&2
+EVM_JAR="${EVM_JAR-../../effesvm_j/effesvm_j/target/effesvm_j-1.0-SNAPSHOT-jar-with-dependencies.jar}"
+if [[ ! -f "$EVM_JAR" ]]; then
+  echo "Couldn't find EVM jar at $EVM_JAR" 1>&2
   exit 1
 fi
 if [[ "$EF_DEBUG" == 1 ]]; then
@@ -27,4 +22,4 @@ if [[ -n "${YOURKIT+x}" && -n "$YOURKIT_AGENT" ]]; then
   YOURKIT_OPTS="dir=yourkit_profiles,${YOURKIT:-sampling}"
   YOURKIT_AGENT_OPTS="-agentpath:$YOURKIT_AGENT=$YOURKIT_OPTS"
 fi
-java $EF_DEBUG $EVM_DEBUG $YOURKIT_AGENT_OPTS $COVERAGE -jar "$effes_jar" "$@"
+java $EF_DEBUG $EVM_DEBUG $YOURKIT_AGENT_OPTS $COVERAGE -jar "$EVM_JAR" "$@"
