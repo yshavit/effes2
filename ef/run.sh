@@ -1,10 +1,15 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-if [[ -z "$EVM_HOME" ]]; then
-  echo 'EVM_HOME not set' >&2
+EVM_HOME="${EVM_HOME-../../effesvm_j/effesvm_j/target}"
+if [[ ! -d "$EVM_HOME" ]]; then
+  echo "EVM_HOME not set or is not a directory: $EVM_HOME" >&2
   exit 1
 fi
 effes_jar=$EVM_HOME/effesvm_j-1.0-SNAPSHOT-jar-with-dependencies.jar
+if [[ ! -f "$effes_jar" ]]; then
+  echo "Couldn't find EVM jar at $effes_jar" 1>&2
+  exit 1
+fi
 if [[ "$EF_DEBUG" == 1 ]]; then
   EF_DEBUG='-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005'
 elif [[ -n "$EF_DEBUG" ]]; then
