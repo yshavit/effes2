@@ -1,0 +1,77 @@
+data Nothing
+
+nickname Possible[A] = A | Nothing
+
+Sizeable -> size :: Int >= 0
+
+Sizeable ->
+    it isEmpty = (size = 0)
+    it notEmpty = (size > 0)
+
+Stack[A] ->
+    push A :: Stack[A]
+    pop :: Stack[A]
+    head :: Possible[A]
+    Sizeable st
+        push A -> size' = size + 1
+        pop -> size' = size - 1
+    establish
+        pop (push h) = it
+        head (push h) = h
+
+Stack[A] ->
+    pop it
+
+data Node[A] head :: A, next :: (Nothing | Node[A])
+
+nickname LinkedList[A] = Nothing | Node[A]
+
+LinkedList[A] -> Stack[A] st
+    push a = Link(head = a, next = it)
+    
+    pop Nothing = Nothing
+    pop l = next l
+
+    head l = case l of
+        Nothing -> Nothing
+        Link -> head l
+
+Stream[A] ->
+    mutably next it :: Possible[A]
+
+Nothing :: Stream[*] st
+    immutably next _ = Nothing
+
+Node[A] :: Stream[A] st
+    next =
+        n initially it
+        case n of
+            Node ->
+                n' = next n
+                head n
+            _ -> Nothing
+
+data LT; GT; EQ
+    nicknamed Comparison
+
+data True; False nicknamed Boolean
+
+not True = False
+not False = True
+
+C :: Comparable ->
+    C compare C :: LT | GT | EQ
+    (a :: C) < (b :: C) :: Boolean st cmp a b Is LT
+    (a :: C) <= (b :: C) :: Boolean st cmp a b Isnt GT
+    (a :: C) == (b :: C) :: Boolean st cmp a b Is EQ
+    (a :: C) != (b :: C) :: Boolean st cmp a b Isnt EQ
+    (a :: C) >= (b :: C) :: Boolean st cmp a b Isnt LT
+    (a :: C) > (b :: C) :: Boolean st cmp a b Is GT
+    given
+        nickname Is = True, Isnt = False
+        cmp (a :: C) (b :: C) (r :: Boolean) (c :: Comparison) :: Boolean st
+            case a compare b of
+                c -> r
+                _ -> not r
+
+

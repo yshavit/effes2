@@ -1,0 +1,65 @@
+type Eq:
+  [compiletime] == (other: This) -> Bool
+
+data type Ball(radius: Int):
+  is Eq
+  [override compiletime] (== other):
+    radius == other.radius
+
+type ColoredBall:
+  is Ball -- also inherits Eq
+  color -> Color:
+  [override compiletime] (== other):
+    radius == other.radius && color == other.color
+  
+  ByRadius:
+    [override compiletime] (== other): (this: Ball) == other
+
+type ListSet[T:Eq]:
+  val underlyhing : List[T] -- TODO set
+  add elem:T -> ListSet[T]: case (contains T) of:
+    True: this
+    False: val' = val add elem
+  contains elem:T: case this of:
+    Nothing: False
+    (head, tail): case head of:
+      elem: True -- uses ==
+      _: tail contains elem
+
+data type LT
+data type GT
+data type EQ
+type Comparison = LT | GT | EQ
+
+type Ordered:
+  is Eq
+  [compiletime] cmp (other: This) -> Comparison
+  [override compiletime] (== other): cmp other == EQ
+  [compiletime] < (other: This): comp other == LT
+  [compiletime] > (other: This): comp other == GT
+  [compiletime] <= (other: This): [LT, EQ] contains $ cmp other
+  [compiletime] >= (other: This): [GT, EQ] contains $ cmp other
+  [compiletime] != (other: This): [LT, GT] contains $ cmp other
+
+extend List[T:Ordered]:
+  sorted -> List[T]: case of
+    (): this
+    (_): this
+    _:
+      (left, right) = splitAt $ size / 2
+      merge (left sorted) (right sorted)
+      where merge (left: List[T]) (right: List[T]): case (left, right) of
+        _, (): left
+        (), _: right
+        (l, lt), (r, rt): if l <= r
+          then create l, merge lt right
+          else create r, merge left rt
+
+s1 = ListSet[Ball]
+s2 = ListSet[ColoredBall]
+s3 = ListSet[ColoredBall:ByRadius]
+
+l1 = [cb1, cb2, cb3, cb4] -- some colored balls
+l1s = l1 sorted
+l1sByRadius = l1 sorted[:ByRadius]
+

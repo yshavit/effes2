@@ -1,0 +1,73 @@
+fib (n : int) : int =
+    when n < 0: -1
+    when n = 0 or n = 1: 1
+    else: (fib n-1) + (fib n-2)
+
+indexOf (needle : a, haystack : List[a]) : int = indexOf' 0 needle haystack given
+    indexOf' (acc : int, needle : a, haystack : List[a]) =
+        when haystack head is
+            Empty: -1
+            One and (get h) = needle: acc
+            else: indexOf' (acc+1) needle (haystack tail)
+
+type List[a] = Empty or (Node head : a, tail : List[a])
+export List[a]:Node head, tail // those two methods are now available outside this file
+
+(arr : List[a]) head : a =   // the only other constructor is Node, and that already has
+    when arr is Empty: Empty // an "(arr : List[a]) head" method, so that still works.
+
+(arr : List[a]) tail : List[a] =
+    when arr is Empty: Empty
+    when arr is Node: arr tail // don't automatically fill in constructors, I don't know why not
+
+type Option[a] = Empty or (One value : a)
+get (opt : One a) : a = opt value
+
+type Employee = Employee name : String, salary : int
+
+getEmployees (companyId : int) : [Employee] = undefined
+
+getEmployees 1 | filter (\e -> employee name == "Bob") | map (\e -> e(salary *= 10))
+
+type Boolean = True | False
+
+filter (f : (a -> Boolean), list : List[a]) : List[a] = when list is
+    Empty: Empty
+    Node:
+        set h = list head
+        when f(h): h ++ filter(f, list tail)
+        else: filter(f, list tail)
+
+// Now a method that gets a list of employees. For each one, it'll either
+// change the employee's salary or remove it from the list
+promoteOrFire (input : List[Employee]) : List[Employee] =
+    copy = List[Employee]:Empty
+    for e in input: // creates a mutable copy of each employee
+        if e name = "Bob"
+            continue
+        if e name = "Joe"
+            e = setSalary e (* 10)
+        if e name = "Mary"
+            e = setSalary e 100_000
+        copy = push copy e
+    copy
+
+
+setSalary (e : Employee, pay : int) : Employee = e(salary = pay)
+
+setSalary (e : Employee, adjust : (int -> int)) =
+    e(salary = pay)
+    given pay = adjust (e salary)
+
+type Iterator[a] = Iterator 
+
+interface Iterator[a] =
+    next *List[a] : Optional[a] 
+
+*List[a] implements *Iterator[a] where
+    next list = when list is
+        Empty : Empty
+        Node :
+            set list = list tail
+            One $ list head
+

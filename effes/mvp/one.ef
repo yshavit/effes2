@@ -1,0 +1,87 @@
+type Eq:
+  [compiletime] == This -> Bool
+  
+  -- This shows how a type is made derivable. It defines a @derive method
+  -- that returns a pair. The first element of the pair is the "default"
+  -- answer, and the second is a function that takes two elements of 
+  -- this type and returns back either the answer or Nothing, if the answer
+  -- isn't known yet.
+  @derive == -> (Bool, (A:Eq, A) -> Nothing | Bool) = (
+    True,
+    \a1, a2 = if a1 != a2 then False else Nothing
+  )
+  -- For instance, to autoderive a type data Person(name:String, dob:Date),
+  -- we'd require that String and Date were both Eq. Let's say we're comparing
+  -- p0 and p1 (pother Person objects). The comparison pairs would be
+  -- [(p0.name, p1.name), (p0.dob, p1.dob)]. We'd pass each pair to the @derive's
+  -- function (the second arg). For each one, iff the function returns a Bool,
+  -- that's the comparison answer; if it returns Nothing, we go to the next pair.
+  -- if all pairs are exhausted and returned Nothing, we return the "default" answer
+  -- (the first pair of @default's answer).
+
+type Hashable:
+  is Eq
+  [compiletime] hash -> Int
+
+data type Nothing
+data type One(value: E)
+-- A data type is just shorthand for:
+-- type One[E]:
+--   @var v : E
+--   @create(value: E):
+--     v = value
+--   @pattern -> (E): (v)
+--   @deriving *
+type Maybe[E] = E | Nothing
+
+data type True
+data type False
+type Bool = True | False:
+  [bindRight] not -> Bool: case of
+    True: False
+    False: True
+
+type List[E]:
+  push A -> List[E]
+  pop -> List[E]
+  head -> Maybe[E]
+  size -> Int
+  isEmpty -> Bool: (size == 0)
+  @pattern -> (E, List[E]) | Nothing: case head of
+    Nothing: Nothing
+    One(h): (h, pop)
+
+type ConsList[E]:
+  val : Nothing | data Cons(head: E, tail: List[E])
+  is List[E]
+  
+  [override] push a: Cons(a, this)
+  [override] pop: case val of -- "case" matches against the defined type, (Nothing | Cons), not any "is" types
+    Nothing: Nothing
+    c: c:tail
+  [override] head: case val of
+    Nothing: Nothing
+    Cons(h, _): One(h)
+  [override] size: case val of
+    Nothing: 0
+    _ -> 1 + (pop // size) -- in java, 1 + (pop().size()).
+    -- // is read as "then" and is basically a left-associative marker, so that the above is like ((pop) size)
+    -- which is itself like ((this pop) size). The // operator has lowest binding, so without the parens
+    -- "1 + pop // size" would be interpreted as ((1 + pop) size) which doesn't make sense and won't compile
+  
+  [override] isEmpty: case val of -- more efficient than default impl
+    Nothing: True
+    _: False
+
+  -- @pattern fis by default scoped to This, but here we want to override the List[E] pattern. We don't
+  -- really need to, but it demonstrates the ability to.
+  [override] @pattern List[E] = case val of
+    Nothing: Nothing
+    Cons(h, t): (h, t)
+  
+  @create(): val = Nothing
+  @create(element:E): val = ConsList(element, Nothing)
+  @create(head:E, tail:List[E]): val = ConsList(h, tail)
+
+-- I was going to do map/fmap, but I'll do lambdas later. Ditto functors.
+

@@ -1,0 +1,160 @@
+data Nothing
+type Maybe[A] = Nothing | A
+
+-- An enum is just like a type, except the words on the
+-- right are assumed to be "data" types and are visible
+-- outside the type. So the following is equivalent to
+--   type True
+--   type False
+--   type Bool = True | False
+enum Bool = True | False
+
+type Sizeable:
+  size -> Int
+  isEmpty -> Bool = size == 0
+
+type List[A]:
+  is Sizeable
+  head -> Maybe[A]
+  pop -> List[A]
+  push A -> List[A]
+  [override] size -> Int = if isEmpty then 0 else 1 + pop.size
+  [override] isEmpty = case of
+    List() -> True
+    _ -> False
+  @pattern -> () | (A, List[A]) = case head of
+    Nothing -> ()
+    e -> (e, pop)
+  @create l:A... -> l -- varargs come in as a List, so just spit them back out!
+
+type ConsList[A] = Nothing | data Node[A](head: A, tail: ConsList[A]):
+  is List[A]
+  [override] head = case of
+    Nothing: Nothing
+    Node(e, _): e
+  [override] pop = case of
+    Nothing: Nothing
+    Node(_, t): t
+  [override] push (h:A) -> List[A] = Node(h, this)
+  @pattern List = case of
+    Nothing: ()
+    Node(h, t): (h, t)
+  @create() = Nothing -- parens are optional, here they mirror the other overload
+  @create(head: A, tail:List[A]) = Node(head, tail)
+
+-- Imagine that Supplier[A] is a third-party type.
+type Bag[A]:
+  get -> Maybe A
+  getOr d:A -> A = case get of
+    Nothing: d
+    a: a
+
+-- Hey look, a List[A] is a kind of Bag[A]!
+type List[A] is Bag[A]: -- could have also been "type List[A]:\n  isBag[A]"
+  get = pop
+
+data QSizeable()
+
+type QSizeable List[A]:
+  val s:Int = size
+  is Sizeable
+  [override] size = s
+  @on pop: s' = s - 1
+  @on push A: s' = s + 1
+
+type Array[A]:
+  is Sizeable
+  [builtin] size -> Int
+  [builtin] get -> Maybe[A]
+  where Mutable:
+    [builtin] set A -> Int
+  [builtin classfunc] make i:Int -> Array[A]
+
+type Iterator[A]:
+  is Mutable
+  next -> Maybe[A]
+
+extend Iterator[A]:
+  map[B] f:(A => B) -> Iterator[B]:
+    data MapIter(delegate: Iterator[A]):
+      is Iterator[B]
+      next = case delegate.next of
+        Nothing: Nothing
+        a: f a
+
+type Iterable[A]:
+  iterByIndex -> Iterator[(Int, A)]
+  iterElements -> Iterator[A] = iterByIndex map \(_, e) = e
+  iterRange -> Iterator[Int] = iterByIndex map \(i, _) = i
+
+function List[A]:iterByIndex -> Iterator[(Int, A)]:
+  data Iter(~remaining: List[A], ~idx: Int): 
+    -- "remaining" is a mutable reference to a non-mutable List[A]
+    is Iterator[(Int, A)]
+    next = case remaining of
+      (): Nothing
+      (head, tail):
+        remaining = tail -- sets this immediately
+        idx' = idx + 1 -- sets idx after this method returns
+        (idx, head)
+  ~Iter(this, 0)
+
+function List[A]:toArray -> ~Array[A]:
+  a = ~Array[A]:make size
+  lastIdx = 0
+  for (i, e) in iterByIndex:
+    a:set i e
+    lastIdx = i
+  assert i + 1 == size, "expected {size} elements but found {i+1}"
+  a
+
+type ArrayList[A] = data Indexer(arr: ~Array[A], i: Int):
+  is List[A]
+  [override] head = arr.get i
+  [override] pop = Indexer(arr, i+1)
+  [override] push head = ConsList[A](head, this)
+  where Mutable:
+    set i:Int elem:A -> arr.set i elem
+  @create a: ~Array[A] = ~Indexer(arr, 0)
+
+type Mappable[A]:
+  map f:(A => B) -> Mappable[B]
+
+List[A] is Mappable[A]:
+  [override] map f -> ~ArrayList[B]: -- methods are covariant in return types
+    arr = ~Array[A]: make size
+    for (i, e) in iterByIndex:
+      arr:set i (f e)
+    ~ArrayList(arr)
+
+-- Here's an extending thing! Imagine this is third-party
+type Indexable[K,V]:
+  get K -> Maybe[V]
+  where Mutable:
+    set K V -> Indexable[K,V]
+
+data Logged(name: String, logger: OutString)
+
+type Logged List[A]:
+  @on push head:
+    logger.write "Pushing a {head} to {name}"
+  @on pop:
+    logger.write "Popped a {@rv} from {name}"
+
+l1 = List("hello", "world")
+l2 = QSize <- l1
+l3 = l1 <- Logged("mylist", stdout)
+l4 = l2 <- l3
+  -- l4 there is an l2 into which has been injected l3. What does this mean?
+  -- The methods and state are members(l4) = members(l2) U members(l3)
+  -- There's a diamond operator problem here, since l1 appears in both places.
+  -- Here's a messier problem:
+
+m1 = Map("hello" -> "world", "duck" -> "boat")
+m2 = QSize m1
+
+data Counter(name: String, increment: Int, out: ~Map[String, Int]):
+  
+
+type ~Map[String,Int] Counter: --
+  on

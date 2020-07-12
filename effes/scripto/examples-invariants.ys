@@ -1,0 +1,156 @@
+l:Stack[A] ->
+    push(l, A+) : Stack[A]
+    headOrEmpty(l) : A | Empty because          // need to work out this and next couple lines
+        if empty(l) then Empty else head(l)
+    head(l) : Possible[A] when A not Empty
+    pop(l) : Stack[A]
+    pushAll(l, as:Iterable[A+]) : Stack[A]
+        because (l = push(l, a) for a in as) // default impl
+    empty(l) : Boolean
+
+s:Sizeable ->   // lots of things can be sizeable!
+    size(s) : Int
+
+l:Stack[A] -> l:Sizeable because
+    given i:Int initially 0
+    push(_, _) -> (i++)
+    pop(_) -> (i--)
+    size(s) = i
+
+i:Iterable[A] ->
+    i:Mutable
+    next(i) : Possible[A]
+
+pattern Empty : ()
+pattern Has[A] : (elem:A)
+
+define Possible[A] = Empty | Has[A]
+
+pattern LList[A] : (e:A, rest:(LList[A] | Empty))
+
+l:LList[A] -> l:Stack[A] because
+    push(tail, elem) = LList(elem, tail)
+    head(l) = e(l)
+    pop(l) = rest(l)
+    empty(_) = False
+    
+l:Empty -> l:Stack[A] because
+    push(_, e) = LList(elem, Empty)
+    head(_) = Empty
+    pop(_) = Empty
+    empty(_) = True
+
+define LinkedList[A] = Empty | LList[A]
+
+u:UserId -> u:Int when
+    u > 0 && u < 5000
+    else Fail
+
+i : UserId = 123 // verifiable at compile time
+i : Int
+case (i tries UserId) of
+    Fail -> print "no!"
+    UserId -> print "yes!"
+
+j:Json -> j:(
+    | String
+    | Decimal
+    | Stack[Json]
+    | Map[String, Json]
+    | True
+    | False
+    | Nothing
+    )
+
+rtrim(s:String) : String =
+    s = pop(j) while head(j) = Has(' ')
+    s
+
+parse(s:String) : Possible[Json] =
+    s = rtrim(s)
+    case head(s) of
+        '"' -> parseJsonString(s)
+        '[' -> parseJsonArray(s)
+        '{' -> parseJsonObject(s)
+        NumberDigit | '-' -> parseJsonNum(s)
+        _ -> case nextWord(s) of
+            "true" -> True
+            "false" -> False
+            "null" -> Empty
+            _ -> Fail "unrecognized JSON: %{s}"
+
+parseJsonString(s:String) : Json String =
+    s = rtrim(s)
+    return Fail "invalid string: %{s}" if head(j) != Has('"')
+    r : String initially ""
+    iter = iterator(s)
+    for h in iter; case h of
+        Empty -> Fail "invalid string: %{s}"
+        '"' -> JsonString(r)
+        '\\' -> (e, iter) = jsonStringEscape(iter)
+        _ -> r += h
+
+i:Positive -> i:Int if i > 0 else Fail
+i:NonNegative -> i:(Positive | 0)
+i:Positive ->
+    (i - 1) : NonNegative
+i:NonNegative -> (i + 1) : Positive // dunno if this is needed
+
+private pattern SubStack[A] : (delegate:Stack[A+], size:NonNegative Int)
+s:SubStack[A] -> s:Stack[A] because
+    push(s, e) =
+        push(delegate, e)
+        size++
+    pop(s) =
+        if empty(l)
+            Empty
+        else // compiler should know i:Positive because it's NonNegative but not 0
+            size = decr(size)
+            delegate = pop(delegate)
+            s // is there a way the compiler can force/warn if this is missing?
+    empty(s) =
+        size == 0 or empty(delegate)
+
+s:Stack[A] ->
+    popn(s, i:Int) : Stack[A] because
+        s = pop(s) while (i-- > 0)
+
+split(s:Stack[A], at:NonNegative Int) =
+    (SubStack(s, at), popn(s, at))
+
+c:Comparable[A] ->
+    pattern LT, EQ, GT
+    compare(c, other:A) : LT | EQ | GT
+
+define Sorted
+s:Stack[E] : Sorted Stack[E:Comparable] if    
+push(s:Sorted Stack[E:Comparable], e:E) : Sorted Stack[E:Comparable] if
+    empty(s) or
+    compare(e, head(s)) : LT | EQ or
+    compare(head(s), e) : GT | EQ
+
+stack:Sizeable Stack[A:Comparable] -> mergeSort(stack:Sizeable Stack[A:Comparable]) : Sorted Stack[A] because
+    0 | 1 -> stack
+    s ->
+        splitAt = intDivision(s, 2)
+        (left, right) = split(stack, splitAt)
+        left = mergeSort(left)
+        right = mergeSort(right)
+        merge(left, right)
+        where merge(left:Sorted Stack[A], right:Sorted Stack[A]) : Sorted Stack[A] r because
+            assuming (empty(left) or head(r) <= head(left)) and (empty(right) or head(r) <= head(right)) // how to validate?
+            case of
+                empty(left) -> right
+                empty(right) -> left
+                _ ->
+                    lHead = head(left)
+                    rHead = head(right)
+                    case compare(lHead, rHead) of
+                        EQ | LT -> push(lHead, merge(pop(left), right)) assume Sorted
+                            // Things we know:
+                            // lHead <= head(pop(left))
+                            // lHead <= head(right)
+                            // pop(left) and right both Sorted
+                            // merge is Sorted
+                            // ** HOW TO PROVE ** head(merge) <= head(pop(left)) and head(right)
+                        GT -> push(rHead, merge(left, pop(right))) assume Sorted

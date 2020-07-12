@@ -1,0 +1,124 @@
+-- all_info = yaml.load(sys.stdin)
+-- type_descs = all_info['types']
+-- casts = all_info['casts']
+allInfo = stdin => toJson => successOrBust -- stdin, take the output and feed it to toJson which results in Try[String], then return the String or throw an exception
+types = allInfo 'types' --allInfo is a Json object, which is a type composed with a function that takes a string name and returns that value iff json object, else throws
+casts = allInfo 'casts'
+
+-- 
+-- def tuplize(elem, *keys):
+--     return tuple([elem[key] for key in keys])
+-- 
+-- def type_name(type_tuple):
+--     return "%s %s" % (type_tuple[0].lower(), type_tuple[4])
+-- 
+-- def v(s):
+--     return "<br />".join(s)
+-- 
+-- casts_map = {}
+castsMap = 
+-- cast_sources_count = {} # map of (bundle, type_name) -> opposite of # of times this type is the source of a strong cast
+-- for cast in casts:
+--     source_key = tuplize(cast, 'source_bundle', 'source_type')
+--     key = ( source_key,
+--             tuplize(cast, 'target_bundle', 'target_type') )
+--     if cast['strong']:
+--         if source_key in cast_sources_count:
+--             cast_sources_count[source_key] -= 1
+--         else:
+--             cast_sources_count[source_key] = -1
+--     casts_map[key] = cast
+-- 
+-- types = sorted([(type_desc['bundle'], type_desc['category'], 'UNSIGNED' in type_desc['name'], cast_sources_count.get((type_desc['bundle'], type_desc['name'])), type_desc['name']) for type_desc in type_descs])
+-- # for each pair of (bundle, category), lists how many names there are
+-- bundle_and_category_count =  {}
+-- for (bundle, category, isSigned, strongCastsCount, name) in types:
+--     key = (bundle, category)
+--     if key in bundle_and_category_count:
+--         bundle_and_category_count[key] += 1
+--     else:
+--         bundle_and_category_count[key] = 1
+-- # Now use that map to create a map from (bundle, category, name) -> int, where the int is 0 if this is the first name 
+-- # with this (bundle, category) and 0 otherwise
+-- spans_per_type = {}
+-- for atype in types:
+--     key = (atype[0], atype[1])
+--     if key in bundle_and_category_count:
+--         count = bundle_and_category_count[key]
+--         del bundle_and_category_count[key]
+--     else:
+--         count = 0
+--     spans_per_type[atype] = count
+-- 
+-- print """
+-- <html>
+--     <head>
+--         <title>AkSQL Casts</title>
+--         <link rel="stylesheet" type="text/css" href="casts_chart.css" />
+--     </head>
+-- <body>"""
+-- 
+-- print '<table id="casts_table">'
+-- 
+-- # header
+-- 
+-- print '<tr><td class="placeholder" colspan="2" rowspan="2">&nbsp;</td><th colspan="%s" id="targets_header">Target</th></tr>' % len(types)
+-- print '<tr>'
+-- for target in types:
+--     t = type_name(target)
+--     css_class = "target_name"
+--     if spans_per_type[target]:
+--         css_class += " target_border"
+--     print '<th class="%s">%s</th>' % (css_class, v(t))
+-- print '</tr>'
+-- 
+-- # pprint(casts_map)
+-- 
+-- # one row per target
+-- first_row = True
+-- for source in types:
+--     if spans_per_type[source]:
+--         print '<tr class="source_border">'
+--     else:
+--         print '<tr>'
+--     if first_row:
+--         print '<th rowspan="%s" id="sources_header">%s</th>' % (len(types), v('Source'))
+--         first_row = False
+--     print '<th class="source_name">%s</th>' % type_name(source)
+--     for target in types:
+--         # the keys don't include the type category
+--         source_key = (source[0], source[4])
+--         target_key = (target[0], target[4])
+--         key = (source_key, target_key)
+--         theCast = casts_map.get(key, None)
+--         if theCast is None:
+--             strength = None
+--             isDerived = None
+--         else:
+--            strength = theCast['strong']
+--            isDerived = theCast['isDerived']
+-- 
+--         if strength is None:
+--             content = 'X'
+--             cell_class = 'no_cast'
+--         elif strength:
+--             content = 'S'
+--             cell_class = 'strong_cast'
+--         else:
+--             content = 'w'
+--             cell_class = 'weak_cast'
+--         if spans_per_type[target]:
+--            cell_class += " target_border"
+--         if isDerived:
+--             cell_class += " derived_cast"
+--         print '<td class="cast %s"><a class="tooltip" href="#">%s<span>source: %s<br />target: %s</span></a></td>' % (cell_class, content, type_name(source), type_name(target))
+--     print '</tr>'
+-- 
+-- print '</table>'
+-- 
+-- import datetime
+-- print '<div class="timestamp">%s</div>' % datetime.date.today().isoformat()
+-- 
+-- print '</body></html>'
+
+

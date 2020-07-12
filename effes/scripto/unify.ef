@@ -1,0 +1,70 @@
+data Nothing
+data One[A] = value : A
+-- This is just sugar for:
+-- One[A]:
+--   let value : A -- no defualt
+--   value : A = value -- field name hides method name
+-- To construct:
+--   One(1), or -- only works with one field
+--   One(value=1), or
+--   One where
+--     value = 1
+
+let Possible[A] = Nothing | One[A]
+
+Sizeable: -- abstract trait
+  size : Int
+
+Stack[A]: -- abstract trait
+  push A : Stack[A]
+  pop : Stack[A]
+  head : Possible[A]
+
+Stack[A] -> Sizeable where -- implementation of Sizeable
+  size = case head of
+    Nothing : 0
+    _ : 1 + pop
+
+QuickSize Stack[A]:
+  let s : Int = size -- unambiguous because QuickSize has no "size" method whereas Sizeable does.
+  size = s
+  push _ : QuickSize Stack[A] where
+    s' = size + 1
+  pop : QuickSize Stack[A]:
+    s' = size - 1
+
+Nothing -> Stack[A] where -- partial implementation of Stack[A]
+  pop = Nothing
+  head = Nothing
+
+-- So this would work:
+--  pop Nothing
+--  head Nothing
+-- This wouldn't:
+--  push Nothing 1
+
+data LinkedNode[A] = head : A, tail : Stack[A]
+
+let LinkedList[A] = Nothing | LinkedNode[A]
+
+LinkedList[A] -> Stack[A]:
+  -- context is now "LinkedList[A]"
+  push h = case it is
+    LinkedNode:
+      -- context is now "LinkedNode"
+      LinkedNode(head=h, tail=it)
+    -- case "Nothing" already defined, so no need to re-define here
+  pop = case it is
+    LinkedNode: tail
+  head = case it is
+    LinkedNode: head
+
+Iterator[A]:
+  mutable next : Possible[A]
+
+iterator (s:Stack[A]) : Iterator[A] = Iter(s) given
+  data Iter[A] = (state : mutable Stack[A])
+  Iter[A] -> Iterator[A]:
+    next = head state given state' = pop state
+
+

@@ -1,0 +1,72 @@
+type Container[A]:
+  insert A -> Ibid
+  get -> Maybe[A]
+  remove -> Ibid
+
+type Box[A] = data Box(elem: A) | Nothing:
+  is Container[A]
+  @override insert e = Box(e)
+  @override get = case of
+    Box(e) -> e
+    _ -> Nothing
+  @override remove -> Nothing
+
+type List[A] = Nothing | data Node(head: A, tail: List[A]):
+  is Container[A]
+  @override insert e = Node(e, this)
+  @override get = case of
+    Node(e, _) -> e
+    _ -> Nothing
+  @override remove -> case of
+    Node(e, t) -> t
+    _ -> Nothing
+  get i:Index -> Maybe[A] = case i, this of
+    0, Node(e, _) -> e
+    _, Nothing -> Nothing
+    _, Node(_, t) -> t.get (i-1)
+
+-- So far so good. Now imagine we have boxy and listy, both List[String].
+-- What does insert do? One option is to say that the *whole* object is a monolith,
+-- and therefore insert has just one binding; say, Box.insert. Then we can do:
+combined = combined.insert "hello"
+-- What about this?
+case combined of
+  List[String] -> combined.get
+-- Well, we can say that even though it's known to be a List, the binding still
+-- belongs to the object, and is therefore Box.get (not List.get). Okay, but then:
+case combined of
+  List[String] -> get 0
+-- ... will give an unexpected result of Nothing, not "hello"!
+-- I think the only option is to always execute all options and then recombine them.
+-- But in that case, what happens if the combinations give conflicting results? e.g.
+data TypeId(id: Int)
+
+type TypeIdable:
+  typeId -> TypeId
+
+type List[A]:
+  is TypeId
+  @override typeId = TypeId(1)
+
+type Box[A]:
+  @override typeId = TypeId(2)
+
+combined.typeId -- Boom? Or maybe it's TypeId(1 @ 2)? Shit yo.
+
+-- One option is to say that "case combined of List[A]" doesn't match; Box[A] supercedes it.
+-- But then we have to ask why. Maybe because there's some overlap? Does that mean that a
+-- compile-time type of "Box List" is invalid? Maybe it should be! This highly limits what
+-- object composition can do, but maybe for the best.
+-- How do we define overlap, anyway? override-able signatures with non-abstract impls?
+
+
+
+
+-- What if we have boxy:Box[String] and listy:List[Int]?
+
+-- What if we have boxy:Box[Int] and listy:List[Num]?
+
+-- I should also have an "identity axiom" (name?) that if a0 == a1, then
+-- a0.methodA(i0, i1,...iN) == a1.methodA(i0, i1,...iN)
+-- This assumes a purity of functions.
+

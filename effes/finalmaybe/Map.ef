@@ -1,0 +1,80 @@
+type Map[K?, V]: -- "some kind of K" -- can't use until we know what kind!
+  is Sizeable
+  get K -> Maybe[V]
+  elements -> Iterator[(K,V)]
+  where Mutable:
+    put K, V -> Maybe[V]
+  where K:Eq, V:Eq:
+    is Eq:
+    [override] == other:
+      @(elements.sameRemainAs other.elements)
+
+Iterator[E:Eq]:
+  sameRemainAs (other: Iterator[E]) -> Bool:
+    loop case next of:
+      Nothing:
+        @other.next == Nothing
+      a: if (a == other.next) then iterate else @False
+        -- note: "a == other.next" requires us to find an Eq impl
+        -- Maybe[A:Eq] is Eq, so we'll use its. Or would we use A's?
+        -- In the case of Maybe it doesn't matter, but generally it does
+        -- I think we should use E's. next is Maybe[E] ~ (Nothing | E).
+        -- The compiler knows that next is not Nothing. So it must be E.
+        -- Otoh, this could get pretty complicated when we match on parameters
+        -- inside the object -- when do we know that the object cannot be of
+        -- a given type anymore? e.g. data Ball(c:Color, r:Double), what happens
+        -- with foo : Ball | Person, then
+        -- case foo of
+        --   Ball(Red, r): whatever
+        --   Ball(Green, r): whatever2
+        --   p: handlePerson p
+        -- Assume that red and green are the only two colors. Should the compiler
+        -- prove that p can't be a Ball and therefore must be a Person? How far
+        -- does this go?
+
+type Eq:
+  [typeres] == Ibid -> Bool
+
+type Hashed:
+  is Eq
+  is not Mutable
+  [typeres] hash -> Int
+
+type HashMap[Immutable Hashed K, V]:
+  data Node(key: K,
+            mutable val: V,
+            mutable next: Maybe[Mutable Node])
+  is Map[K,V]
+  val table = new Array[Maybe[Node]] 16
+
+  [override] put k v =
+    hash = k.hash % table.size
+    bucket = loop node = table[hash]: case node of
+      Nothing: Nothing
+      Node(k' _ next'):  -- loop' will assign the next value of loop
+        if k' == k: @node
+        else: iterate
+    case bucket of
+      Nothing: -- bucket is empty or key not found
+        table[hash] = new Node(k, v, node)
+        @Nothing
+      Node(_, v', _): -- found this key, replace the value
+        node.v = v'
+        @v'
+
+  [override] get k =
+    hash = k.hash % table.size
+    loop node = table[hash]: case node of
+      Nothing: Nothing
+      Node(k' v next):
+        if k' == k: @v
+        else node' = node
+
+  [override] elements = generate
+    for i in 0 to table.size:
+      loop node = table[hash]: case node of
+        Node(k, v, next):
+          node' = next
+          @(k,v)
+        Nothing:
+          @Nothing
